@@ -1,0 +1,26 @@
+This directory contains the files which run
+our high precision Newton's method. We use
+this code to generate high precision versions of
+our near-flat torus. Here is a
+breakdown of the directory.
+
+Run.java: wrapper class which runs the Newton's method program.
+NewtonsMethodBig.java: This runs the main routine.
+AcosBig.java: high precision arccos approximator.
+SqrtBig.java: high precision square root function approximator
+VectorBig.java: high precision 3-vector class
+MatrixBig.java: high precision 3-vector class
+
+The other files, like Vector.java are not used in the
+calculation, but we keep them around to shadow their
+high precision counterparts. I generated the high
+precision versions starting with the regular files and
+then transcribing all the subroutines.
+
+To compile the code, use the command
+
+javac *.java
+
+To run the code, use the command
+
+java Run

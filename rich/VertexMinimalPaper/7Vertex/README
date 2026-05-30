@@ -1,0 +1,10 @@
+To compile, use the command
+
+javac*.java
+
+To run, use the command
+
+java Main
+
+When you run the program you will see a
+window which has instructions in it.

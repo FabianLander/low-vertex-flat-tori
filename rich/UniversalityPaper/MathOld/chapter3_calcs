@@ -1,0 +1,389 @@
+
+(*This file checks the calculations from Chapter 3.*)
+
+ClearAll["Global`*"]
+
+
+(*The positive functions*)
+gamma0 = 1 - 2 x;
+gamma1 = -2 x + x^2 + y^2;
+gamma2 = 2 x - x^2 + y^2;
+gamma3 = 2 x + x^2 + y^2;
+gamma4=2 x gamma0 +(2x +1) (x x + y y);
+gamma5=2 x x gamma0 + x x gamma3 + y y gamma3;
+
+
+
+(*Here are the equations for the golden pup tent*)
+
+plat = {
+  x0 -> -x^2 + 2 x - y^2,   y0 -> 0,              z0 -> 0,
+  x1 -> -2 x^2 + x,         y1 -> y - 2 x y,      z1 -> Sqrt[8 x] y,
+  x2 -> -x^2 + x - y^2,     y2 -> -y,             z2 -> 0,
+  x3 -> -x^2 + 3 x - y^2,   y3 -> y,              z3 -> 0,
+  x4 ->  x^2 - 3 x + y^2,   y4 -> -y,             z4 -> 0,
+  x5 ->  x^2 -   x + y^2,   y5 -> y,              z5 -> 0,
+  x6 ->  2 x^2 - x,         y6 -> 2 x y - y,      z6 -> Sqrt[8 x] y,
+  x7 ->  x^2 - 2 x + y^2,   y7 -> 0,              z7 -> 0
+};
+
+U = {
+  {x0,y0,z0},
+  {x1,y1,z1},
+  {x2,y2,z2},
+  {x3,y3,z3}
+};
+
+(* symmetry map: 180° rotation about Z *)
+RZ[A_] := {-A[[1]], -A[[2]], A[[3]]};
+
+(*Here is the golden pup tent.  Technically we just use the
+first four relations and symmetry.*)
+V={U[[1]],U[[2]],U[[3]],U[[4]],RZ[U[[4]]],RZ[U[[3]]],RZ[U[[2]]],RZ[U[[1]]]}//.plat
+
+
+
+(* Triangulation (0-based indices) *)
+
+triangles = {
+  {3,7,5}, {3,0,7}, {3,5,4}, {3,1,0}, {3,4,2},
+  {3,2,1}, {7,1,5}, {7,0,4}, {7,4,6}, {7,6,1},
+  {5,6,4}, {5,1,2}, {5,2,6}, {0,2,4}, {0,1,6}, {0,6,2}
+  };
+
+
+Print["---------------THE JACOBIAN-------------------------------------"];
+
+(*This computes the jacobian matrix for symmetric variations of
+  pup tents, evaluated along the golden valley. We are using
+  we choose.  The ANGLE variable encodes this choice.  The
+  options are {0,1,2} or {0,2,3}, or {0,1,3} or {1,2,3}.
+  We use ANGLE = {0,1,2}, as in the paper*)
+
+(*This lists the vectors symbolically*)
+V = {
+  {x0,y0,z0},{x1,y1,z1},{x2,y2,z2},{x3,y3,z3},
+  {x4,y4,z4},{x5,y5,z5},{x6,y6,z6},{x7,y7,z7}
+};
+
+
+
+(* Angle at vertex i in triangle {i,j,k} *)
+angleAt[i_, j_, k_] := Module[
+  {vi, vj, vk, u, w, uu, ww, uw, c},
+  vi = V[[i + 1]]; 
+  vj = V[[j + 1]]; 
+  vk = V[[k + 1]];
+  u  = vj - vi;
+  w  = vk - vi;
+  uu = Dot[u, u];
+  ww = Dot[w, w];
+  uw = Dot[u, w];
+  c  = uw/(Sqrt[uu] Sqrt[ww]);
+  ArcCos[c]
+]
+
+(* Angle contribution of a triangle to vertex v *)
+angleInTri[{i_, j_, k_}, v_] := 
+  If[v == i, angleAt[i, j, k],
+    If[v == j, angleAt[j, k, i],
+      If[v == k, angleAt[k, i, j], 0]
+    ]
+  ];
+
+(* Cone angles *)
+ConeAngle[v_] := Module[{sum = 0, t},
+  For[t = 1, t <= 16, t++,
+    sum = sum + angleInTri[triangles[[t]], v];
+  ];
+sum
+];
+
+
+(*Here is the Jacobian. We want symmetric variations.
+The symmetry is (x,y,z) <-> (-x,-y,z). The convention
+is that we just vary the first 4 points.*)
+
+J0[k_]:=D[ConeAngle[k],z0]+D[ConeAngle[k],z7];
+J1[k_]:=D[ConeAngle[k],z1]+D[ConeAngle[k],z6];
+J2[k_]:=D[ConeAngle[k],z2]+D[ConeAngle[k],z5];
+JJ0  := Table[J0[k],  {k,0,2}];
+JJ1  := Table[J1[k],  {k,0,2}];
+JJ2  := Table[J2[k],  {k,0,2}];
+
+JJsym = {JJ0, JJ1, JJ2};
+
+(* Now we have the symbolic Jacobian. We want to evaluate it at on
+the golden valley. Substitute the (x,y)-parametrization.*)
+
+
+(*Now we specialized to the golden tent*)
+JAC = {JJ0,JJ1,JJ2} /. plat;
+$Assumptions = x > 0 && x < 1/2 && y > 0 && (x - 1)^2 + y^2 > 1;
+JAC=FullSimplify[JAC,Assumptions]
+Print[MatrixForm[JAC]];
+
+Print["check that matrix is symmetric."];
+Print[JAC-Transpose[JAC]];
+
+Print["List of denominators in the Jacobian entries"];
+DEN=Table[Table[Denominator[JAC[[i,j]]],{i,1,3}],{j,1,3}];
+DEN=Flatten[DEN];
+DEN=MatrixForm[Union[Factor[DEN]]];
+Print[DEN];
+
+DET=Factor[Det[JAC]];
+Print["determinant"];
+Print[DET];
+
+Print["compare with gamma4 and gamma5"];
+Print[Expand[gamma4]];
+Print[Expand[gamma5]];
+
+
+Print["----------------------------------------------------"];
+
+(*Seeing that the magic point goes not blow up*)
+
+
+
+magic = (1/GAMMA) {(4 x y (-40 x^5 + 60 x^6 - 30 x^7 - 25 x^8 + 15 x^9 + 24 x^3 y^2 - 
+      24 x^4 y^2 - 50 x^5 y^2 - 54 x^6 y^2 + 48 x^7 y^2 - 
+      20 x^2 y^4 - 42 x^3 y^4 - 36 x^4 y^4 + 54 x^5 y^4 - 22 x y^6 - 
+      10 x^2 y^6 + 24 x^3 y^6 - 3 y^8 + 3 x y^8))/(3 (-1 + 
+      2 x) (-2 x + x^2 - y^2)^2 (2 x + x^2 + y^2)), (4 x y (-2 x + 
+      x^2 + y^2) (48 x^4 - 72 x^5 + 48 x^6 + 18 x^7 + 20 x^5 y + 
+      15 x^6 y + 24 x^3 y^2 + 48 x^4 y^2 + 30 x^5 y^2 + 32 x^2 y^3 + 
+      40 x^3 y^3 + 33 x^4 y^3 + 6 x^3 y^4 + 20 x y^5 + 21 x^2 y^5 - 
+      6 x y^6 + 3 y^7))/(3 (-1 + 2 x) (-2 x + x^2 - y^2)^2 (2 x + 
+      x^2 + y^2))}
+
+
+GAMMA = (
+  y^7
+  + 2 gamma0 x y^6
+  + 8 x y^5 + 7 x^2 y^5
+  + 16 x^2 y^4 + 6 gamma0 x^3 y^4
+  + 11 x^2 y^3 + gamma0 x^2 y^3 + 6 x^4 y^3
+  + 24 x^3 y^2 + 24 x^4 y^2 + 16 x^5 y^2 + 6 gamma0 x^5 y^2
+  + 10 gamma1 x^3 y + 5 gamma1 x^4 y
+  + (3/2) gamma0 x^5 + 6 gamma0^2 x^5 + (1/2) gamma0^3 x^5
+  + 6 gamma0^2 x^6 + 12 gamma0 x^7);
+
+Print["-----------------------------------------------------------------"];
+Print["The big polynomial Gamma from the first section"];
+
+(***********************************************************)
+(**DEFINING THE SPECIAL DEFORMATION*)
+
+(*here is the relation that get flatness to second order*)
+m=-2 x y/(2 x - x x + y y);
+
+(*Now we are building up towards the special deformation.
+first we give the functions a0(X1,X2) and a1(X1,X2) and a2(X1.X2).*)
+
+(*  m and a_j formulas *)
+m = (-2 x y)/gamma2;
+
+a[j_] := (alpha[j] + alpha[j, 1] X1 + alpha[j, 2] X2)/
+   (4 Sqrt[2] * gamma0 * gamma1 * gamma2^2 * 
+    Sqrt[x] * (2 x^2 gamma0 + x^2 gamma3 + y^2 gamma3));
+
+(*  Alpha coefficients *)
+alpha[0] = 
+  4 x y (-4 x^2 + 6 x^3 - 5 x^4 - 2 x y^2 - 6 x^2 y^2 - y^4) * gamma1;
+
+alpha[0, 1] = 
+  4 x (2 x^2 - 2 x^3 + x^4 - 2 x y - x^2 y + 2 x y^2 + 
+      2 x^2 y^2 - y^3 + y^4) * gamma0 * gamma1 * gamma2^2;
+
+alpha[0, 2] = 
+  (2 x^3 - x^4 - 6 x y^2 - 2 x^2 y^2 - y^4) * 
+  gamma0 * gamma2^2 * gamma3;
+
+alpha[1] = 
+  8 x y (-4 x^2 + 9 x^3 - 7 x^4 - 3 x y^2 - y^4) * gamma1;
+
+alpha[1, 1] = 
+  -4 y * gamma0 * gamma1 * gamma2^2 * gamma3^2;
+
+alpha[1, 2] = 
+  2 (x - 2 y^2) * gamma0 * gamma2^2 * gamma3^2;
+
+alpha[2] = 
+  8 x y (x^2 + y^2) (2 x - 3 x^2 + y^2) * gamma1;
+
+alpha[2, 1] = 
+  -4 y (x^4 + 6 x^2 + 4 x y^2 + 2 x^2 y^2 + y^4) *
+  gamma0 * gamma1 * gamma2^2;
+
+alpha[2, 2] = 
+  2 (2 x^7 - 9 x^6 + 12 x^5 - 4 x^4 + 6 x^5 y^2 - 
+      11 x^4 y^2 - 12 x^3 y^2 - 12 x^2 y^2 + 6 x^3 y^4 - 
+      3 x^2 y^4 - 8 x y^4 + 2 x y^6 - y^6) * gamma0 * gamma2^2;
+
+
+
+
+(*Here is the deformation of the golden pup tent*)
+
+xx0=x0;
+xx1=x1+s;
+xx2=x2+X1 s s;
+
+yy0=y0+ X1 s s;
+yy1=y1 + m s;
+yy2=y2 + X2 s s;
+
+zz0 = z0 + a[0] s^2;
+zz1 = z1 + a[1] s^2;
+zz2 = z2 + a[2] s^2;
+
+U = {
+  {xx0,yy0,zz0},
+  {xx1,yy1,zz1},
+  {xx2,yy2,zz2},
+  {x3,y3,z3}
+};
+
+(* symmetry map: 180° rotation about Z *)
+RZ[A_] := {-A[[1]], -A[[2]], A[[3]]};
+
+
+(*Here is the special deformation*)
+V={U[[1]],U[[2]],U[[3]],U[[4]],RZ[U[[4]]],RZ[U[[3]]],RZ[U[[2]]],RZ[U[[1]]]}//.plat
+
+(*DONE DEFINING THE SPECIAL DEFORMATION*)
+(**********************************************************************)
+
+
+
+(**********************************************************************)
+(*CHECKING 3RD ORDER FLATNESS*)
+
+(*Here we give some random rational numbers, and we check on these*)
+
+XX2=With[{d = RandomInteger[{1, 99999}]}, RandomInteger[{-d, d}]/d];
+XX3=With[{d = RandomInteger[{1, 99999}]}, RandomInteger[{-d, d}]/d];
+xx=With[{d = RandomInteger[{1, 99999}]}, RandomInteger[{1,d-1}]/d/2];
+yy=1+With[{d = RandomInteger[{1, 99999}]}, RandomInteger[{0, d}]/d];
+
+Print["-----------------------------------------------------------------"];
+Print["Flatness Check for Random Parameters..."];
+Print["x=",xx," ","y=",yy,"   ","X1=",XX2,"  ","X2=",XX3];
+Print["First Derivative"];
+Print[FullSimplify[Table[D[ConeAngle[j], {s, 1}] /. {s -> 0, X1 -> XX2, X2 -> XX3, x -> xx, y -> yy},{j,0,2}]]]
+Print["Second Derivative"];
+Print[FullSimplify[Table[D[ConeAngle[j], {s, 2}] /. {s -> 0, X1 -> XX2, X2 -> XX3, x -> xx, y -> yy},{j,0,2}]]]
+Print["-----------------------------------------------------------------"];
+(*We don't need to check the 0th order flatness because for t=0 we
+already know we have a golden pup tent*)
+
+(**DONE WITH FLATNESS CHECK*)
+(****************************************************************)
+
+
+(****************************************************************)
+(*CHECKING ROBUST EMBEDDING*)
+
+
+(*Here are the tetrahedra in lex order*)
+
+    TETRA={{0,1,2,3}, {0,1,2,4}, {0,1,2,5}, {0,1,2,6}, {0,1,2,7}, {0,1,3,4}, {0,1,3,5}, 
+        {0,1,3,6}, {0,1,3,7}, {0,1,4,5}, {0,1,4,6}, {0,1,4,7}, {0,1,5,6}, {0,1,5,7},
+        {0,1,6,7}, {0,2,3,4}, {0,2,3,5}, {0,2,3,6}, {0,2,3,7}, {0,2,4,5}, {0,2,4,6}, 
+        {0,2,4,7}, {0,2,5,6}, {0,2,5,7}, {0,2,6,7}, {0,3,4,5}, {0,3,4,6}, {0,3,4,7},
+        {0,3,5,6}, {0,3,5,7}, {0,3,6,7}, {0,4,5,6}, {0,4,5,7}, {0,4,6,7}, {0,5,6,7}, 
+        {1,2,3,4}, {1,2,3,5}, {1,2,3,6}, {1,2,3,7}, {1,2,4,5}, {1,2,4,6}, {1,2,4,7}, 
+        {1,2,5,6}, {1,2,5,7}, {1,2,6,7}, {1,3,4,5}, {1,3,4,6}, {1,3,4,7}, {1,3,5,6}, 
+        {1,3,5,7}, {1,3,6,7}, {1,4,5,6}, {1,4,5,7}, {1,4,6,7}, {1,5,6,7}, {2,3,4,5}, 
+        {2,3,4,6}, {2,3,4,7}, {2,3,5,6}, {2,3,5,7}, {2,3,6,7}, {2,4,5,6}, {2,4,5,7}, 
+        {2,4,6,7}, {2,5,6,7}, {3,4,5,6}, {3,4,5,7}, {3,4,6,7}, {3,5,6,7}, {4,5,6,7}}; 
+
+
+(*Here are the list of indices and their prescribed orders*)
+ORD0={2,3,5,6,7,9,10,11,12,13,14,15,21,23,25,27,29,31,32,34,35,36,37,39,40,41,42,43,44,45,46,47,48,49,50,51,57,59,61,62,64,65,66,68,69};
+
+ORD1 = {4,8,38,54,52,55};
+
+ORD2 = {1,16,17,18,19,20,22,24,26,28,30,33,53,56,58,60,63,67,70};
+
+
+TetraVol[k_]:=(
+LL=TETRA[[k]];
+LL=LL+{1,1,1,1};
+MM={V[[LL[[2]]]]-V[[LL[[1]]]],V[[LL[[3]]]]-V[[LL[[1]]]],V[[LL[[4]]]]-V[[LL[[1]]]]};
+Det[MM])
+
+sign0[k_]:=Factor[Coefficient[TetraVol[ORD0[[k]]], s, 0]]
+sign1[k_]:=Factor[Coefficient[TetraVol[ORD1[[k]]], s, 1]]
+sign2[k_]:=Factor[Coefficient[TetraVol[ORD2[[k]]], s, 2]//.{X1->magic[[1]],X2->magic[[2]]}]
+
+Print[""];
+Print["-----------------------------------------------------------------"];
+Print["robustness check: the 70 determinants"];
+Print["Here are the order 0 expressions"];
+Print[MatrixForm[Table[sign0[k],{k,1,45}]]]
+
+Print["Here are the order 1 expressions"];
+Print[MatrixForm[Table[sign1[k],{k,1,6}]]]
+
+Print["Here are the order 2 expressions"];
+Print[MatrixForm[Table[sign2[k],{k,1,19}]]]
+
+
+
+Print["robustness check: the denominators of the determinants"];
+Print[MatrixForm[Table[Denominator[Factor[TetraVol[k]]],{k,1,70}]]];
+
+
+Print[""];
+Print["-----------------------------------------------------------------"];
+
+(*Now we compare with the known embedded pup tent*)
+
+(*Here is the pup tent from the paper, accurate to 16 digits*)
+
+Pup={
+  {-0.25,  0.51,  0.0048531277065192},
+  { 0.64, -0.20,  1.0},
+  {-1.09,  0.38,  0.0206663266698443},
+  { 0.78,  0.62,  0.0082275214556137},
+  {-0.78, -0.62,  0.0082275214556137},
+  { 1.09, -0.38,  0.0206663266698443},
+  {-0.64,  0.20,  1.0},
+  { 0.25, -0.51,  0.0048531277065192}
+}
+
+TetraVolCompare[k_]:=(
+LL=TETRA[[k]];
+LL=LL+{1,1,1,1};
+MM={Pup[[LL[[2]]]]-Pup[[LL[[1]]]],Pup[[LL[[3]]]]-Pup[[LL[[1]]]],Pup[[LL[[4]]]]-Pup[[LL[[1]]]]};
+Det[MM])
+
+signCompare0[k_]:=Sign[TetraVolCompare[ORD0[[k]]]]
+signCompare1[k_]:=Sign[TetraVolCompare[ORD1[[k]]]]
+signCompare2[k_]:=Sign[TetraVolCompare[ORD2[[k]]]]
+
+Print[""];
+Print["checking signs against known embedded pup tent"];
+
+ss00=Table[signCompare0[k],{k,1,45}]
+ss01=Table[Sign[sign0[k]//.{x->1/4,y->1}],{k,1,45}]
+Print["compare 0th order terms"];
+Print[ss00/ss01];
+
+
+ss10=Table[signCompare1[k],{k,1,6}]
+ss11=Table[Sign[sign1[k]//.{x->1/4,y->1}],{k,1,6}]
+Print["compare 1st order terms"];
+Print[ss10/ss11];
+
+
+ss20=Table[signCompare2[k],{k,1,19}]
+ss21=Table[Sign[sign2[k]//.{x->1/4,y->1}],{k,1,19}]
+Print["compare 2nd order terms"];
+Print[ss20/ss21];
+
+Print["-----------------------------------------------------------------"];
+Print["DONE WITH ALL CHECKS"];

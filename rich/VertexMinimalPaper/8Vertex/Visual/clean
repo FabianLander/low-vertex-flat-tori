@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# This script removes all class files from subdirectories.
+
+# clear all class files
+for file in `find . -name "*.class"`
+do 
+rm $file
+done
+
+# clear all tilde files
+for file in `find . -name "*~"`
+do 
+rm $file
+done

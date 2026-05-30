@@ -1,0 +1,17 @@
+This is the Java code we write to
+visualize the platinum pup tents and
+also their goodpath deformations.
+You compile the code with
+
+javac *.java
+
+and then you run the interface with
+
+jave Main
+
+Once you run it, the interface will pup
+up and there will be a button you can press
+(lower left) for further instructions.
+This code is not completely documented.
+It is not needed for the proofs in the paper.
+It is just for illustration purposes.

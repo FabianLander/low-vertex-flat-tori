@@ -1,0 +1,82 @@
+30 Oct 2025
+
+*****purpose**********************
+
+This directory contains the computer code I used
+in my paper "Vertex Minimal Paper Tori".
+It is written in Java and should be compatible with
+all modern Java compilers.  If you have questions
+or comments please send them to Richard.Evan.Schwartz@gmail.com
+
+****** directory contents****************
+
+flatness_test: This has the Mathematica code that
+tests that the example is flat up to 10^{-31}.
+
+mathematica_plotter: This has a short Mathematica
+program that lets you plot the pup tent and move it
+around.
+
+
+EmbeddingLemma: This directory contains the code we use to
+prove the Robust Embedding Lemma.  It runs with
+exact integer arithmetic.
+
+Newton: This directory contains our high precision
+implementation of Newton's Method.  We use this class
+to generate extremely high precision versions of our
+nearly flat paper torus and to compute the relevant
+Jacobian matrix to high precision.   This class uses
+the BigDecimal class.  Logically, this directory is
+not used in our proof, except that we extract from it
+a 2-digit approximation of the Jacobian. This 2-digit
+approximation could practically be done on an abacus.
+
+Visual:  This directory contains a graphical user
+interface which displays our example graphically.
+We used this program to generate the pictures in
+the paper.  We also used it to generate the vectors
+used in the proof of the Robust Embedding Lemma.
+As we say repeatedly in the paper, it does not
+matter logically how we generate our various
+proof certificates; all that matters is their
+existence.
+
+Each of these directories has its own README file.
+
+****more code************
+
+This directory is part of a larger suite of programs
+I have written to study this problem.  I just
+extracted the parts relevant to the paper.  If you
+are interested in seeing the other code, which is
+still not documented well, I can send it to you.
+
+***operating the code*******
+
+To compile the code in any
+directory use the command
+
+javac *.java
+
+In all but the Visual directory, run the code
+using the command
+
+java Run
+
+In the Visual directory, you can either run the main
+program with
+
+java Main
+
+Finally, every directory has a file called clean.
+You run it using the command
+
+./clean
+
+This will remove all the java class files. I find
+it useful to use this file to make a less cluttered
+directory when I am debugging and documenting rather
+than coding.
+
+

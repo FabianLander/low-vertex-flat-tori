@@ -1,0 +1,157 @@
+
+(*This file checks the calculations from Ch2.
+First we deal with the flatness of the golden pup tents*)
+
+ClearAll["Global`*"]
+
+(*Here are the equations for the golden pup tent*)
+
+plat = {
+  x0 -> -2 x^2 + x,         y0 -> y - 2 x y,      z0 -> Sqrt[8 x] y,
+  x1 -> -x^2 + x - y^2,     y1 -> -y,             z1 -> 0,
+  x2 -> -x^2 + 2 x - y^2,   y2 -> 0,              z2 -> 0,
+  x3 -> -x^2 + 3 x - y^2,   y3 -> y,              z3 -> 0
+};
+
+U = {
+  {x0,y0,z0},
+  {x1,y1,z1},
+  {x2,y2,z2},
+  {x3,y3,z3}
+};
+
+(* symmetry map: 180° rotation about Z *)
+RZ[A_] := {-A[[1]], -A[[2]], A[[3]]};
+
+(*Here is the golden pup tent.  Technically we just use the
+first four relations and symmetry.*)
+V={U[[1]],U[[2]],U[[3]],U[[4]],RZ[U[[4]]],RZ[U[[3]]],RZ[U[[2]]],RZ[U[[1]]]}//.plat
+
+
+
+(* Triangulation (0-based indices) *)
+
+triangles = {
+   {3,5,6}, {3,2,5}, {3,6,4}, {3,0,2}, {3,4,1},
+   {3,1,0}, {5,0,6}, {5,2,4}, {5,4,7}, {5,7,0},
+   {6,7,4}, {6,0,1}, {6,1,7}, {2,1,4}, {2,0,7}, {2,7,1}
+  };
+
+
+
+(*Here is the list of triangles in the intrinsic structure.
+These tile one fundamental domain*)
+L1=4 I y;
+L2=z L1;
+z=x + I y;
+Q0=z - 2 x x - 2 y y;
+Q1=Q2 - z;
+Q2=2 x - x x - y y;
+Q3=Q2 + z;
+
+TriList = {
+  {{0,1,6}, {Q0, Q1+L1, -Q1 + L2}},
+  {{1,0,3}, {Q1 + L1, Q0, Q3}},
+  {{3,4,1}, {Q3, -Q3 + L1, Q1 + L1}},
+  {{0,7,2}, {Q0, -Q0 + L2, Q2}},
+  {{2,3,0}, {Q2, Q3, Q0}},
+  {{3,2,5}, {Q3, Q2, -Q2}},
+  {{5,6,3}, {-Q2, -Q1, Q3}},
+  {{6,5,0}, {-Q1, -Q2, Q0 - L2}}
+};
+
+
+
+(*Vector and complex distance*)
+
+VecDist2[v_,w_]:=(v-w).(v-w);
+CxDist2[v_,w_]:=ComplexExpand[(v-w) Conjugate[v-w]]
+DIST2[v_,w_]:=(v-w).(v-w);
+
+ExtrinsicDistances[k_]:=(
+u=TriList[[k,1]];
+u=u+{1,1,1};
+d12=VecDist2[V[[u[[1]]]],V[[u[[2]]]]];
+d13=VecDist2[V[[u[[1]]]],V[[u[[3]]]]];
+d23=VecDist2[V[[u[[2]]]],V[[u[[3]]]]];
+Factor[{d12,d13,d23}])
+
+
+IntrinsicDistances[k_]:=(
+u=TriList[[k,1]];
+VV=TriList[[k,2]];
+d12=CxDist2[VV[[1]],VV[[2]]];
+d13=CxDist2[VV[[1]],VV[[3]]];
+d23=CxDist2[VV[[2]],VV[[3]]];
+Factor[{d12,d13,d23}])
+
+Print["-------------------CHAPTER 2 CALCULATIONS-----------------------"];
+Print["checking that all extrinsic/intrinsic distance ratios are 1"]
+
+RATIO=Table[ExtrinsicDistances[k]/IntrinsicDistances[k],{k,1,Length[TriList]}];
+Print[MatrixForm[RATIO]]
+
+Print["----------------------------------------------------"];
+
+
+(*We are done with the computational test, but here
+is a plot of the triangles.  In other words, this
+reproduces the plots of the triangles in Chapter 2.
+This is currently set to 1/4 + I, but you cam adjust
+xx and yy to get a different parameter.*)
+
+(*Change these as needed*)
+xx=1/4;
+yy=3;
+
+Convert[z_] := {Re[z], Im[z]};
+ConvertVec[v_] := Table[Convert[v[[j]]], {j, 1, 3}];
+PolyConvert[t_] := Table[Polygon[ConvertVec[t[[k, 2]]]], {k, 1, 8}];
+
+tt1 = TriList //. {x -> xx, y -> yy};
+uu1 = PolyConvert[tt1];
+
+TL1 = Table[{TriList[[k, 1]], -TriList[[k, 2]]}, {k, 1, 8}];
+tt2 = TL1 //. {x -> xx, y -> yy};
+uu2 = PolyConvert[tt2];
+
+TL3 = Table[{TriList[[k, 1]],  - L2 + TriList[[k, 2]]}, {k, 1, 8}];
+tt3 = TL3 //. {x -> xx, y -> yy};
+uu3 = PolyConvert[tt3];
+
+TL4 = Table[{TL1[[k, 1]], - L2 + TL1[[k, 2]]}, {k, 1, 8}];
+tt4 = TL4 //. {x -> xx, y -> yy};
+uu4 = PolyConvert[tt4];
+
+helpTL = Table[{TL1[[k, 1]], +L1 - L2 + TL1[[k, 2]]}, {k, 1, 8}];
+helpTT = helpTL //. {x -> xx, y -> yy};
+helpUU = PolyConvert[helpTT];
+
+TL5 = Table[{helpTL[[k, 1]],  + L2 + helpTL[[k, 2]]}, {k, 1, 8}];
+tt5 = TL5 //. {x -> xx, y -> yy};
+uu5 = PolyConvert[tt5];
+
+TL6 = Table[{TL3[[k, 1]], -L1 + TL3[[k, 2]]}, {k, 1, 8}];
+tt6 = TL6 //. {x -> xx, y -> yy};
+uu6 = PolyConvert[tt6];
+
+uu = Flatten[{uu1, uu2, uu3, uu4, uu5, uu6}];
+
+f[c_] := Table[c, {8}];
+col = Flatten[{
+   f[Yellow],
+   f[RGBColor[.5, .9, 1]],
+   f[Red],
+   f[RGBColor[.3, .7, 1]],
+   f[RGBColor[.2, .4, 1]],
+   f[Orange]
+   }];
+
+Print["Here is the plot from Chapter 2"];
+
+Graphics[
+  Table[{EdgeForm[Black], col[[k]], uu[[k]]}, {k, 48}]
+]
+
+
+

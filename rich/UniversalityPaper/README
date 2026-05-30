@@ -1,0 +1,14 @@
+This directory contains the file that are companions
+to the paper.
+
+Math has the Mathematica programs that verify the
+calculations from the paper.
+
+Java has a java program that lets you visualize
+many the constructions in the paper.
+
+The directories MathOld and JavaOld
+have older versions of the files.
+The main change is that we permuted the
+labels of the triangulation so that they
+are more canonical.

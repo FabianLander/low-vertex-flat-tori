@@ -1,0 +1,7 @@
+These files verify the calculations in Chapter 2 and Chapter 3 of
+the paper.  Just open up Mathematica and enter them like this
+<<chapter2_calcs   or
+<<chapter3_calcs
+The file pup_tent plotter has a Mathematica file that plots
+the pup tent from the discussion section at the end of
+Chapter 2.

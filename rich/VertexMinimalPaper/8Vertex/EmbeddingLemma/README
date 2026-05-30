@@ -1,0 +1,22 @@
+This directory contains the files which run
+our rigorous proof of the Robust Embedding Lemmma.
+Here is a breakdown of the directory.
+
+Run.java: wrapper class which runs the calculation for the proof.
+Separation.java: This file contains the main test we run for the proof.
+IntegerTorus.java: This file stores our Integer Torus.  This is the main subject of the proof.
+EmbeddedProof0.java: This file contains the 24 separation vectors for triangles with no common vertices.
+EmbeddedProof1.java: This file contains the 72 separation vectors for triangles with 1 common vertex.
+EmbeddedProof2.java: This file contains the 24 separation vectors for triangles with 2 common vertex.
+ListHelp.java: This file contains a few routines to help us manipulate lists
+VectorBig.java: This contains an integer Vector class which works on as many digits as we need.
+
+To compile the code, use the command
+
+javac *.java
+
+To run the code, use the command
+
+java Run
+
+
