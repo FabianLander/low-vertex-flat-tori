@@ -11,7 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
-samples
+# Raw sampler scratch at repo root only — curated finds live in
+# demos/flat-samples/samples/ and ARE tracked. Anchored with a leading
+# slash so it doesn't also match that nested directory.
+/samples
 
 # Editor directories and files
 .vscode/*
@@ -23,3 +26,4 @@ samples
 *.njsproj
 *.sln
 *.sw?
+package-lock.json

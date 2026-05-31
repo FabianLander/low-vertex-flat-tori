@@ -5,10 +5,11 @@ import { PaperTorus } from '../../src/math/embedding';
 import { VERTEX_COUNT, TRIANGLES } from '../../src/math/topology';
 import { TorusView } from '../../src/viewer/TorusView';
 
-// Read every samples/*.csv directly at serve/build time — no codegen, no manual
-// data file to edit. Re-run the sampler, refresh, and the new tori appear.
+// Read every curated CSV directly at serve/build time — no codegen, no manual
+// data file to edit. These files are tracked (the repo-root samples/ dir is
+// raw scratch and gitignored); promote good finds into ./samples/ and refresh.
 // Vite inlines each file's text via the ?raw query.
-const csvFiles = import.meta.glob('/samples/*.csv', {
+const csvFiles = import.meta.glob('./samples/*.csv', {
   query: '?raw',
   import: 'default',
   eager: true,
