@@ -17,7 +17,7 @@
 import { newtonFlatten, type NewtonOptions, type NewtonStatus } from './newton';
 import type { RepulsionEnergy } from './energies/types';
 
-export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged';
+export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked';
 
 export type FlowOptions = {
   /** Step size on the gradient descent move. Default 0.005. */
@@ -32,6 +32,18 @@ export type FlowOptions = {
   newtonOpts?: NewtonOptions;
   /** Per-iteration callback for live visualization / logging. */
   onIter?: (info: IterationInfo) => void;
+  /**
+   * Optional hard feasibility constraint (e.g. isEmbedded). When supplied, the
+   * step becomes a backtracking line search: the move is accepted only if the
+   * post-Newton position is feasible AND the energy strictly decreases, else
+   * the step is halved and retried. If no feasible improving step is found the
+   * flow halts with status 'blocked' at the last good point. This turns a soft
+   * penalty into a hard constraint — the surface can never leave the feasible
+   * region.
+   */
+  feasible?: (positions: Float64Array) => boolean;
+  /** Backtracking attempts per iteration when `feasible` is set. Default 24. */
+  maxBacktracks?: number;
 };
 
 export type IterationInfo = {
@@ -58,8 +70,11 @@ export function embeddedFlow(
   const energyTol = opts.energyTol ?? 1e-10;
   const gradientTol = opts.gradientTol ?? 1e-8;
   const maxIters = opts.maxIters ?? 500;
+  const feasible = opts.feasible;
+  const maxBacktracks = opts.maxBacktracks ?? 24;
 
   const grad = new Float64Array(positions.length);
+  const saved = new Float64Array(positions.length); // last good point, for backtracking
 
   // Land on F before starting (in case caller's seed isn't flat).
   let nr = newtonFlatten(positions, opts.newtonOpts);
@@ -91,21 +106,43 @@ export function embeddedFlow(
       return { status: 'stalled', iters: iter, energy: e, totalNewtonIters: totalNewton };
     }
 
-    // Naive Euclidean descent step. Off-manifold drift is O(stepSize²);
-    // the next Newton call mops it up.
-    for (let i = 0; i < positions.length; i++) {
-      positions[i] -= stepSize * grad[i];
-    }
+    if (!feasible) {
+      // Naive Euclidean descent step. Off-manifold drift is O(stepSize²);
+      // the next Newton call mops it up.
+      for (let i = 0; i < positions.length; i++) {
+        positions[i] -= stepSize * grad[i];
+      }
 
-    nr = newtonFlatten(positions, opts.newtonOpts);
-    totalNewton += nr.iters;
-    if (nr.status !== 'converged') {
-      return {
-        status: 'diverged',
-        iters: iter + 1,
-        energy: energy.compute(positions),
-        totalNewtonIters: totalNewton,
-      };
+      nr = newtonFlatten(positions, opts.newtonOpts);
+      totalNewton += nr.iters;
+      if (nr.status !== 'converged') {
+        return {
+          status: 'diverged',
+          iters: iter + 1,
+          energy: energy.compute(positions),
+          totalNewtonIters: totalNewton,
+        };
+      }
+    } else {
+      // Guarded backtracking: accept the largest step that lands on F, stays
+      // feasible, and strictly lowers the energy. Else halt at the last good x.
+      saved.set(positions);
+      let alpha = stepSize;
+      let accepted = false;
+      for (let bt = 0; bt < maxBacktracks; bt++) {
+        for (let i = 0; i < positions.length; i++) positions[i] = saved[i] - alpha * grad[i];
+        nr = newtonFlatten(positions, opts.newtonOpts);
+        totalNewton += nr.iters;
+        if (nr.status === 'converged' && feasible(positions) && energy.compute(positions) < e) {
+          accepted = true;
+          break;
+        }
+        alpha *= 0.5;
+      }
+      if (!accepted) {
+        positions.set(saved);
+        return { status: 'blocked', iters: iter, energy: e, totalNewtonIters: totalNewton };
+      }
     }
 
     opts.onIter?.({
