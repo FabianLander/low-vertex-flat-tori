@@ -9,7 +9,8 @@
     "preview": "node scripts/run-demo.mjs preview",
     "sample": "tsx scripts/sample-embedded.mjs",
     "sample-flat": "tsx scripts/sample-flat.mjs",
-    "fatten": "tsx scripts/fatten.mjs"
+    "fatten": "tsx scripts/fatten.mjs",
+    "barrier": "tsx scripts/barrier-fatten.mjs"
   },
   "devDependencies": {
     "@types/three": "^0.181.0",

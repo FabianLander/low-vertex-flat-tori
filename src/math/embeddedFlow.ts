@@ -55,6 +55,13 @@ export type FlowOptions = {
   earlyRejectIters?: number;
   /** Required best-energy drop ratio for early-reject. Default 0.5. */
   earlyRejectRatio?: number;
+  /**
+   * If true, step along the UNIT gradient (move = stepSize · ∇E/‖∇E‖) instead
+   * of the raw gradient. Keeps a stiff energy (e.g. a log-barrier, whose
+   * gradient blows up near contact) from producing huge overshooting steps:
+   * stepSize then means a fixed displacement per step. Default false.
+   */
+  normalizeGradient?: boolean;
 };
 
 export type IterationInfo = {
@@ -87,6 +94,7 @@ export function embeddedFlow(
   const earlyRejectIters = opts.earlyRejectIters ?? 0;
   const earlyRejectRatio = opts.earlyRejectRatio ?? 0.5;
   const useMomentum = momentum > 0 && !feasible;
+  const normalizeGradient = opts.normalizeGradient ?? false;
 
   const grad = new Float64Array(positions.length);
   const saved = new Float64Array(positions.length);     // last good point, for backtracking
@@ -132,16 +140,20 @@ export function embeddedFlow(
       return { status: 'stalled', iters: iter, energy: e, totalNewtonIters: totalNewton };
     }
 
+    // Optional unit-gradient stepping for stiff energies (barriers): a fixed
+    // displacement along ∇E/‖∇E‖ rather than the raw (possibly huge) ∇E.
+    const dirScale = normalizeGradient ? 1 / gNorm : 1;
+
     if (!feasible) {
       // Euclidean descent step (optionally heavy-ball). Off-manifold drift is
       // O(stepSize²); the next Newton call mops it up.
       if (useMomentum) {
         for (let i = 0; i < positions.length; i++) {
-          velocity![i] = momentum * velocity![i] - stepSize * grad[i];
+          velocity![i] = momentum * velocity![i] - stepSize * dirScale * grad[i];
           positions[i] += velocity![i];
         }
       } else {
-        for (let i = 0; i < positions.length; i++) positions[i] -= stepSize * grad[i];
+        for (let i = 0; i < positions.length; i++) positions[i] -= stepSize * dirScale * grad[i];
       }
 
       nr = newtonFlatten(positions, opts.newtonOpts);
@@ -161,7 +173,7 @@ export function embeddedFlow(
       let alpha = stepSize;
       let accepted = false;
       for (let bt = 0; bt < maxBacktracks; bt++) {
-        for (let i = 0; i < positions.length; i++) positions[i] = saved[i] - alpha * grad[i];
+        for (let i = 0; i < positions.length; i++) positions[i] = saved[i] - alpha * dirScale * grad[i];
         nr = newtonFlatten(positions, opts.newtonOpts);
         totalNewton += nr.iters;
         if (nr.status === 'converged' && feasible(positions) && energy.compute(positions) < e) {

@@ -206,6 +206,29 @@ export function triangleTriangleDist2(
   return m;
 }
 
+/**
+ * Squared distance between segment [p,q] and the FILLED triangle (a,b,c).
+ * The closest pair between a segment and a convex triangle is realized either
+ * at a segment endpoint vs the triangle, or between the segment and one of the
+ * triangle's three edges — so we min over those 2 + 3 candidates. (Like
+ * triangleTriangleDist2, this returns the boundary distance rather than 0 if
+ * the segment threads the interior; embedded meshes never do that.)
+ */
+export function segmentTriangleDist2(
+  px: number, py: number, pz: number,
+  qx: number, qy: number, qz: number,
+  ax: number, ay: number, az: number,
+  bx: number, by: number, bz: number,
+  cx: number, cy: number, cz: number,
+): number {
+  let m = pointTriangleDist2(px, py, pz, ax, ay, az, bx, by, bz, cx, cy, cz);
+  m = Math.min(m, pointTriangleDist2(qx, qy, qz, ax, ay, az, bx, by, bz, cx, cy, cz));
+  m = Math.min(m, segmentSegmentDist2(px, py, pz, qx, qy, qz, ax, ay, az, bx, by, bz));
+  m = Math.min(m, segmentSegmentDist2(px, py, pz, qx, qy, qz, bx, by, bz, cx, cy, cz));
+  m = Math.min(m, segmentSegmentDist2(px, py, pz, qx, qy, qz, cx, cy, cz, ax, ay, az));
+  return m;
+}
+
 function clamp01(x: number): number {
   return x < 0 ? 0 : x > 1 ? 1 : x;
 }
