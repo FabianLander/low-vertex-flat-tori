@@ -156,7 +156,7 @@ if (seedMode === 'file') {
 const stepSize = num(flag('--step-size'), 0.001);
 const maxFlowIters = num(flag('--max-flow-iters'), 500);
 const momentum = num(flag('--momentum'), 0);
-const earlyRejectIters = num(flag('--early-reject-iters'), 0);
+const earlyRejectIters = num(flag('--early-reject-iters'), 60);
 const earlyRejectRatio = num(flag('--early-reject-ratio'), 0.5);
 const angleTol = num(flag('--angle-tol'), 1e-10);
 const maxTries = num(flag('--max-tries'), Infinity);

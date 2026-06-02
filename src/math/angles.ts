@@ -73,3 +73,72 @@ export function maxConeDeficit(positions: ArrayLike<number>): number {
   }
   return m;
 }
+
+/**
+ * Analytic Jacobian of the cone-angle DEFICITS R_i = 2π − θ_i.
+ *
+ * Writes out[i*N + c] = ∂R_i/∂x_c for every vertex i (0..7) and coordinate
+ * c (0..23), row-major with stride N = 24. Exact derivative — the FD-free
+ * alternative to differencing coneAngleDeficits. Validated row-by-row against
+ * central finite differences (see angles.test.ts).
+ *
+ * θ_i = Σ over the incident corners (apex i, arms to consecutive link-neighbors
+ * j, l) of the corner angle α between u = P_j − P_i and v = P_l − P_i. The
+ * corner-angle gradient is the standard discrete-geometry result (N̂ = unit
+ * u×v, the corner's plane normal):
+ *
+ *   ∂α/∂P_j = −(N̂ × u)/|u|²,   ∂α/∂P_l = (N̂ × v)/|v|²,   ∂α/∂P_i = −(both).
+ *
+ * Each is ⊥ its arm, in the corner plane, magnitude 1/|arm| (moving the far
+ * end ⊥ by δ opens the angle by δ/|arm|). R_i = −θ_i, so contributions are
+ * accumulated with a leading minus. A link-neighbor appears as the `l` of one
+ * corner and the `j` of the next; both contributions accumulate into its slot.
+ */
+const N_COORDS = VERTEX_COUNT * 3;
+export function coneAngleJacobian(
+  positions: ArrayLike<number>,
+  out: Float64Array,
+): void {
+  out.fill(0);
+  for (let i = 0; i < VERTEX_COUNT; i++) {
+    const link = VERTEX_LINKS[i];
+    const oi = 3 * i;
+    const xi = positions[oi], yi = positions[oi + 1], zi = positions[oi + 2];
+    const row = i * N_COORDS;
+    for (let k = 0; k < link.length; k++) {
+      const j = link[k];
+      const l = link[(k + 1) % link.length];
+      const oj = 3 * j, ol = 3 * l;
+      const ux = positions[oj] - xi, uy = positions[oj + 1] - yi, uz = positions[oj + 2] - zi;
+      const vx = positions[ol] - xi, vy = positions[ol + 1] - yi, vz = positions[ol + 2] - zi;
+
+      // N = u × v, then normalize.
+      let nx = uy * vz - uz * vy;
+      let ny = uz * vx - ux * vz;
+      let nz = ux * vy - uy * vx;
+      const nmag = Math.hypot(nx, ny, nz);
+      if (nmag < 1e-300) continue;   // collinear arms: degenerate corner, skip
+      const inv = 1 / nmag;
+      nx *= inv; ny *= inv; nz *= inv;
+
+      const u2 = ux * ux + uy * uy + uz * uz;
+      const v2 = vx * vx + vy * vy + vz * vz;
+
+      // ∂α/∂P_j = −(N̂ × u)/|u|²
+      const gjx = -(ny * uz - nz * uy) / u2;
+      const gjy = -(nz * ux - nx * uz) / u2;
+      const gjz = -(nx * uy - ny * ux) / u2;
+      // ∂α/∂P_l = (N̂ × v)/|v|²
+      const glx = (ny * vz - nz * vy) / v2;
+      const gly = (nz * vx - nx * vz) / v2;
+      const glz = (nx * vy - ny * vx) / v2;
+      // ∂α/∂P_i = −(∂α/∂P_j + ∂α/∂P_l)
+      const gix = -(gjx + glx), giy = -(gjy + gly), giz = -(gjz + glz);
+
+      // R_i = −θ_i ⟹ subtract each corner-angle gradient.
+      out[row + oi]     -= gix; out[row + oi + 1] -= giy; out[row + oi + 2] -= giz;
+      out[row + oj]     -= gjx; out[row + oj + 1] -= gjy; out[row + oj + 2] -= gjz;
+      out[row + ol]     -= glx; out[row + ol + 1] -= gly; out[row + ol + 2] -= glz;
+    }
+  }
+}

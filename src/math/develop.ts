@@ -15,9 +15,13 @@
  *
  * Pipeline:
  *   1. intrinsic primitives: edge lengths ℓ_ij, corner angles α[t][k].
- *   2. developNet: BFS over a deterministic spanning tree of the dual graph;
- *      each triangle is laid out CCW, stepping off the stored corner angle to
- *      aim the next edge. Every (triangle, local-corner) gets a planar point.
+ *   2. developNet: unfold the 16 triangles in a fixed, hand-authored order
+ *      (DEVELOP_ORDER) along the spanning tree induced by the abstract
+ *      hexagonal fundamental domain (ATTACH, derived from latticeLayout.hexDomain
+ *      — NOT a generic BFS, so the net matches the abstract figure exactly).
+ *      Each triangle is laid out CCW by circle–circle intersection against its
+ *      already-placed parent edge. Every (triangle, local-corner) gets a planar
+ *      point.
  *   3. The 24 − 15 = 9 dual edges NOT in the tree are CUT edges; each appears
  *      twice on the net boundary, related by a translation τₑ (its holonomy).
  *      The 9 τₑ generate Λ.

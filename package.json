@@ -10,13 +10,16 @@
     "sample": "tsx scripts/sample-embedded.mjs",
     "sample-flat": "tsx scripts/sample-flat.mjs",
     "fatten": "tsx scripts/fatten.mjs",
-    "barrier": "tsx scripts/barrier-fatten.mjs"
+    "barrier": "tsx scripts/barrier-fatten.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@types/three": "^0.181.0",
     "tsx": "^4.22.3",
     "typescript": "~5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^4.1.8"
   },
   "dependencies": {
     "three": "^0.181.2"
