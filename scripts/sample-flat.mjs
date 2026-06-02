@@ -10,7 +10,7 @@
  *     2. Newton-flatten              (lands on the flatness manifold F)
  *     3. embeddedFlow                (descent on a repulsion energy + Newton re-projection)
  *     4. Explicit verification:        max |2π − cone-angle(i)|  <  --angle-tol
- *                                  AND  isEmbedded(positions)        is true
+ *                                  AND  isEmbedded(RICH, positions)        is true
  *     5. If all pass: write one CSV row of 24 full-precision floats
  *
  * The verification in step 4 is gating *only* — it runs after the flow already
@@ -65,22 +65,22 @@ import { resolve, dirname } from 'path';
 
 import { RICH_REFERENCE } from '../src/math/reference.ts';
 import { mulberry32 } from '../src/math/perturb.ts';
-import { VERTEX_COUNT } from '../src/math/topology.ts';
+import { RICH } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
-import { CHORD_LENGTH_SQUARED } from '../src/math/energies/chordLengthSquared.ts';
-import { CUTOFF_AREA } from '../src/math/energies/cutOffArea.ts';
+import { makeChordLengthSquared } from '../src/math/energies/chordLengthSquared.ts';
+import { makeCutOffArea } from '../src/math/energies/cutOffArea.ts';
 import { linearSize } from '../src/math/energies/cellMargin.ts';
 
-const N = VERTEX_COUNT * 3;  // 24
+const N = RICH.vertexCount * 3;  // 24
 
 /** Scale positions in place to total surface area 1 (uniform scaling, so it
  *  preserves flatness and embeddedness). linearSize = √area, so dividing by it
  *  makes area = 1. */
 function normalizeUnitArea(arr) {
-  const s = linearSize(arr);
+  const s = linearSize(RICH, arr);
   if (s > 0) { const k = 1 / s; for (let i = 0; i < N; i++) arr[i] *= k; }
 }
 
@@ -166,8 +166,8 @@ const reportSecs = num(flag('--report-secs'), 30);
 const energyName = flag('--energy') ?? 'cutoff';
 
 let energy;
-if (energyName === 'cutoff' || energyName === 'cut-off-area') energy = CUTOFF_AREA;
-else if (energyName === 'chord2' || energyName === 'chord-length-squared') energy = CHORD_LENGTH_SQUARED;
+if (energyName === 'cutoff' || energyName === 'cut-off-area') energy = makeCutOffArea(RICH);
+else if (energyName === 'chord2' || energyName === 'chord-length-squared') energy = makeChordLengthSquared(RICH);
 else {
   console.error(`unknown --energy: ${energyName}; choices: cutoff, chord2`);
   process.exit(1);
@@ -280,9 +280,9 @@ function gaussian() {
  * true iff the positions are flat to `angleTol` AND embedded.
  */
 function verify(positions) {
-  const deficit = maxConeDeficit(positions);
+  const deficit = maxConeDeficit(RICH, positions);
   if (!(deficit < angleTol)) return false;
-  if (!isEmbedded(positions)) return false;
+  if (!isEmbedded(RICH, positions)) return false;
   return true;
 }
 
@@ -353,7 +353,7 @@ while (tries < maxTries && saved < maxAccepts) {
   tries++;
 
   // 2. Newton-flatten.
-  const nr = newtonFlatten(p, { tolerance: 1e-10 });
+  const nr = newtonFlatten(RICH, p, { tolerance: 1e-10 });
   if (nr.status !== 'converged') {
     if (Date.now() - lastReport > reportMs) report();
     continue;
@@ -361,7 +361,7 @@ while (tries < maxTries && saved < maxAccepts) {
   newtonOk++;
 
   // 3. Repulsion flow.
-  const fr = embeddedFlow(p, energy, {
+  const fr = embeddedFlow(RICH, p, energy, {
     stepSize,
     energyTol: 1e-12,
     gradientTol: 1e-12,

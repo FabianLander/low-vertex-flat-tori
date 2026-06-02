@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { CHORD_LENGTH_SQUARED } from './chordLengthSquared';
-import { CUTOFF_AREA } from './cutOffArea';
-import { CELL_MARGIN, minMargin, totalArea, linearSize } from './cellMargin';
+import { makeChordLengthSquared } from './chordLengthSquared';
+import { makeCutOffArea } from './cutOffArea';
+import { makeCellMargin, minMargin, totalArea, linearSize } from './cellMargin';
 import { RICH_REFERENCE } from '../reference';
 import { mulberry32 } from '../perturb';
+import { RICH } from '../../tori';
+
+const CHORD_LENGTH_SQUARED = makeChordLengthSquared(RICH);
+const CUTOFF_AREA = makeCutOffArea(RICH);
+const CELL_MARGIN = makeCellMargin(RICH);
 
 describe('repulsion energies', () => {
   it('intersection energies are ~0 on embedded Rich (E=0 ⟺ embedded)', () => {
@@ -13,19 +18,19 @@ describe('repulsion energies', () => {
 
   it('cell-margin: Rich has a strictly positive gap, and the energy is scale-free', () => {
     const p = RICH_REFERENCE.positions;
-    const report = minMargin(p);
+    const report = minMargin(RICH, p);
     expect(report.margin).toBeGreaterThan(0);
 
     // Scale-invariance: inflating the mesh leaves the cell-margin energy fixed.
     const scaled = Float64Array.from(p, (v) => v * 3.7);
     expect(CELL_MARGIN.compute(scaled)).toBeCloseTo(CELL_MARGIN.compute(p), 9);
-    expect(linearSize(scaled)).toBeCloseTo(3.7 * linearSize(p), 9);
+    expect(linearSize(RICH, scaled)).toBeCloseTo(3.7 * linearSize(RICH, p), 9);
   });
 
   it('totalArea is positive and matches √-scaling of linearSize', () => {
-    const a = totalArea(RICH_REFERENCE.positions);
+    const a = totalArea(RICH, RICH_REFERENCE.positions);
     expect(a).toBeGreaterThan(0);
-    expect(linearSize(RICH_REFERENCE.positions)).toBeCloseTo(Math.sqrt(a), 12);
+    expect(linearSize(RICH, RICH_REFERENCE.positions)).toBeCloseTo(Math.sqrt(a), 12);
   });
 
   it('gradient points downhill: a small step along −∇E lowers E', () => {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { VERTEX_COUNT } from '../../src/math/topology';
+import { RICH } from '../../src/tori';
 import { PaperTorus } from '../../src/math/embedding';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { perturb, mulberry32 } from '../../src/math/perturb';
@@ -62,12 +62,12 @@ function smoothstep(x: number): number {
   return c * c * (3 - 2 * c);
 }
 
-const view = new TorusView({ vertexRadius: 0.05 });
+const view = new TorusView(RICH, { vertexRadius: 0.05 });
 scene.add(view);
 
-const deficitBuf = new Float32Array(VERTEX_COUNT);
+const deficitBuf = new Float32Array(RICH.vertexCount);
 function refreshColors(): void {
-  for (let i = 0; i < VERTEX_COUNT; i++) {
+  for (let i = 0; i < RICH.vertexCount; i++) {
     deficitBuf[i] = Math.abs(current.coneAngleDeficit(i));
   }
   view.setVertexScalars(deficitBuf, DEFICIT_PALETTE);

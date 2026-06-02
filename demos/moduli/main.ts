@@ -17,10 +17,10 @@
  * class, hover to read τ. r resets the view. Pure canvas 2D, no three.js.
  */
 
-import { VERTEX_COUNT } from '../../src/math/topology';
+import { RICH } from '../../src/tori';
 import { modulus, type V2 } from '../../src/math/develop';
 
-const DIM = VERTEX_COUNT * 3;
+const DIM = RICH.vertexCount * 3;
 const ROT_TOL = 1e-5; // skip any row whose holonomy isn't a pure translation
 
 // Vite: pull in every seed-N.csv as raw text, keyed by path.
@@ -54,7 +54,7 @@ const classes: Klass[] = Object.keys(seedFiles)
     const name = path.match(/(seed-\d+)/)![1];
     const pts: V2[] = [];
     for (const p of parseRows(seedFiles[path])) {
-      const m = modulus(p);
+      const m = modulus(RICH, p);
       if (m.rotDefect > ROT_TOL) continue;
       pts.push(m.tau);
     }

@@ -21,7 +21,7 @@
  * other endpoint comes from the non-shared edge of A crossing plane(B).
  */
 
-import { TRIANGLES } from './topology';
+import type { Torus } from '../tori/defineTorus';
 
 export type ChordResult = {
   length: number;
@@ -33,12 +33,13 @@ const SMALL = 1e-12;
 const TINY = 1e-20;
 
 export function triTriChord(
+  torus: Torus,
   positions: ArrayLike<number>,
   tA: number,
   tB: number,
 ): ChordResult | null {
-  const A = TRIANGLES[tA];
-  const B = TRIANGLES[tB];
+  const A = torus.triangles[tA];
+  const B = torus.triangles[tB];
 
   const oa0 = 3 * A[0], oa1 = 3 * A[1], oa2 = 3 * A[2];
   const ob0 = 3 * B[0], ob1 = 3 * B[1], ob2 = 3 * B[2];

@@ -1,10 +1,10 @@
 /**
- * PaperTorus — 8 vertex positions in R³ on the fixed topology in `topology.ts`.
- * Thin wrapper around a Float64Array of length 24 so it can back a three.js
- * BufferAttribute directly.
+ * PaperTorus — V vertex positions in R³ bound to a specific `Torus`
+ * combinatorics. Thin wrapper around a Float64Array of length 3V so it can back
+ * a three.js BufferAttribute directly.
  */
 
-import { VERTEX_COUNT, TRIANGLES } from './topology';
+import type { Torus } from '../tori/defineTorus';
 import { coneAngleAt, maxConeDeficit as maxDef } from './angles';
 
 const TWO_PI = Math.PI * 2;
@@ -12,26 +12,27 @@ const TWO_PI = Math.PI * 2;
 export type Vec3 = [number, number, number];
 
 export class PaperTorus {
+  readonly torus: Torus;
   readonly positions: Float64Array;
 
-  constructor(positions?: Float64Array | readonly number[]) {
-    this.positions = new Float64Array(VERTEX_COUNT * 3);
+  constructor(torus: Torus, positions?: Float64Array | readonly number[]) {
+    this.torus = torus;
+    const n = torus.vertexCount * 3;
+    this.positions = new Float64Array(n);
     if (positions) {
-      if (positions.length !== VERTEX_COUNT * 3) {
-        throw new Error(
-          `PaperTorus expects ${VERTEX_COUNT * 3} floats, got ${positions.length}`,
-        );
+      if (positions.length !== n) {
+        throw new Error(`PaperTorus expects ${n} floats, got ${positions.length}`);
       }
       this.positions.set(positions);
     }
   }
 
-  static fromVec3s(verts: readonly Vec3[]): PaperTorus {
-    if (verts.length !== VERTEX_COUNT) {
-      throw new Error(`expected ${VERTEX_COUNT} vertices, got ${verts.length}`);
+  static fromVec3s(torus: Torus, verts: readonly (readonly [number, number, number])[]): PaperTorus {
+    if (verts.length !== torus.vertexCount) {
+      throw new Error(`expected ${torus.vertexCount} vertices, got ${verts.length}`);
     }
-    const t = new PaperTorus();
-    for (let i = 0; i < VERTEX_COUNT; i++) {
+    const t = new PaperTorus(torus);
+    for (let i = 0; i < torus.vertexCount; i++) {
       const [x, y, z] = verts[i];
       t.positions[3 * i] = x;
       t.positions[3 * i + 1] = y;
@@ -41,7 +42,7 @@ export class PaperTorus {
   }
 
   clone(): PaperTorus {
-    return new PaperTorus(this.positions);
+    return new PaperTorus(this.torus, this.positions);
   }
 
   getVertex(i: number, out?: Vec3): Vec3 {
@@ -70,7 +71,7 @@ export class PaperTorus {
   }
 
   triangleArea(t: number): number {
-    const [a, b, c] = TRIANGLES[t];
+    const [a, b, c] = this.torus.triangles[t];
     const oa = 3 * a, ob = 3 * b, oc = 3 * c;
     const ax = this.positions[ob] - this.positions[oa];
     const ay = this.positions[ob + 1] - this.positions[oa + 1];
@@ -85,7 +86,7 @@ export class PaperTorus {
   }
 
   triangleNormal(t: number, out?: Vec3): Vec3 {
-    const [a, b, c] = TRIANGLES[t];
+    const [a, b, c] = this.torus.triangles[t];
     const oa = 3 * a, ob = 3 * b, oc = 3 * c;
     const ax = this.positions[ob] - this.positions[oa];
     const ay = this.positions[ob + 1] - this.positions[oa + 1];
@@ -105,14 +106,14 @@ export class PaperTorus {
 
   /** Sum of corner angles at vertex i. 2π exactly when the embedding is flat. */
   coneAngle(i: number): number {
-    return coneAngleAt(this.positions, i);
+    return coneAngleAt(this.torus, this.positions, i);
   }
 
   coneAngleDeficit(i: number): number {
-    return TWO_PI - coneAngleAt(this.positions, i);
+    return TWO_PI - coneAngleAt(this.torus, this.positions, i);
   }
 
   maxConeDeficit(): number {
-    return maxDef(this.positions);
+    return maxDef(this.torus, this.positions);
   }
 }

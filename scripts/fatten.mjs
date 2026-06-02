@@ -27,17 +27,17 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 
-import { VERTEX_COUNT } from '../src/math/topology.ts';
+import { RICH } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded, allViolations } from '../src/math/embedded.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 import { makeCellMargin, minMargin, linearSize } from '../src/math/energies/cellMargin.ts';
-import { CUTOFF_AREA } from '../src/math/energies/cutOffArea.ts';
-import { CHORD_LENGTH_SQUARED } from '../src/math/energies/chordLengthSquared.ts';
+import { makeCutOffArea } from '../src/math/energies/cutOffArea.ts';
+import { makeChordLengthSquared } from '../src/math/energies/chordLengthSquared.ts';
 import { weightedSum } from '../src/math/energies/weightedSum.ts';
 
-const DIM = VERTEX_COUNT * 3; // 24
+const DIM = RICH.vertexCount * 3; // 24
 
 const args = process.argv.slice(2);
 const flag = (name) => { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; };
@@ -64,8 +64,8 @@ const outPath = resolve(flag('--out')
 
 // The annealed objective: embedding-keeping base + λ·cell-margin, with λ shrunk
 // each round until the surface re-settles to embedded. Built fresh per λ.
-const margin = makeCellMargin({ epsilon, weight });
-const base = intersection === 'chord2' ? CHORD_LENGTH_SQUARED : CUTOFF_AREA;
+const margin = makeCellMargin(RICH, { epsilon, weight });
+const base = intersection === 'chord2' ? makeChordLengthSquared(RICH) : makeCutOffArea(RICH);
 const composite = (lam) => weightedSum(`${base.label} + ${lam}·margin`,
   [{ energy: base, weight: 1 }, { energy: margin, weight: lam }]);
 
@@ -105,41 +105,41 @@ for (let i = 0; i < samples.length; i++) {
   const p = samples[i];
 
   // Normalize to √area = 1 so base (scale-dependent) and margin (scale-free) are comparable.
-  const s = 1 / linearSize(p);
+  const s = 1 / linearSize(RICH, p);
   for (let k = 0; k < DIM; k++) p[k] *= s;
-  newtonFlatten(p, { tolerance: 1e-12 });
+  newtonFlatten(RICH, p, { tolerance: 1e-12 });
 
-  const before = minMargin(p);
+  const before = minMargin(RICH, p);
   const m0 = before.margin;
 
   // Anneal: fatten at λ (allowing slightly-non-embedded excursions), then shrink
   // λ each round until the surface re-settles to embedded + flat. Stop at that λ.
   let lam = lambda0, rounds = 0, peakViol = 0, lamTerm = lam, embeddedNow = false;
   while (rounds < maxRounds) {
-    embeddedFlow(p, composite(lam), {
+    embeddedFlow(RICH, p, composite(lam), {
       stepSize, energyTol: 1e-12, gradientTol: 1e-12, maxIters: roundIters,
       newtonOpts: { tolerance: 1e-12 },
     });
     rounds++;
-    peakViol = Math.max(peakViol, allViolations(p).length);
+    peakViol = Math.max(peakViol, allViolations(RICH, p).length);
     lamTerm = lam;
-    if (isEmbedded(p) && maxConeDeficit(p) < angleTol) { embeddedNow = true; break; }
+    if (isEmbedded(RICH, p) && maxConeDeficit(RICH, p) < angleTol) { embeddedNow = true; break; }
     lam *= decay;
     if (lam < lambdaMin) break;
   }
   // Final cleanup: if still over the line, relax with the base alone (λ → 0).
   if (!embeddedNow) {
-    embeddedFlow(p, base, {
+    embeddedFlow(RICH, p, base, {
       stepSize, energyTol: 1e-12, gradientTol: 1e-12, maxIters,
       newtonOpts: { tolerance: 1e-12 },
     });
     lamTerm = 0;
-    embeddedNow = isEmbedded(p) && maxConeDeficit(p) < angleTol;
+    embeddedNow = isEmbedded(RICH, p) && maxConeDeficit(RICH, p) < angleTol;
   }
 
-  const after = minMargin(p);
+  const after = minMargin(RICH, p);
   const m1 = after.margin;
-  const flatResid = maxConeDeficit(p);
+  const flatResid = maxConeDeficit(RICH, p);
   const ratio = m0 > 0 ? m1 / m0 : Infinity;
   const fatter = embeddedNow && m1 > fatThreshold;
   if (embeddedNow) nEmbedded++;

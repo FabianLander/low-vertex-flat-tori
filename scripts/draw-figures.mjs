@@ -18,10 +18,13 @@ import { writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { execSync } from 'child_process';
 
-import { GENERATOR_LOOPS } from '../src/math/develop.ts';
-import {
-  PERIOD_BASIS, planeOf, periodicTiles, hexDomain, vertexLabels, tracePath,
-} from '../src/math/latticeLayout.ts';
+import { RICH } from '../src/tori/index.ts';
+import { latticeLayout } from '../src/math/latticeLayout.ts';
+
+const GENERATOR_LOOPS = RICH.generatorLoops;
+const lattice = latticeLayout(RICH);
+const { planeOf, periodicTiles, hexDomain, vertexLabels, tracePath } = lattice;
+const PERIOD_BASIS = lattice.periodBasis;
 
 // ── SVG rendering ─────────────────────────────────────────────────────────────
 function renderFigure(name, { tiles, polylines = [], polygons = [], caption, labelTriangles = true }) {

@@ -1,20 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import {
-  isEmbedded, firstViolation, allViolations,
-  DISJOINT_TRIANGLE_PAIRS, SHARED_VERTEX_TRIANGLE_PAIRS,
-} from './embedded';
+import { isEmbedded, firstViolation, allViolations } from './embedded';
 import { RICH_REFERENCE } from './reference';
+import { RICH } from '../tori';
 
 describe('embeddedness', () => {
-  it('pair classification matches the 24 / 72 / 24 split', () => {
-    expect(DISJOINT_TRIANGLE_PAIRS.length).toBe(24);
-    expect(SHARED_VERTEX_TRIANGLE_PAIRS.length).toBe(72);
+  it('pair classification matches the 24 / 72 split for Rich', () => {
+    expect(RICH.disjointTrianglePairs.length).toBe(24);
+    expect(RICH.sharedVertexTrianglePairs.length).toBe(72);
   });
 
   it('Rich reference is embedded', () => {
-    expect(isEmbedded(RICH_REFERENCE.positions)).toBe(true);
-    expect(firstViolation(RICH_REFERENCE.positions)).toBeNull();
-    expect(allViolations(RICH_REFERENCE.positions)).toHaveLength(0);
+    expect(isEmbedded(RICH, RICH_REFERENCE.positions)).toBe(true);
+    expect(firstViolation(RICH, RICH_REFERENCE.positions)).toBeNull();
+    expect(allViolations(RICH, RICH_REFERENCE.positions)).toHaveLength(0);
   });
 
   it('detects a genuine (non-coplanar) crossing', () => {
@@ -24,13 +22,13 @@ describe('embeddedness', () => {
     // coplanar pairs as non-intersecting by design (the documented v1 limit).
     const p = Float64Array.from(RICH_REFERENCE.positions);
     p[2] = -1;
-    expect(isEmbedded(p)).toBe(false);
-    expect(firstViolation(p)).not.toBeNull();
+    expect(isEmbedded(RICH, p)).toBe(false);
+    expect(firstViolation(RICH, p)).not.toBeNull();
   });
 
   it('firstViolation and allViolations agree on embeddedness', () => {
     const p = Float64Array.from(RICH_REFERENCE.positions);
     p[2] = -1;
-    expect(firstViolation(p) !== null).toBe(allViolations(p).length > 0);
+    expect(firstViolation(RICH, p) !== null).toBe(allViolations(RICH, p).length > 0);
   });
 });

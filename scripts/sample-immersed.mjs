@@ -43,11 +43,11 @@ import { appendFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname } from 'path';
 
 import { mulberry32 } from '../src/math/perturb.ts';
-import { VERTEX_COUNT, TRIANGLES } from '../src/math/topology.ts';
+import { RICH } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 
-const N = VERTEX_COUNT * 3;  // 24
+const N = RICH.vertexCount * 3;  // 24
 
 const args = process.argv.slice(2);
 function flag(name) { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; }
@@ -80,8 +80,8 @@ const p = new Float64Array(N);
 // --- smallest triangle area, to reject degenerate (non-immersion) realizations.
 function minTriArea(q) {
   let m = Infinity;
-  for (let t = 0; t < TRIANGLES.length; t++) {
-    const [a, b, c] = TRIANGLES[t];
+  for (let t = 0; t < RICH.triangles.length; t++) {
+    const [a, b, c] = RICH.triangles[t];
     const ux = q[3 * b] - q[3 * a], uy = q[3 * b + 1] - q[3 * a + 1], uz = q[3 * b + 2] - q[3 * a + 2];
     const vx = q[3 * c] - q[3 * a], vy = q[3 * c + 1] - q[3 * a + 1], vz = q[3 * c + 2] - q[3 * a + 2];
     const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
@@ -141,7 +141,7 @@ while (saved < count) {
   for (let i = 0; i < N; i++) p[i] = rng() * 2 - 1;   // 1. uniform in cube
   tries++;
 
-  const r = newtonFlatten(p, { tolerance: tol, maxIters: maxNewton });  // 2.
+  const r = newtonFlatten(RICH, p, { tolerance: tol, maxIters: maxNewton });  // 2.
   if (r.status !== 'converged') { notConverged++; }          // 3.
   else if (!inCube(p)) { leftCube++; }                       // 4.
   else if (minTriArea(p) < minArea) { degenerate++; }        // 5.

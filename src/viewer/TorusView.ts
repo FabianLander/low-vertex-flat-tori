@@ -12,7 +12,7 @@
  */
 
 import * as THREE from 'three';
-import { VERTEX_COUNT, TRIANGLES, EDGES } from '../math/topology';
+import type { Torus } from '../tori/defineTorus';
 import { PaperTorus } from '../math/embedding';
 import {
   DEFAULT_VERTEX_COLOR,
@@ -21,16 +21,16 @@ import {
   type ScalarPalette,
 } from './palette';
 
-const FACE_COUNT = TRIANGLES.length;       // 16
-const EDGE_COUNT = EDGES.length;           // 24
-const FACE_VERTS = FACE_COUNT * 3;         // 48 — non-indexed face geom
-const EDGE_VERTS = EDGE_COUNT * 2;         // 48
-
 export interface TorusViewOptions {
   vertexRadius?: number;
 }
 
 export class TorusView extends THREE.Group {
+  private readonly torus: Torus;
+  private readonly faceCount: number;       // = torus.triangles.length
+  private readonly edgeCount: number;        // = torus.edges.length
+  private readonly vertexCount: number;
+
   private readonly faceMesh: THREE.Mesh;
   private readonly faceGeom: THREE.BufferGeometry;
   private readonly facePositions: Float32Array;
@@ -45,8 +45,15 @@ export class TorusView extends THREE.Group {
 
   private readonly _dummy = new THREE.Object3D();
 
-  constructor(opts: TorusViewOptions = {}) {
+  constructor(torus: Torus, opts: TorusViewOptions = {}) {
     super();
+
+    this.torus = torus;
+    this.faceCount = torus.triangles.length;
+    this.edgeCount = torus.edges.length;
+    this.vertexCount = torus.vertexCount;
+    const FACE_VERTS = this.faceCount * 3;
+    const EDGE_VERTS = this.edgeCount * 2;
 
     const vertexRadius = opts.vertexRadius ?? 0.06;
 
@@ -78,8 +85,8 @@ export class TorusView extends THREE.Group {
     // ---- Vertices ----
     const sphereGeom = new THREE.SphereGeometry(vertexRadius, 16, 12);
     this.vertexMat = new THREE.MeshStandardMaterial({ roughness: 0.4 });
-    this.vertexMesh = new THREE.InstancedMesh(sphereGeom, this.vertexMat, VERTEX_COUNT);
-    for (let i = 0; i < VERTEX_COUNT; i++) {
+    this.vertexMesh = new THREE.InstancedMesh(sphereGeom, this.vertexMat, this.vertexCount);
+    for (let i = 0; i < this.vertexCount; i++) {
       this.vertexMesh.setColorAt(i, DEFAULT_VERTEX_COLOR);
     }
     if (this.vertexMesh.instanceColor) {
@@ -88,12 +95,12 @@ export class TorusView extends THREE.Group {
     this.add(this.vertexMesh);
   }
 
-  sync(torus: PaperTorus): void {
-    const p = torus.positions;
+  sync(paper: PaperTorus): void {
+    const p = paper.positions;
 
     // Faces: splat 3 vertex positions per triangle.
-    for (let t = 0; t < FACE_COUNT; t++) {
-      const [a, b, c] = TRIANGLES[t];
+    for (let t = 0; t < this.faceCount; t++) {
+      const [a, b, c] = this.torus.triangles[t];
       const base = t * 9;
       const oa = 3 * a, ob = 3 * b, oc = 3 * c;
       this.facePositions[base    ] = p[oa];
@@ -111,8 +118,8 @@ export class TorusView extends THREE.Group {
     this.faceGeom.computeBoundingSphere();
 
     // Edges: endpoint pairs.
-    for (let e = 0; e < EDGE_COUNT; e++) {
-      const [i, j] = EDGES[e];
+    for (let e = 0; e < this.edgeCount; e++) {
+      const [i, j] = this.torus.edges[e];
       const base = e * 6;
       const oi = 3 * i, oj = 3 * j;
       this.edgePositions[base    ] = p[oi];
@@ -126,7 +133,7 @@ export class TorusView extends THREE.Group {
     this.edgeGeom.computeBoundingSphere();
 
     // Vertex sphere translations.
-    for (let i = 0; i < VERTEX_COUNT; i++) {
+    for (let i = 0; i < this.vertexCount; i++) {
       this._dummy.position.set(p[3 * i], p[3 * i + 1], p[3 * i + 2]);
       this._dummy.updateMatrix();
       this.vertexMesh.setMatrixAt(i, this._dummy.matrix);
@@ -136,20 +143,20 @@ export class TorusView extends THREE.Group {
 
   setVertexScalars(values: ArrayLike<number> | null, palette?: ScalarPalette): void {
     if (values === null) {
-      for (let i = 0; i < VERTEX_COUNT; i++) {
+      for (let i = 0; i < this.vertexCount; i++) {
         this.vertexMesh.setColorAt(i, DEFAULT_VERTEX_COLOR);
       }
     } else {
-      if (values.length !== VERTEX_COUNT) {
+      if (values.length !== this.vertexCount) {
         throw new Error(
-          `setVertexScalars expects ${VERTEX_COUNT} values, got ${values.length}`,
+          `setVertexScalars expects ${this.vertexCount} values, got ${values.length}`,
         );
       }
       if (!palette) {
         throw new Error('setVertexScalars: palette required when values is non-null');
       }
       const domain = resolveDomain(values, palette.domain);
-      for (let i = 0; i < VERTEX_COUNT; i++) {
+      for (let i = 0; i < this.vertexCount; i++) {
         const c = palette.color(values[i], domain);
         this.vertexMesh.setColorAt(i, c);
       }
@@ -164,16 +171,16 @@ export class TorusView extends THREE.Group {
     if (values === null) {
       fillRGB(c, DEFAULT_FACE_COLOR);
     } else {
-      if (values.length !== FACE_COUNT) {
+      if (values.length !== this.faceCount) {
         throw new Error(
-          `setFaceScalars expects ${FACE_COUNT} values, got ${values.length}`,
+          `setFaceScalars expects ${this.faceCount} values, got ${values.length}`,
         );
       }
       if (!palette) {
         throw new Error('setFaceScalars: palette required when values is non-null');
       }
       const domain = resolveDomain(values, palette.domain);
-      for (let t = 0; t < FACE_COUNT; t++) {
+      for (let t = 0; t < this.faceCount; t++) {
         const col = palette.color(values[t], domain);
         const base = t * 9;
         for (let k = 0; k < 3; k++) {

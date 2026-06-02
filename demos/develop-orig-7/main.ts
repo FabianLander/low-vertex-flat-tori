@@ -17,10 +17,14 @@
  */
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
-import { VERTEX_COUNT } from '../../src/math/topology';
+import { RICH } from '../../src/tori';
 import { developNet, generatorPaths, type V2 } from '../../src/math/develop';
+import { latticeLayout } from '../../src/math/latticeLayout';
 
-const DIM = VERTEX_COUNT * 3;
+// Unfold with the lattice-consistent gluing so the net matches the abstract figure.
+const ATTACH = latticeLayout(RICH).developAttach(RICH.developOrder);
+
+const DIM = RICH.vertexCount * 3;
 const BLUE = '#3b82f6', RED = '#ef4444';
 const INTRO_MS = 3200, MORPH_MS = 1900;
 
@@ -43,8 +47,8 @@ const clamp01 = (x: number) => x < 0 ? 0 : x > 1 ? 1 : x;
 
 const tori = parse(seedsRaw);
 const data = tori.map((p) => {
-  const net = developNet(p);
-  const g = generatorPaths(net);
+  const net = developNet(RICH, p, ATTACH);
+  const g = generatorPaths(RICH, net);
   const base = g[0][0];
   const hA: V2 = [g[0].at(-1)![0] - base[0], g[0].at(-1)![1] - base[1]];
   const hB: V2 = [g[1].at(-1)![0] - base[0], g[1].at(-1)![1] - base[1]];

@@ -3,7 +3,6 @@
  */
 
 import { PaperTorus } from './embedding';
-import { VERTEX_COUNT } from './topology';
 
 /** Mulberry32: small, fast, deterministic PRNG. Returns uniform [0,1). */
 export function mulberry32(seed: number): () => number {
@@ -32,7 +31,7 @@ export function perturb(
   rng: () => number,
 ): PaperTorus {
   const out = base.clone();
-  for (let i = 0; i < VERTEX_COUNT * 3; i++) {
+  for (let i = 0; i < out.positions.length; i++) {
     out.positions[i] += magnitude * gaussian(rng);
   }
   return out;

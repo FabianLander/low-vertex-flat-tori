@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+import { RICH } from '../../src/tori';
 import { PaperTorus } from '../../src/math/embedding';
 import { TorusView } from '../../src/viewer/TorusView';
 import { SAMPLE_COUNT, SAMPLE_SIZE, SAMPLES_FLAT } from './data';
@@ -42,8 +43,8 @@ const views: TorusView[] = [];
 const buf = new Float64Array(SAMPLE_SIZE);
 for (let i = 0; i < SAMPLE_COUNT; i++) {
   for (let k = 0; k < SAMPLE_SIZE; k++) buf[k] = SAMPLES_FLAT[i * SAMPLE_SIZE + k];
-  const t = new PaperTorus(buf);
-  const view = new TorusView({ vertexRadius: 0.04 });
+  const t = new PaperTorus(RICH, buf);
+  const view = new TorusView(RICH, { vertexRadius: 0.04 });
   view.sync(t);
   const r = Math.floor(i / GRID);
   const c = i % GRID;

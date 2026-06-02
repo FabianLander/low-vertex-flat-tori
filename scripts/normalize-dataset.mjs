@@ -18,10 +18,10 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-import { VERTEX_COUNT } from '../src/math/topology.ts';
+import { RICH } from '../src/tori/index.ts';
 import { toReduced, REDUCED_DIM } from '../src/math/normalize.ts';
 
-const DIM = VERTEX_COUNT * 3; // 24
+const DIM = RICH.vertexCount * 3; // 24
 
 const args = process.argv.slice(2);
 function flag(name) { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; }

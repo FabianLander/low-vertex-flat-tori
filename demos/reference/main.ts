@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { VERTEX_COUNT } from '../../src/math/topology';
+import { RICH } from '../../src/tori';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE, HIGHLIGHT_PALETTE, oneHot } from '../../src/viewer/palette';
@@ -41,11 +41,11 @@ scene.add(fill);
 
 // ---- Torus + view ----
 const torus = RICH_REFERENCE;
-const view = new TorusView({ vertexRadius: 0.05 });
+const view = new TorusView(RICH, { vertexRadius: 0.05 });
 view.sync(torus);
 
-const absDeficits = new Float32Array(VERTEX_COUNT);
-for (let i = 0; i < VERTEX_COUNT; i++) {
+const absDeficits = new Float32Array(RICH.vertexCount);
+for (let i = 0; i < RICH.vertexCount; i++) {
   absDeficits[i] = Math.abs(torus.coneAngleDeficit(i));
 }
 view.setVertexScalars(absDeficits, DEFICIT_PALETTE);
@@ -86,7 +86,7 @@ panel.appendChild(list);
 
 const TOL = 1e-3;
 let maxAbs = 0;
-for (let i = 0; i < VERTEX_COUNT; i++) {
+for (let i = 0; i < RICH.vertexCount; i++) {
   const a = torus.coneAngle(i);
   const d = TWO_PI - a;
   if (Math.abs(d) > maxAbs) maxAbs = Math.abs(d);
@@ -113,7 +113,7 @@ for (let i = 0; i < VERTEX_COUNT; i++) {
   row.append(label, angle, deficit);
 
   row.addEventListener('mouseenter', () => {
-    view.setVertexScalars(oneHot(VERTEX_COUNT, i), HIGHLIGHT_PALETTE);
+    view.setVertexScalars(oneHot(RICH.vertexCount, i), HIGHLIGHT_PALETTE);
   });
   row.addEventListener('mouseleave', () => {
     view.setVertexScalars(absDeficits, DEFICIT_PALETTE);

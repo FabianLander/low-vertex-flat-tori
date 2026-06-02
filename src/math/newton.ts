@@ -41,11 +41,7 @@
  */
 
 import { coneAngleDeficits, coneAngleJacobian } from './angles';
-import { VERTEX_COUNT } from './topology';
-
-const N = VERTEX_COUNT * 3;       // 24
-const KFULL = VERTEX_COUNT;       // 8 — full deficit vector (honest convergence check)
-const K = VERTEX_COUNT - 1;       // 7 — independent constraints driving the step
+import type { Torus } from '../tori/defineTorus';
 
 export type NewtonStatus = 'converged' | 'diverged' | 'max-iters';
 
@@ -76,9 +72,13 @@ export type NewtonResult = {
 };
 
 export function newtonFlatten(
+  torus: Torus,
   positions: Float64Array,
   opts: NewtonOptions = {},
 ): NewtonResult {
+  const N = torus.vertexCount * 3;     // coordinate count
+  const KFULL = torus.vertexCount;     // full deficit vector (honest convergence check)
+  const K = torus.vertexCount - 1;     // independent constraints driving the step (Gauss–Bonnet)
   if (positions.length !== N) {
     throw new Error(`newtonFlatten: expected ${N} positions, got ${positions.length}`);
   }
@@ -101,8 +101,8 @@ export function newtonFlatten(
   const aug = new Float64Array(K * (K + 1));      // augmented [G | F], K × (K+1)
   const w = new Float64Array(K);
 
-  coneAngleDeficits(positions, F);
-  let curNorm = infNorm(F);                       // ‖·‖∞ over all 8 deficits
+  coneAngleDeficits(torus, positions, F);
+  let curNorm = infNorm(F);                       // ‖·‖∞ over all deficits
 
   for (let iter = 0; iter <= maxIters; iter++) {
     if (curNorm < tol) {
@@ -117,15 +117,15 @@ export function newtonFlatten(
 
     // ---- Jacobian J[r * N + c] = ∂R_r/∂x_c ----
     if (analytic) {
-      coneAngleJacobian(positions, J);           // exact, one pass, fills all 8 rows
+      coneAngleJacobian(torus, positions, J);    // exact, one pass, fills all rows
     } else {
       // Central finite differences (default).
       for (let c = 0; c < N; c++) {
         const saved = positions[c];
         positions[c] = saved + h;
-        coneAngleDeficits(positions, Fp);
+        coneAngleDeficits(torus, positions, Fp);
         positions[c] = saved - h;
-        coneAngleDeficits(positions, Fm);
+        coneAngleDeficits(torus, positions, Fm);
         positions[c] = saved;
         for (let r = 0; r < K; r++) {
           J[r * N + c] = (Fp[r] - Fm[r]) * invTwoH;
@@ -158,7 +158,7 @@ export function newtonFlatten(
       positions[c] -= s;
     }
 
-    coneAngleDeficits(positions, F);
+    coneAngleDeficits(torus, positions, F);
     curNorm = infNorm(F);
   }
 

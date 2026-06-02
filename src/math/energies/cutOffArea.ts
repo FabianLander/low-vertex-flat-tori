@@ -20,8 +20,7 @@
  * instead — same shape but uniform weight per pair.
  */
 
-import { TRIANGLES } from '../topology';
-import { DISJOINT_TRIANGLE_PAIRS, SHARED_VERTEX_TRIANGLE_PAIRS } from '../embedded';
+import type { Torus } from '../../tori/defineTorus';
 import { triTriChord } from '../intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';
@@ -44,12 +43,13 @@ const EPS = 1e-12;
  * doesn't affect the result.
  */
 function smallerPieceRatio(
+  torus: Torus,
   positions: ArrayLike<number>,
   triIdx: number,
   npx: number, npy: number, npz: number,
   refX: number, refY: number, refZ: number,
 ): number {
-  const T = TRIANGLES[triIdx];
+  const T = torus.triangles[triIdx];
   const o0 = 3 * T[0], o1 = 3 * T[1], o2 = 3 * T[2];
 
   const v0x = positions[o0], v0y = positions[o0 + 1], v0z = positions[o0 + 2];
@@ -87,12 +87,12 @@ function smallerPieceRatio(
   return Math.min(prod, 1 - prod);
 }
 
-function pairEnergy(positions: ArrayLike<number>, tA: number, tB: number): number {
-  const c = triTriChord(positions, tA, tB);
+function pairEnergy(torus: Torus, positions: ArrayLike<number>, tA: number, tB: number): number {
+  const c = triTriChord(torus, positions, tA, tB);
   if (!c) return 0;
 
-  const A = TRIANGLES[tA];
-  const B = TRIANGLES[tB];
+  const A = torus.triangles[tA];
+  const B = torus.triangles[tB];
   const oa0 = 3 * A[0], oa1 = 3 * A[1], oa2 = 3 * A[2];
   const ob0 = 3 * B[0], ob1 = 3 * B[1], ob2 = 3 * B[2];
 
@@ -115,23 +115,24 @@ function pairEnergy(positions: ArrayLike<number>, tA: number, tB: number): numbe
   const nBy = eB1z * eB2x - eB1x * eB2z;
   const nBz = eB1x * eB2y - eB1y * eB2x;
 
-  const ratioA = smallerPieceRatio(positions, tA, nBx, nBy, nBz, b0x, b0y, b0z);
-  const ratioB = smallerPieceRatio(positions, tB, nAx, nAy, nAz, a0x, a0y, a0z);
+  const ratioA = smallerPieceRatio(torus, positions, tA, nBx, nBy, nBz, b0x, b0y, b0z);
+  const ratioB = smallerPieceRatio(torus, positions, tB, nAx, nAy, nAz, a0x, a0y, a0z);
 
   return c.length * c.length * (ratioA + ratioB);
 }
 
-function compute(positions: ArrayLike<number>): number {
-  let E = 0;
-  for (const [tA, tB] of DISJOINT_TRIANGLE_PAIRS) E += pairEnergy(positions, tA, tB);
-  for (const pair of SHARED_VERTEX_TRIANGLE_PAIRS) E += pairEnergy(positions, pair.a, pair.b);
-  return E;
+export function makeCutOffArea(torus: Torus): RepulsionEnergy {
+  function compute(positions: ArrayLike<number>): number {
+    let E = 0;
+    for (const [tA, tB] of torus.disjointTrianglePairs) E += pairEnergy(torus, positions, tA, tB);
+    for (const pair of torus.sharedVertexTrianglePairs) E += pairEnergy(torus, positions, pair.a, pair.b);
+    return E;
+  }
+  return {
+    label: 'cut-off area (chord²-modulated)',
+    compute,
+    gradient(positions, out) {
+      fdGradient(compute, positions, out);
+    },
+  };
 }
-
-export const CUTOFF_AREA: RepulsionEnergy = {
-  label: 'cut-off area (chord²-modulated)',
-  compute,
-  gradient(positions, out) {
-    fdGradient(compute, positions, out);
-  },
-};

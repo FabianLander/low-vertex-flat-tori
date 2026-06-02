@@ -37,9 +37,9 @@ import { resolve, dirname } from 'path';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { mulberry32 } from '../src/math/perturb.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
-import { VERTEX_COUNT } from '../src/math/topology.ts';
+import { RICH } from '../src/tori/index.ts';
 
-const N = VERTEX_COUNT * 3;     // 24
+const N = RICH.vertexCount * 3;     // 24
 const SAMPLE_BYTES = N * 4;     // 96
 
 const args = process.argv.slice(2);
@@ -187,7 +187,7 @@ process.on('SIGINT', () => {
 while (tries < maxTries && embAccepts < maxAccepts) {
   for (let i = 0; i < N; i++) p[i] = (rng() * 2 - 1) * size;
   tries++;
-  if (isEmbedded(p)) {
+  if (isEmbedded(RICH, p)) {
     // Stage 1: save the embedded random torus.
     embStaging.set(p, embStagingCount * N);
     embStagingCount++;
@@ -199,10 +199,10 @@ while (tries < maxTries && embAccepts < maxAccepts) {
     // Stage 2: copy, Newton-flatten, re-check embedded.
     if (flatten) {
       pCopy.set(p);
-      const r = newtonFlatten(pCopy, { tolerance: newtonTol });
+      const r = newtonFlatten(RICH, pCopy, { tolerance: newtonTol });
       if (r.status === 'converged') {
         newtonConverged++;
-        if (isEmbedded(pCopy)) {
+        if (isEmbedded(RICH, pCopy)) {
           flatStaging.set(pCopy, flatStagingCount * N);
           flatStagingCount++;
           flatAccepts++;

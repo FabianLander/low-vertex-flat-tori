@@ -23,72 +23,7 @@
  * to keep the predicate robust on generic embeddings.
  */
 
-import { TRIANGLES } from './topology';
-
-type DisjointPair = readonly [number, number];
-
-type SharedVertexPair = {
-  readonly a: number;                              // triangle index
-  readonly b: number;                              // triangle index
-  readonly shared: number;                         // shared vertex index
-  readonly aOpp: readonly [number, number];        // a's two other vertices
-  readonly bOpp: readonly [number, number];        // b's two other vertices
-};
-
-function classifyPairs(): {
-  disjoint: DisjointPair[];
-  sharedVertex: SharedVertexPair[];
-  edgeShared: number;
-} {
-  const disjoint: DisjointPair[] = [];
-  const sharedVertex: SharedVertexPair[] = [];
-  let edgeShared = 0;
-  const n = TRIANGLES.length;
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      const t1 = TRIANGLES[i], t2 = TRIANGLES[j];
-      const shared: number[] = [];
-      for (let k = 0; k < 3; k++) {
-        const v = t1[k];
-        if (v === t2[0] || v === t2[1] || v === t2[2]) shared.push(v);
-      }
-      if (shared.length === 0) {
-        disjoint.push([i, j]);
-      } else if (shared.length === 1) {
-        const sv = shared[0];
-        const aOpp: number[] = [];
-        const bOpp: number[] = [];
-        for (let k = 0; k < 3; k++) {
-          if (t1[k] !== sv) aOpp.push(t1[k]);
-          if (t2[k] !== sv) bOpp.push(t2[k]);
-        }
-        sharedVertex.push({
-          a: i, b: j, shared: sv,
-          aOpp: [aOpp[0], aOpp[1]],
-          bOpp: [bOpp[0], bOpp[1]],
-        });
-      } else {
-        edgeShared++;
-      }
-    }
-  }
-  return { disjoint, sharedVertex, edgeShared };
-}
-
-const _pairs = classifyPairs();
-if (
-  _pairs.disjoint.length !== 24 ||
-  _pairs.sharedVertex.length !== 72 ||
-  _pairs.edgeShared !== 24
-) {
-  throw new Error(
-    `triangle pair classification: expected 24/72/24, ` +
-    `got ${_pairs.disjoint.length}/${_pairs.sharedVertex.length}/${_pairs.edgeShared}`,
-  );
-}
-
-export const DISJOINT_TRIANGLE_PAIRS: readonly DisjointPair[] = _pairs.disjoint;
-export const SHARED_VERTEX_TRIANGLE_PAIRS: readonly SharedVertexPair[] = _pairs.sharedVertex;
+import type { Torus } from '../tori/defineTorus';
 
 export type EmbeddingViolation = {
   /** 'tri-tri' = disjoint pair's interiors intersect.
@@ -98,19 +33,20 @@ export type EmbeddingViolation = {
   readonly t2: number;
 };
 
-export function isEmbedded(positions: ArrayLike<number>): boolean {
-  return firstViolation(positions) === null;
+export function isEmbedded(torus: Torus, positions: ArrayLike<number>): boolean {
+  return firstViolation(torus, positions) === null;
 }
 
-export function firstViolation(positions: ArrayLike<number>): EmbeddingViolation | null {
-  for (const [t1, t2] of DISJOINT_TRIANGLE_PAIRS) {
-    if (triangleTriangleIntersect(positions, t1, t2)) {
+export function firstViolation(torus: Torus, positions: ArrayLike<number>): EmbeddingViolation | null {
+  const { triangles } = torus;
+  for (const [t1, t2] of torus.disjointTrianglePairs) {
+    if (triangleTriangleIntersect(triangles, positions, t1, t2)) {
       return { kind: 'tri-tri', t1, t2 };
     }
   }
-  for (const pair of SHARED_VERTEX_TRIANGLE_PAIRS) {
-    const t1 = TRIANGLES[pair.a];
-    const t2 = TRIANGLES[pair.b];
+  for (const pair of torus.sharedVertexTrianglePairs) {
+    const t1 = triangles[pair.a];
+    const t2 = triangles[pair.b];
     if (segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2])) {
       return { kind: 'edge-tri', t1: pair.a, t2: pair.b };
     }
@@ -121,16 +57,17 @@ export function firstViolation(positions: ArrayLike<number>): EmbeddingViolation
   return null;
 }
 
-export function allViolations(positions: ArrayLike<number>): EmbeddingViolation[] {
+export function allViolations(torus: Torus, positions: ArrayLike<number>): EmbeddingViolation[] {
+  const { triangles } = torus;
   const out: EmbeddingViolation[] = [];
-  for (const [t1, t2] of DISJOINT_TRIANGLE_PAIRS) {
-    if (triangleTriangleIntersect(positions, t1, t2)) {
+  for (const [t1, t2] of torus.disjointTrianglePairs) {
+    if (triangleTriangleIntersect(triangles, positions, t1, t2)) {
       out.push({ kind: 'tri-tri', t1, t2 });
     }
   }
-  for (const pair of SHARED_VERTEX_TRIANGLE_PAIRS) {
-    const t1 = TRIANGLES[pair.a];
-    const t2 = TRIANGLES[pair.b];
+  for (const pair of torus.sharedVertexTrianglePairs) {
+    const t1 = triangles[pair.a];
+    const t2 = triangles[pair.b];
     const hitA = segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2]);
     const hitB = segmentTriangleIntersect(positions, pair.bOpp[0], pair.bOpp[1], t1[0], t1[1], t1[2]);
     if (hitA || hitB) out.push({ kind: 'edge-tri', t1: pair.a, t2: pair.b });
@@ -144,12 +81,13 @@ export function allViolations(positions: ArrayLike<number>): EmbeddingViolation[
  * offending faces red.
  */
 export function violationFaceScalars(
+  torus: Torus,
   positions: ArrayLike<number>,
   out?: Float32Array,
 ): Float32Array {
-  const r = out ?? new Float32Array(TRIANGLES.length);
+  const r = out ?? new Float32Array(torus.triangles.length);
   r.fill(0);
-  for (const v of allViolations(positions)) {
+  for (const v of allViolations(torus, positions)) {
     r[v.t1] = 1;
     r[v.t2] = 1;
   }
@@ -158,12 +96,13 @@ export function violationFaceScalars(
 
 /** Triangle-triangle interior intersection via 6 segment-triangle tests. */
 function triangleTriangleIntersect(
+  triangles: Torus['triangles'],
   positions: ArrayLike<number>,
   t1: number,
   t2: number,
 ): boolean {
-  const a = TRIANGLES[t1];
-  const b = TRIANGLES[t2];
+  const a = triangles[t1];
+  const b = triangles[t2];
   for (let k = 0; k < 3; k++) {
     if (segmentTriangleIntersect(positions, a[k], a[(k + 1) % 3], b[0], b[1], b[2])) return true;
   }

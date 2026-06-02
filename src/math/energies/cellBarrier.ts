@@ -27,12 +27,7 @@
  * This module is self-contained and does not modify cellMargin.ts.
  */
 
-import { EDGES, TRIANGLES } from '../topology';
-import {
-  VERTEX_VERTEX_PAIRS, VERTEX_EDGE_PAIRS, VERTEX_FACE_PAIRS,
-  EDGE_EDGE_PAIRS, EDGE_FACE_PAIRS, FACE_FACE_PAIRS,
-} from '../cellPairs';
-import { SHARED_VERTEX_TRIANGLE_PAIRS } from '../embedded';
+import type { Torus } from '../../tori/defineTorus';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   triangleTriangleDist2, segmentTriangleDist2,
@@ -53,9 +48,9 @@ function dVV(p: ArrayLike<number>, i: number, j: number): number {
   return Math.sqrt(pointPointDist2(p[oi], p[oi + 1], p[oi + 2], p[oj], p[oj + 1], p[oj + 2]));
 }
 
-function dVE(p: ArrayLike<number>, v: number, e: number): number {
+function dVE(torus: Torus, p: ArrayLike<number>, v: number, e: number): number {
   const ov = 3 * v;
-  const [a, b] = EDGES[e];
+  const [a, b] = torus.edges[e];
   const oa = 3 * a, ob = 3 * b;
   return Math.sqrt(pointSegmentDist2(
     p[ov], p[ov + 1], p[ov + 2],
@@ -63,9 +58,9 @@ function dVE(p: ArrayLike<number>, v: number, e: number): number {
   ));
 }
 
-function dVF(p: ArrayLike<number>, v: number, f: number): number {
+function dVF(torus: Torus, p: ArrayLike<number>, v: number, f: number): number {
   const ov = 3 * v;
-  const [a, b, c] = TRIANGLES[f];
+  const [a, b, c] = torus.triangles[f];
   const oa = 3 * a, ob = 3 * b, oc = 3 * c;
   return Math.sqrt(pointTriangleDist2(
     p[ov], p[ov + 1], p[ov + 2],
@@ -81,11 +76,11 @@ function midpointSegDist(
   return Math.sqrt(pointSegmentDist2(mx, my, mz, p[oa], p[oa + 1], p[oa + 2], p[ob], p[ob + 1], p[ob + 2]));
 }
 
-function dEF(p: ArrayLike<number>, e: number, f: number): number {
-  const [a, b] = EDGES[e];
+function dEF(torus: Torus, p: ArrayLike<number>, e: number, f: number): number {
+  const [a, b] = torus.edges[e];
   const oa = 3 * a, ob = 3 * b;
   const mx = 0.5 * (p[oa] + p[ob]), my = 0.5 * (p[oa + 1] + p[ob + 1]), mz = 0.5 * (p[oa + 2] + p[ob + 2]);
-  const [c0, c1, c2] = TRIANGLES[f];
+  const [c0, c1, c2] = torus.triangles[f];
   const o0 = 3 * c0, o1 = 3 * c1, o2 = 3 * c2;
   return Math.sqrt(pointTriangleDist2(
     mx, my, mz,
@@ -93,9 +88,9 @@ function dEF(p: ArrayLike<number>, e: number, f: number): number {
   ));
 }
 
-function dFF(p: ArrayLike<number>, fa: number, fb: number): number {
-  const [a0, a1, a2] = TRIANGLES[fa];
-  const [b0, b1, b2] = TRIANGLES[fb];
+function dFF(torus: Torus, p: ArrayLike<number>, fa: number, fb: number): number {
+  const [a0, a1, a2] = torus.triangles[fa];
+  const [b0, b1, b2] = torus.triangles[fb];
   const A0 = 3 * a0, A1 = 3 * a1, A2 = 3 * a2;
   const B0 = 3 * b0, B1 = 3 * b1, B2 = 3 * b2;
   return Math.sqrt(triangleTriangleDist2(
@@ -118,9 +113,10 @@ export interface CellBarrierOptions {
   strength?: number;
 }
 
-export function makeCellBarrier(opts: CellBarrierOptions = {}): RepulsionEnergy {
+export function makeCellBarrier(torus: Torus, opts: CellBarrierOptions = {}): RepulsionEnergy {
   const delta = opts.delta ?? DEFAULT_DELTA;
   const strength = opts.strength ?? DEFAULT_STRENGTH;
+  const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = torus.cellPairs;
 
   const barrier = (dt: number): number => {
     if (dt >= delta) return 0;
@@ -129,28 +125,28 @@ export function makeCellBarrier(opts: CellBarrierOptions = {}): RepulsionEnergy 
   };
 
   function compute(p: ArrayLike<number>): number {
-    const invL = 1 / linearSize(p);
+    const invL = 1 / linearSize(torus, p);
     let E = 0;
 
     // Fattening / degeneracy terms (the six non-adjacent cell-pair types).
-    for (const [i, j] of VERTEX_VERTEX_PAIRS) E += barrier(dVV(p, i, j) * invL);
-    for (const [v, e] of VERTEX_EDGE_PAIRS) E += barrier(dVE(p, v, e) * invL);
-    for (const [v, f] of VERTEX_FACE_PAIRS) E += barrier(dVF(p, v, f) * invL);
-    for (const [e1, e2] of EDGE_EDGE_PAIRS) {
-      const [a1, b1] = EDGES[e1];
-      const [a2, b2] = EDGES[e2];
+    for (const [i, j] of vertexVertex) E += barrier(dVV(p, i, j) * invL);
+    for (const [v, e] of vertexEdge) E += barrier(dVE(torus, p, v, e) * invL);
+    for (const [v, f] of vertexFace) E += barrier(dVF(torus, p, v, f) * invL);
+    for (const [e1, e2] of edgeEdge) {
+      const [a1, b1] = torus.edges[e1];
+      const [a2, b2] = torus.edges[e2];
       E += barrier(midpointSegDist(p, a1, b1, a2, b2) * invL);
       E += barrier(midpointSegDist(p, a2, b2, a1, b1) * invL);
     }
-    for (const [e, f] of EDGE_FACE_PAIRS) E += barrier(dEF(p, e, f) * invL);
+    for (const [e, f] of edgeFace) E += barrier(dEF(torus, p, e, f) * invL);
 
     // Embedding-critical terms (exactly what isEmbedded checks):
     //   disjoint triangle pairs → triangle–triangle gap
-    for (const [fa, fb] of FACE_FACE_PAIRS) E += barrier(dFF(p, fa, fb) * invL);
+    for (const [fa, fb] of faceFace) E += barrier(dFF(torus, p, fa, fb) * invL);
     //   shared-vertex pairs → each non-shared edge vs the opposite triangle
-    for (const pair of SHARED_VERTEX_TRIANGLE_PAIRS) {
-      const tb = TRIANGLES[pair.b];
-      const ta = TRIANGLES[pair.a];
+    for (const pair of torus.sharedVertexTrianglePairs) {
+      const tb = torus.triangles[pair.b];
+      const ta = torus.triangles[pair.a];
       E += barrier(dEdgeTri(p, pair.aOpp[0], pair.aOpp[1], tb[0], tb[1], tb[2]) * invL);
       E += barrier(dEdgeTri(p, pair.bOpp[0], pair.bOpp[1], ta[0], ta[1], ta[2]) * invL);
     }
@@ -165,6 +161,3 @@ export function makeCellBarrier(opts: CellBarrierOptions = {}): RepulsionEnergy 
     },
   };
 }
-
-/** Default cell-barrier with δ = 0.1, μ = 1. */
-export const CELL_BARRIER: RepulsionEnergy = makeCellBarrier();

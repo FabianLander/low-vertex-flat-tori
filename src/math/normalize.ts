@@ -23,8 +23,11 @@
  * Pure module: no three.js, no DOM.
  */
 
-import { VERTEX_COUNT } from './topology';
-
+// This canonical-pose scheme is specific to the 8-vertex torus: it pins anchors
+// v0,v1,v2 and unrolls the free data as v3..v7 (REDUCED_DIM = 17). It is pure
+// rigid-motion algebra on the 24-coordinate array — no combinatorics — so the
+// vertex count is a fixed domain constant here, not a Torus dependency.
+const VERTEX_COUNT = 8;
 const N = VERTEX_COUNT * 3;          // 24
 export const FULL_DIM = N;           // 24
 export const REDUCED_DIM = N - 7;    // 17

@@ -16,6 +16,7 @@
 
 import { newtonFlatten, type NewtonOptions, type NewtonStatus } from './newton';
 import type { RepulsionEnergy } from './energies/types';
+import type { Torus } from '../tori/defineTorus';
 
 export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked' | 'rejected';
 
@@ -80,6 +81,7 @@ export type FlowResult = {
 };
 
 export function embeddedFlow(
+  torus: Torus,
   positions: Float64Array,
   energy: RepulsionEnergy,
   opts: FlowOptions = {},
@@ -102,7 +104,7 @@ export function embeddedFlow(
   let initialEnergy = -1, minEnergy = Infinity;
 
   // Land on F before starting (in case caller's seed isn't flat).
-  let nr = newtonFlatten(positions, opts.newtonOpts);
+  let nr = newtonFlatten(torus, positions, opts.newtonOpts);
   let totalNewton = nr.iters;
   if (nr.status !== 'converged') {
     return {
@@ -156,7 +158,7 @@ export function embeddedFlow(
         for (let i = 0; i < positions.length; i++) positions[i] -= stepSize * dirScale * grad[i];
       }
 
-      nr = newtonFlatten(positions, opts.newtonOpts);
+      nr = newtonFlatten(torus, positions, opts.newtonOpts);
       totalNewton += nr.iters;
       if (nr.status !== 'converged') {
         return {
@@ -174,7 +176,7 @@ export function embeddedFlow(
       let accepted = false;
       for (let bt = 0; bt < maxBacktracks; bt++) {
         for (let i = 0; i < positions.length; i++) positions[i] = saved[i] - alpha * dirScale * grad[i];
-        nr = newtonFlatten(positions, opts.newtonOpts);
+        nr = newtonFlatten(torus, positions, opts.newtonOpts);
         totalNewton += nr.iters;
         if (nr.status === 'converged' && feasible(positions) && energy.compute(positions) < e) {
           accepted = true;

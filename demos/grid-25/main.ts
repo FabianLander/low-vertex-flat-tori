@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { VERTEX_COUNT } from '../../src/math/topology';
+import { RICH } from '../../src/tori';
 import { PaperTorus } from '../../src/math/embedding';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { perturb, mulberry32 } from '../../src/math/perturb';
@@ -48,12 +48,12 @@ scene.add(key);
  */
 function renderGrid(embeddings: readonly PaperTorus[]): TorusView[] {
   const views: TorusView[] = [];
-  const deficits = new Float32Array(VERTEX_COUNT);
+  const deficits = new Float32Array(RICH.vertexCount);
   for (let i = 0; i < embeddings.length; i++) {
     const t = embeddings[i];
-    const view = new TorusView({ vertexRadius: 0.05 });
+    const view = new TorusView(RICH, { vertexRadius: 0.05 });
     view.sync(t);
-    for (let v = 0; v < VERTEX_COUNT; v++) {
+    for (let v = 0; v < RICH.vertexCount; v++) {
       deficits[v] = Math.abs(t.coneAngleDeficit(v));
     }
     view.setVertexScalars(deficits, DEFICIT_PALETTE);

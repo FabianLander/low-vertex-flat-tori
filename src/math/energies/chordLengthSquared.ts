@@ -17,28 +17,29 @@
  * Cost: ≈ 96 triTriChord calls per compute(). FD gradient is 48× that.
  */
 
-import { DISJOINT_TRIANGLE_PAIRS, SHARED_VERTEX_TRIANGLE_PAIRS } from '../embedded';
+import type { Torus } from '../../tori/defineTorus';
 import { triTriChord } from '../intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';
 
-function compute(positions: ArrayLike<number>): number {
-  let E = 0;
-  for (const [tA, tB] of DISJOINT_TRIANGLE_PAIRS) {
-    const c = triTriChord(positions, tA, tB);
-    if (c) E += c.length * c.length;
+export function makeChordLengthSquared(torus: Torus): RepulsionEnergy {
+  function compute(positions: ArrayLike<number>): number {
+    let E = 0;
+    for (const [tA, tB] of torus.disjointTrianglePairs) {
+      const c = triTriChord(torus, positions, tA, tB);
+      if (c) E += c.length * c.length;
+    }
+    for (const pair of torus.sharedVertexTrianglePairs) {
+      const c = triTriChord(torus, positions, pair.a, pair.b);
+      if (c) E += c.length * c.length;
+    }
+    return E;
   }
-  for (const pair of SHARED_VERTEX_TRIANGLE_PAIRS) {
-    const c = triTriChord(positions, pair.a, pair.b);
-    if (c) E += c.length * c.length;
-  }
-  return E;
+  return {
+    label: 'chord length²',
+    compute,
+    gradient(positions, out) {
+      fdGradient(compute, positions, out);
+    },
+  };
 }
-
-export const CHORD_LENGTH_SQUARED: RepulsionEnergy = {
-  label: 'chord length²',
-  compute,
-  gradient(positions, out) {
-    fdGradient(compute, positions, out);
-  },
-};

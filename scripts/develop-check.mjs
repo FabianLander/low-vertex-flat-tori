@@ -14,12 +14,12 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-import { VERTEX_COUNT } from '../src/math/topology.ts';
+import { RICH } from '../src/tori/index.ts';
 import { RICH_REFERENCE } from '../src/math/reference.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 import { modulus, developNet, reduceModulus } from '../src/math/develop.ts';
 
-const DIM = VERTEX_COUNT * 3;
+const DIM = RICH.vertexCount * 3;
 const inPath = resolve(process.argv[2] ?? 'data/explore-from-seeds/seeds.csv');
 
 function rows(path) {
@@ -35,8 +35,8 @@ function rows(path) {
 }
 
 function check(label, p) {
-  const net = developNet(p);
-  const m = modulus(p);
+  const net = developNet(RICH, p);
+  const m = modulus(RICH, p);
   const covErr = Math.abs(m.covolume - m.area) / m.area;
   const tauStr = `${m.tau[0].toFixed(5)} + ${m.tau[1].toFixed(5)}i`;
   const red = reduceModulus(m.tau);
@@ -45,7 +45,7 @@ function check(label, p) {
   console.log(
     `${ok ? '✓' : '✗'} ${label.padEnd(10)}  `
     + `cov.err=${covErr.toExponential(1)}  rotDef=${m.rotDefect.toExponential(1)}  `
-    + `coneDef=${maxConeDeficit(p).toExponential(1)}  `
+    + `coneDef=${maxConeDeficit(RICH, p).toExponential(1)}  `
     + `τ=${tauStr}  →  τ̂=${redStr}`,
   );
   return ok;

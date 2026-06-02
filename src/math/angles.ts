@@ -10,12 +10,12 @@
  * coloring. One implementation, two callers.
  */
 
-import { VERTEX_COUNT, VERTEX_LINKS } from './topology';
+import type { Torus } from '../tori/defineTorus';
 
 const TWO_PI = Math.PI * 2;
 
-export function coneAngleAt(positions: ArrayLike<number>, i: number): number {
-  const link = VERTEX_LINKS[i];
+export function coneAngleAt(torus: Torus, positions: ArrayLike<number>, i: number): number {
+  const link = torus.vertexLinks[i];
   const oi = 3 * i;
   const xi = positions[oi];
   const yi = positions[oi + 1];
@@ -44,11 +44,12 @@ export function coneAngleAt(positions: ArrayLike<number>, i: number): number {
 }
 
 export function coneAngles(
+  torus: Torus,
   positions: ArrayLike<number>,
   out?: Float64Array,
 ): Float64Array {
-  const r = out ?? new Float64Array(VERTEX_COUNT);
-  for (let i = 0; i < VERTEX_COUNT; i++) r[i] = coneAngleAt(positions, i);
+  const r = out ?? new Float64Array(torus.vertexCount);
+  for (let i = 0; i < torus.vertexCount; i++) r[i] = coneAngleAt(torus, positions, i);
   return r;
 }
 
@@ -57,18 +58,19 @@ export function coneAngles(
  * embedding is flat. This is the Newton solver's R(x).
  */
 export function coneAngleDeficits(
+  torus: Torus,
   positions: ArrayLike<number>,
   out?: Float64Array,
 ): Float64Array {
-  const r = out ?? new Float64Array(VERTEX_COUNT);
-  for (let i = 0; i < VERTEX_COUNT; i++) r[i] = TWO_PI - coneAngleAt(positions, i);
+  const r = out ?? new Float64Array(torus.vertexCount);
+  for (let i = 0; i < torus.vertexCount; i++) r[i] = TWO_PI - coneAngleAt(torus, positions, i);
   return r;
 }
 
-export function maxConeDeficit(positions: ArrayLike<number>): number {
+export function maxConeDeficit(torus: Torus, positions: ArrayLike<number>): number {
   let m = 0;
-  for (let i = 0; i < VERTEX_COUNT; i++) {
-    const d = Math.abs(TWO_PI - coneAngleAt(positions, i));
+  for (let i = 0; i < torus.vertexCount; i++) {
+    const d = Math.abs(TWO_PI - coneAngleAt(torus, positions, i));
     if (d > m) m = d;
   }
   return m;
@@ -94,14 +96,15 @@ export function maxConeDeficit(positions: ArrayLike<number>): number {
  * accumulated with a leading minus. A link-neighbor appears as the `l` of one
  * corner and the `j` of the next; both contributions accumulate into its slot.
  */
-const N_COORDS = VERTEX_COUNT * 3;
 export function coneAngleJacobian(
+  torus: Torus,
   positions: ArrayLike<number>,
   out: Float64Array,
 ): void {
+  const N_COORDS = torus.vertexCount * 3;
   out.fill(0);
-  for (let i = 0; i < VERTEX_COUNT; i++) {
-    const link = VERTEX_LINKS[i];
+  for (let i = 0; i < torus.vertexCount; i++) {
+    const link = torus.vertexLinks[i];
     const oi = 3 * i;
     const xi = positions[oi], yi = positions[oi + 1], zi = positions[oi + 2];
     const row = i * N_COORDS;

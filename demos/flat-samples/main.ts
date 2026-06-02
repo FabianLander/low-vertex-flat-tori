@@ -19,12 +19,12 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 import { PaperTorus } from '../../src/math/embedding';
-import { VERTEX_COUNT, TRIANGLES } from '../../src/math/topology';
+import { RICH } from '../../src/tori';
 import { normalize } from '../../src/math/normalize';
 import { TorusView } from '../../src/viewer/TorusView';
 
-const DIM = VERTEX_COUNT * 3;
-const FACE_COUNT = TRIANGLES.length;
+const DIM = RICH.vertexCount * 3;
+const FACE_COUNT = RICH.triangles.length;
 const SPACING = 4.5;          // gap between columns (one column per seed)
 const TOP_Y = 3.0, BOT_Y = -3.0;
 
@@ -36,7 +36,7 @@ const C_V0 = new THREE.Color(0xffffff);   // origin
 const C_V1 = new THREE.Color(0xef4444);   // +x  (matches the red x-axis)
 const C_V2 = new THREE.Color(0x22c55e);   // xy-plane (matches the green y-axis)
 const C_OTHER = new THREE.Color(0x9aa0aa);
-const anchorScalars = new Float32Array(VERTEX_COUNT); // 0 except the 3 anchors
+const anchorScalars = new Float32Array(RICH.vertexCount); // 0 except the 3 anchors
 anchorScalars[0] = 1; anchorScalars[1] = 2; anchorScalars[2] = 3;
 const anchorPalette = {
   color: (v: number) => v === 1 ? C_V0.clone() : v === 2 ? C_V1.clone() : v === 3 ? C_V2.clone() : C_OTHER.clone(),
@@ -60,15 +60,15 @@ function parseRaw(text: string): Float64Array[] {
 function displayGauge(p: Float64Array): Float64Array {
   const q = Float64Array.from(p);
   let cx = 0, cy = 0, cz = 0;
-  for (let v = 0; v < VERTEX_COUNT; v++) { cx += q[3 * v]; cy += q[3 * v + 1]; cz += q[3 * v + 2]; }
-  cx /= VERTEX_COUNT; cy /= VERTEX_COUNT; cz /= VERTEX_COUNT;
+  for (let v = 0; v < RICH.vertexCount; v++) { cx += q[3 * v]; cy += q[3 * v + 1]; cz += q[3 * v + 2]; }
+  cx /= RICH.vertexCount; cy /= RICH.vertexCount; cz /= RICH.vertexCount;
   let rms2 = 0;
-  for (let v = 0; v < VERTEX_COUNT; v++) {
+  for (let v = 0; v < RICH.vertexCount; v++) {
     const x = q[3 * v] - cx, y = q[3 * v + 1] - cy, z = q[3 * v + 2] - cz;
     q[3 * v] = x; q[3 * v + 1] = y; q[3 * v + 2] = z;
     rms2 += x * x + y * y + z * z;
   }
-  const rms = Math.sqrt(rms2 / VERTEX_COUNT) || 1;
+  const rms = Math.sqrt(rms2 / RICH.vertexCount) || 1;
   for (let i = 0; i < DIM; i++) q[i] /= rms;
   return q;
 }
@@ -105,8 +105,8 @@ type Tagged = { anchor: THREE.Vector3; text: string };
 const tags: Tagged[] = [];
 
 function addTorus(p24: Float64Array, x: number, y: number, colHex: number): void {
-  const view = new TorusView({ vertexRadius: 0.05 });
-  view.sync(new PaperTorus(p24));
+  const view = new TorusView(RICH, { vertexRadius: 0.05 });
+  view.sync(new PaperTorus(RICH, p24));
   const col = new THREE.Color(colHex);
   view.setFaceScalars(new Array(FACE_COUNT).fill(0), { color: () => col.clone() });
   view.setVertexScalars(anchorScalars, anchorPalette);

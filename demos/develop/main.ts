@@ -14,11 +14,17 @@
  */
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
-import { VERTEX_COUNT, TRIANGLES } from '../../src/math/topology';
-import { developNet, modulus, reduceModulus, DEVELOP_ORDER, type V2 } from '../../src/math/develop';
-import { hexDomain, vertexLabels, type Tile, type XY } from '../../src/math/latticeLayout';
+import { RICH } from '../../src/tori';
+import { developNet, modulus, reduceModulus, type V2 } from '../../src/math/develop';
+import { latticeLayout, type Tile, type XY } from '../../src/math/latticeLayout';
 
-const DIM = VERTEX_COUNT * 3;
+const DEVELOP_ORDER = RICH.developOrder;
+const lattice = latticeLayout(RICH);
+// Unfold the metric net with the SAME gluing the lattice picture uses, so the
+// developed net (right) matches the abstract net (left) triangle-for-triangle.
+const ATTACH = lattice.developAttach(DEVELOP_ORDER);
+
+const DIM = RICH.vertexCount * 3;
 const STEP_MS = 500;
 const HOLD_MS = 1000; // pause on the finished net before restarting
 
@@ -36,16 +42,16 @@ function parse(text: string): Float64Array[] {
 const tori = parse(seedsRaw);
 
 // abstract picture (fixed for all tori)
-const ABSTRACT: Tile[] = hexDomain();
-const ABSTRACT_VERTS = vertexLabels(ABSTRACT);
+const ABSTRACT: Tile[] = lattice.hexDomain();
+const ABSTRACT_VERTS = lattice.vertexLabels(ABSTRACT);
 
 // ---- state ----
 let torusIdx = 0;
 let step = 1;            // triangles revealed (1..16)
 let playing = true;
-let net = developNet(tori[torusIdx]);
-let mod = modulus(tori[torusIdx]);
-const reload = () => { net = developNet(tori[torusIdx]); mod = modulus(tori[torusIdx]); };
+let net = developNet(RICH, tori[torusIdx], ATTACH);
+let mod = modulus(RICH, tori[torusIdx]);
+const reload = () => { net = developNet(RICH, tori[torusIdx], ATTACH); mod = modulus(RICH, tori[torusIdx]); };
 
 // ---- canvas ----
 const canvas = document.createElement('canvas');
@@ -132,7 +138,7 @@ function draw(): void {
   ctx.font = '11px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = 'rgba(220,225,240,0.65)';
   for (const { t } of shown) {
-    const trv = TRIANGLES[t];
+    const trv = RICH.triangles[t];
     for (let k = 0; k < 3; k++) { const P = net.corners[t][k]; ctx.fillText(String(trv[k]), fR.sx(P) + 3, fR.sy(P) - 3); }
   }
 

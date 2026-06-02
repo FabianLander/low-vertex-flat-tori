@@ -28,7 +28,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 
-import { VERTEX_COUNT } from '../src/math/topology.ts';
+import { RICH } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
@@ -36,7 +36,7 @@ import { maxConeDeficit } from '../src/math/angles.ts';
 import { minMargin, linearSize } from '../src/math/energies/cellMargin.ts';
 import { makeCellBarrier } from '../src/math/energies/cellBarrier.ts';
 
-const DIM = VERTEX_COUNT * 3;
+const DIM = RICH.vertexCount * 3;
 
 const args = process.argv.slice(2);
 const flag = (name) => { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; };
@@ -52,7 +52,7 @@ const guard = args.includes('--guard');
 const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
 const outPath = resolve(flag('--out') ?? `samples/barrier-d${delta}-m${strength}-${stamp}.csv`);
 
-const energy = makeCellBarrier({ delta, strength });
+const energy = makeCellBarrier(RICH, { delta, strength });
 
 function readRows(p) {
   const files = statSync(p).isDirectory()
@@ -89,26 +89,26 @@ for (let i = 0; i < samples.length; i++) {
   const p = samples[i];
 
   // Normalize to √area = 1 so δ is in the same units across samples.
-  const s = 1 / linearSize(p);
+  const s = 1 / linearSize(RICH, p);
   for (let k = 0; k < DIM; k++) p[k] *= s;
-  newtonFlatten(p, { tolerance: 1e-12 });
+  newtonFlatten(RICH, p, { tolerance: 1e-12 });
 
-  const m0 = minMargin(p).margin;
+  const m0 = minMargin(RICH, p).margin;
 
-  const fr = embeddedFlow(p, energy, {
+  const fr = embeddedFlow(RICH, p, energy, {
     stepSize,
     energyTol: -Infinity,   // never "converge" on energy; run to stall or max-iters
     gradientTol: 1e-9,
     maxIters,
     normalizeGradient: true,
     newtonOpts: { tolerance: 1e-12 },
-    feasible: guard ? isEmbedded : undefined,
+    feasible: guard ? (q) => isEmbedded(RICH, q) : undefined,
   });
 
-  const after = minMargin(p);
+  const after = minMargin(RICH, p);
   const m1 = after.margin;
-  const flatResid = maxConeDeficit(p);
-  const embAfter = isEmbedded(p);
+  const flatResid = maxConeDeficit(RICH, p);
+  const embAfter = isEmbedded(RICH, p);
   const flatOk = flatResid < angleTol;
   const ratio = m0 > 0 ? m1 / m0 : Infinity;
   const fatter = embAfter && flatOk && m1 > 0.002;
