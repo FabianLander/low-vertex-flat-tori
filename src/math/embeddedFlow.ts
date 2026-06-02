@@ -17,7 +17,7 @@
 import { newtonFlatten, type NewtonOptions, type NewtonStatus } from './newton';
 import type { RepulsionEnergy } from './energies/types';
 
-export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked';
+export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked' | 'rejected';
 
 export type FlowOptions = {
   /** Step size on the gradient descent move. Default 0.005. */
@@ -44,6 +44,17 @@ export type FlowOptions = {
   feasible?: (positions: Float64Array) => boolean;
   /** Backtracking attempts per iteration when `feasible` is set. Default 24. */
   maxBacktracks?: number;
+  /** Heavy-ball momentum β ∈ [0, 1). 0 disables (default). With momentum,
+   *  v ← β·v − stepSize·grad; positions += v. Steady-state effective step is
+   *  stepSize/(1−β), so scale stepSize down accordingly. Ignored when
+   *  `feasible` is set (the backtracking line search owns the step there). */
+  momentum?: number;
+  /** If > 0, abandon the attempt as 'rejected' when, after `earlyRejectIters`
+   *  iterations, the best energy seen hasn't fallen below `earlyRejectRatio`×
+   *  the starting energy. Cheap way to kill hopeless flows. Default 0 (off). */
+  earlyRejectIters?: number;
+  /** Required best-energy drop ratio for early-reject. Default 0.5. */
+  earlyRejectRatio?: number;
 };
 
 export type IterationInfo = {
@@ -72,9 +83,15 @@ export function embeddedFlow(
   const maxIters = opts.maxIters ?? 500;
   const feasible = opts.feasible;
   const maxBacktracks = opts.maxBacktracks ?? 24;
+  const momentum = opts.momentum ?? 0;
+  const earlyRejectIters = opts.earlyRejectIters ?? 0;
+  const earlyRejectRatio = opts.earlyRejectRatio ?? 0.5;
+  const useMomentum = momentum > 0 && !feasible;
 
   const grad = new Float64Array(positions.length);
-  const saved = new Float64Array(positions.length); // last good point, for backtracking
+  const saved = new Float64Array(positions.length);     // last good point, for backtracking
+  const velocity = useMomentum ? new Float64Array(positions.length) : null;
+  let initialEnergy = -1, minEnergy = Infinity;
 
   // Land on F before starting (in case caller's seed isn't flat).
   let nr = newtonFlatten(positions, opts.newtonOpts);
@@ -90,10 +107,19 @@ export function embeddedFlow(
 
   for (let iter = 0; iter < maxIters; iter++) {
     const e = energy.compute(positions);
+    if (iter === 0) initialEnergy = e;
+    if (e < minEnergy) minEnergy = e;
 
     if (e < energyTol) {
       opts.onIter?.({ iter, energy: e, gradNorm: 0, newtonIters: 0, newtonStatus: 'converged' });
       return { status: 'converged', iters: iter, energy: e, totalNewtonIters: totalNewton };
+    }
+
+    // Early-rejection: trajectory not improving fast enough. Use best-seen
+    // energy so a momentum overshoot doesn't falsely kill a good attempt.
+    if (earlyRejectIters > 0 && iter === earlyRejectIters
+        && minEnergy > initialEnergy * earlyRejectRatio) {
+      return { status: 'rejected', iters: iter, energy: e, totalNewtonIters: totalNewton };
     }
 
     energy.gradient(positions, grad);
@@ -107,10 +133,15 @@ export function embeddedFlow(
     }
 
     if (!feasible) {
-      // Naive Euclidean descent step. Off-manifold drift is O(stepSize²);
-      // the next Newton call mops it up.
-      for (let i = 0; i < positions.length; i++) {
-        positions[i] -= stepSize * grad[i];
+      // Euclidean descent step (optionally heavy-ball). Off-manifold drift is
+      // O(stepSize²); the next Newton call mops it up.
+      if (useMomentum) {
+        for (let i = 0; i < positions.length; i++) {
+          velocity![i] = momentum * velocity![i] - stepSize * grad[i];
+          positions[i] += velocity![i];
+        }
+      } else {
+        for (let i = 0; i < positions.length; i++) positions[i] -= stepSize * grad[i];
       }
 
       nr = newtonFlatten(positions, opts.newtonOpts);

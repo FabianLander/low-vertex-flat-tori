@@ -5,6 +5,8 @@
  *     1. Sample a seed (see --seed-mode):
  *        - "rich" (default): perturb Rich by Gaussian noise σ ~ uniform[σ_min, σ_max]
  *        - "uniform":         each coord independently uniform in [−seed-size, seed-size]
+ *        - "file":            pick a random row from --seed-file PATH and perturb
+ *                             by Gaussian noise σ ~ uniform[σ_min, σ_max]
  *     2. Newton-flatten              (lands on the flatness manifold F)
  *     3. embeddedFlow                (descent on a repulsion energy + Newton re-projection)
  *     4. Explicit verification:        max |2π − cone-angle(i)|  <  --angle-tol
@@ -29,12 +31,25 @@
  * Options:
  *   --seed N                RNG seed (default: clock-derived)
  *   --out PATH              Output base path (default: samples/flat-<timestamp>)
- *   --seed-mode NAME        "rich" (default) — perturb Rich; or "uniform" — random cube
- *   --seed-size N           Half-extent of the uniform cube (default: 1.0)
- *   --sigma-min N           Rich-mode: min perturbation σ (default: 0.005)
- *   --sigma-max N           Rich-mode: max perturbation σ (default: 0.15)
+ *   --seed-mode NAME        "rich" (default), "uniform", or "file"
+ *   --seed-size N           Half-extent of the uniform cube (uniform mode; default 1.0)
+ *   --seed-file PATH        CSV of seed embeddings (file mode; required)
+ *   --feedback              file mode only: every accepted save is also
+ *                             appended back to the seed file and added to
+ *                             the in-memory pool. Lets one walk grow its
+ *                             own seed pool indefinitely → progressive
+ *                             coverage of a connected component.
+ *   --sigma-min N           rich/file mode: min Gaussian σ (default: 0.005)
+ *   --sigma-max N           rich/file mode: max Gaussian σ (default: 0.15)
  *   --step-size N           Flow descent step size (default: 0.001)
  *   --max-flow-iters N      Per-attempt cap on flow iterations (default: 500)
+ *   --momentum N            Heavy-ball β ∈ [0, 1) (default: 0 = off).
+ *                             Effective step ≈ stepSize / (1 − momentum).
+ *                             β = 0.9 typically needs --step-size ~0.0003.
+ *   --early-reject-iters N  Abandon attempt if best energy hasn't dropped
+ *                             after N flow iters (default: 0 = off).
+ *   --early-reject-ratio N  Required energy drop ratio (default: 0.5,
+ *                             i.e. "best energy must halve in N iters").
  *   --energy NAME           "cutoff" (default) or "chord2"
  *   --angle-tol N           Verification: max |cone deficit| (default: 1e-10)
  *   --max-tries N           Total attempts cap (default: ∞)
@@ -45,7 +60,7 @@
  * Ctrl-C flushes the pending buffer and exits cleanly.
  */
 
-import { appendFileSync, existsSync, mkdirSync, statSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 
 import { RICH_REFERENCE } from '../src/math/reference.ts';
@@ -57,8 +72,17 @@ import { isEmbedded } from '../src/math/embedded.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 import { CHORD_LENGTH_SQUARED } from '../src/math/energies/chordLengthSquared.ts';
 import { CUTOFF_AREA } from '../src/math/energies/cutOffArea.ts';
+import { linearSize } from '../src/math/energies/cellMargin.ts';
 
 const N = VERTEX_COUNT * 3;  // 24
+
+/** Scale positions in place to total surface area 1 (uniform scaling, so it
+ *  preserves flatness and embeddedness). linearSize = √area, so dividing by it
+ *  makes area = 1. */
+function normalizeUnitArea(arr) {
+  const s = linearSize(arr);
+  if (s > 0) { const k = 1 / s; for (let i = 0; i < N; i++) arr[i] *= k; }
+}
 
 const args = process.argv.slice(2);
 function flag(name) {
@@ -67,19 +91,73 @@ function flag(name) {
   return args[i + 1];
 }
 function num(v, d) { return v === undefined ? d : Number(v); }
+function hasFlag(name) { return args.indexOf(name) !== -1; }
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
 const seedMode = flag('--seed-mode') ?? 'rich';
 const seedSize = num(flag('--seed-size'), 1.0);
 const sigmaMin = num(flag('--sigma-min'), 0.005);
 const sigmaMax = num(flag('--sigma-max'), 0.15);
-
-if (seedMode !== 'rich' && seedMode !== 'uniform') {
-  console.error(`unknown --seed-mode: ${seedMode}; choices: rich, uniform`);
+const sigmaDist = flag('--sigma-dist') ?? 'uniform';   // 'uniform' | 'log'
+if (sigmaDist !== 'uniform' && sigmaDist !== 'log') {
+  console.error(`unknown --sigma-dist: ${sigmaDist}; choices: uniform, log`);
   process.exit(1);
+}
+const logMin = Math.log(sigmaMin), logMax = Math.log(sigmaMax);
+// Draw the per-attempt perturbation σ. 'log' is log-uniform: most draws stay
+// small (good yield, fill locally) with a fat tail of large jumps (reach new
+// regions). Lets you push --sigma-max high without flooding with unrecoverable
+// big jumps the way plain 'uniform' would.
+function drawSigma() {
+  return sigmaDist === 'log'
+    ? Math.exp(logMin + rng() * (logMax - logMin))
+    : sigmaMin + rng() * (sigmaMax - sigmaMin);
+}
+
+if (seedMode !== 'rich' && seedMode !== 'uniform' && seedMode !== 'file') {
+  console.error(`unknown --seed-mode: ${seedMode}; choices: rich, uniform, file`);
+  process.exit(1);
+}
+
+const feedback = hasFlag('--feedback');
+const unitArea = hasFlag('--unit-area');   // normalize every saved torus (and loaded seeds) to area 1
+if (feedback && seedMode !== 'file') {
+  console.error(`--feedback only valid with --seed-mode file`);
+  process.exit(1);
+}
+
+// Load a CSV of seed embeddings for file mode. Each row must have 24 floats.
+let seedPool = null;
+let seedFileAbs = null;
+if (seedMode === 'file') {
+  const seedFile = flag('--seed-file');
+  if (!seedFile) {
+    console.error(`--seed-mode file requires --seed-file PATH`);
+    process.exit(1);
+  }
+  seedFileAbs = resolve(seedFile);
+  const text = readFileSync(seedFileAbs, 'utf8').trim();
+  const lines = text.length === 0 ? [] : text.split('\n');
+  if (lines.length === 0) {
+    console.error(`--seed-file ${seedFileAbs} is empty`);
+    process.exit(1);
+  }
+  seedPool = lines.map((line, idx) => {
+    const parts = line.split(',');
+    if (parts.length !== N) {
+      throw new Error(`row ${idx + 1} of ${seedFileAbs} has ${parts.length} cols, expected ${N}`);
+    }
+    const arr = new Float64Array(N);
+    for (let i = 0; i < N; i++) arr[i] = Number(parts[i]);
+    if (unitArea) normalizeUnitArea(arr);   // seeds start at unit area
+    return arr;
+  });
 }
 const stepSize = num(flag('--step-size'), 0.001);
 const maxFlowIters = num(flag('--max-flow-iters'), 500);
+const momentum = num(flag('--momentum'), 0);
+const earlyRejectIters = num(flag('--early-reject-iters'), 0);
+const earlyRejectRatio = num(flag('--early-reject-ratio'), 0.5);
 const angleTol = num(flag('--angle-tol'), 1e-10);
 const maxTries = num(flag('--max-tries'), Infinity);
 const maxAccepts = num(flag('--max-accepts'), 100_000);
@@ -106,12 +184,25 @@ console.log('sample-flat');
 console.log(`  seed:           ${seed}`);
 console.log(`  seed mode:      ${seedMode}`);
 if (seedMode === 'rich') {
-  console.log(`  σ:              uniform[${sigmaMin}, ${sigmaMax}]  (Gaussian noise around Rich)`);
-} else {
+  console.log(`  σ:              ${sigmaDist}[${sigmaMin}, ${sigmaMax}]  (Gaussian noise around Rich)`);
+} else if (seedMode === 'uniform') {
   console.log(`  seed range:     [-${seedSize}, ${seedSize}]^${N}  (uniform i.i.d.)`);
+} else {
+  console.log(`  seed file:      ${seedFileAbs}  (${seedPool.length} seeds at start)`);
+  console.log(`  σ:              ${sigmaDist}[${sigmaMin}, ${sigmaMax}]  (Gaussian noise around a random seed)`);
+  if (feedback) {
+    console.log(`  feedback:       ON  (each save also appended to seed file; pool grows unboundedly)`);
+  }
 }
+if (unitArea) console.log(`  unit-area:      ON  (every saved torus + loaded seeds normalized to area 1)`);
 console.log(`  energy:         ${energy.label}`);
 console.log(`  flow step:      ${stepSize}  (max ${maxFlowIters} iters/attempt)`);
+if (momentum > 0) {
+  console.log(`  momentum:       ${momentum}  (effective step ≈ ${(stepSize / (1 - momentum)).toExponential(2)})`);
+}
+if (earlyRejectIters > 0) {
+  console.log(`  early-reject:   if best energy hasn't dropped to ${earlyRejectRatio}× start by iter ${earlyRejectIters}`);
+}
 console.log(`  angle tol:      ${angleTol}  (verification: max |2π − coneAngle| < this)`);
 console.log(`  out:            ${baseOut}-<NNN>.csv  (full-precision Float64 CSV)`);
 console.log(`  max-tries:      ${maxTries === Infinity ? '∞' : maxTries.toLocaleString()}`);
@@ -141,6 +232,7 @@ let flowConverged = 0;
 let flowDiverged = 0;
 let flowMaxIter = 0;
 let flowStalled = 0;
+let flowRejected = 0;
 let verificationFailed = 0;
 let saved = 0;
 
@@ -229,21 +321,34 @@ process.on('SIGINT', () => {
   console.log('\n— interrupted —');
   report();
   console.log(`flow status:    converged=${flowConverged}  diverged=${flowDiverged}  `
-    + `max-iters=${flowMaxIter}  stalled=${flowStalled}`);
+    + `max-iters=${flowMaxIter}  stalled=${flowStalled}  rejected=${flowRejected}`);
   console.log(`verify fails:   ${verificationFailed} (flow said converged but check rejected)`);
   process.exit(0);
 });
 
 const reportMs = reportSecs * 1000;
 
+// Captured per-attempt for the per-save log line.
+let lastSigma = 0;
+let lastSeedIdx = -1;
+
 while (tries < maxTries && saved < maxAccepts) {
   // 1. Sample seed according to mode.
   if (seedMode === 'rich') {
-    const sigma = sigmaMin + rng() * (sigmaMax - sigmaMin);
-    for (let i = 0; i < N; i++) p[i] = base[i] + sigma * gaussian();
-  } else {
-    // uniform: each coord independently uniform in [-seedSize, seedSize]
+    lastSigma = drawSigma();
+    lastSeedIdx = -1;
+    for (let i = 0; i < N; i++) p[i] = base[i] + lastSigma * gaussian();
+  } else if (seedMode === 'uniform') {
+    // each coord independently uniform in [-seedSize, seedSize]
+    lastSigma = 0;
+    lastSeedIdx = -1;
     for (let i = 0; i < N; i++) p[i] = (rng() * 2 - 1) * seedSize;
+  } else {
+    // file: pick a random row from the loaded seed pool and add Gaussian noise.
+    lastSeedIdx = Math.floor(rng() * seedPool.length);
+    const seedRow = seedPool[lastSeedIdx];
+    lastSigma = drawSigma();
+    for (let i = 0; i < N; i++) p[i] = seedRow[i] + lastSigma * gaussian();
   }
   tries++;
 
@@ -261,15 +366,22 @@ while (tries < maxTries && saved < maxAccepts) {
     energyTol: 1e-12,
     gradientTol: 1e-12,
     maxIters: maxFlowIters,
+    momentum,
+    earlyRejectIters,
+    earlyRejectRatio,
   });
   if (fr.status === 'converged') flowConverged++;
   else if (fr.status === 'diverged') flowDiverged++;
   else if (fr.status === 'max-iters') flowMaxIter++;
   else if (fr.status === 'stalled') flowStalled++;
+  else if (fr.status === 'rejected') flowRejected++;
 
   // 4. Explicit verification: only write if flat to high precision AND embedded.
   if (fr.status === 'converged') {
     if (verify(p)) {
+      // Normalize to unit area before saving (keeps tori from blowing up; the
+      // row written here is also what feedback adds to the pool).
+      if (unitArea) normalizeUnitArea(p);
       // 5. Serialize as CSV row. .toString() is shortest exact round-trip.
       let row = p[0].toString();
       for (let i = 1; i < N; i++) row += ',' + p[i].toString();
@@ -278,6 +390,28 @@ while (tries < maxTries && saved < maxAccepts) {
       savedInPart++;
       if (buf.length >= flushEvery) flushBuf();
       if (savedInPart >= maxPerFile) rollPart();
+
+      // Feedback: append the row to the seed file AND extend the in-memory
+      // pool with a fresh copy of the current positions. Now the next
+      // perturbation can be drawn from any flat embedded torus discovered
+      // so far for this walk.
+      if (feedback) {
+        appendFileSync(seedFileAbs, row + '\n');
+        const newSeed = new Float64Array(p);
+        seedPool.push(newSeed);
+      }
+
+      // Per-save log line.
+      const elapsed = ((Date.now() - start) / 1000).toFixed(0);
+      const sigmaStr = seedMode === 'uniform' ? '   —   ' : `σ=${lastSigma.toFixed(3)}`;
+      const seedStr = seedMode === 'file' ? ` seed#${lastSeedIdx}` : '';
+      console.log(
+        `  + save #${saved.toString().padStart(5)}  `
+        + `${sigmaStr}${seedStr}  `
+        + `flow=${fr.iters.toString().padStart(5)}  `
+        + `newton-total=${fr.totalNewtonIters.toString().padStart(5)}  `
+        + `t=${elapsed.padStart(4)}s`,
+      );
     } else {
       verificationFailed++;
     }
@@ -290,5 +424,5 @@ flushBuf();
 console.log('\n— done —');
 report();
 console.log(`flow status:    converged=${flowConverged}  diverged=${flowDiverged}  `
-  + `max-iters=${flowMaxIter}  stalled=${flowStalled}`);
+  + `max-iters=${flowMaxIter}  stalled=${flowStalled}  rejected=${flowRejected}`);
 console.log(`verify fails:   ${verificationFailed} (flow said converged but check rejected)`);
