@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" width="900" height="340">
+  <rect width="900" height="340" fill="#ffffff"/>
+  <g fill="#fdf1d6" stroke="#33302a" stroke-width="3.5">
+
+    <!-- 1: lens / eye (arcs bow opposite ways) -->
+    <ellipse cx="150" cy="175" rx="135" ry="88"/>
+    <path d="M 98 165 Q 150 130 202 165 Q 150 220 98 165 Z" fill="#ffffff"/>
+
+    <!-- 2: crescent (both arcs bow down, near rim deeper) -->
+    <ellipse cx="450" cy="175" rx="135" ry="88"/>
+    <path d="M 398 158 Q 450 178 502 158 Q 450 215 398 158 Z" fill="#ffffff"/>
+
+    <!-- 3: rounded oval w/ slight corners (flatter arcs) -->
+    <ellipse cx="750" cy="175" rx="135" ry="88"/>
+    <path d="M 698 168 Q 750 150 802 168 Q 750 205 698 168 Z" fill="#ffffff"/>
+  </g>
+  <g font-family="system-ui" font-size="20" fill="#33302a" text-anchor="middle">
+    <text x="150" y="312">1  lens / eye</text>
+    <text x="450" y="312">2  crescent</text>
+    <text x="750" y="312">3  rounded</text>
+  </g>
+</svg>

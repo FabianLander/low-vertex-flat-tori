@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300" width="420" height="300">
+  <!-- Cartoon torus: an outer oval with a genus-1 hole drawn in perspective.
+       The hole is a lens formed by TWO arcs of different radii (the flatter far
+       rim on top, the deeper near rim on bottom) meeting at two corner points. -->
+  <rect width="420" height="300" fill="#ffffff"/>
+
+  <!-- donut body (outer oval) -->
+  <ellipse cx="210" cy="152" rx="186" ry="112" fill="#fdf1d6" stroke="#33302a" stroke-width="4"/>
+
+  <!-- the hole: top arc (large radius, flatter) + bottom arc (small radius, deeper),
+       meeting at the left/right corners with an angle -->
+  <path d="M 142 138
+           A 120 120 0 0 1 278 138
+           A 78 78 0 0 1 142 138 Z"
+        fill="#ffffff" stroke="#33302a" stroke-width="3.5"/>
+</svg>

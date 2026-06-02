@@ -1,0 +1,14 @@
+<svg width="500" height="330" viewBox="0 0 500 330" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="white"></rect>
+
+  <!-- outer oval -->
+  <ellipse cx="250" cy="165" rx="175" ry="95" fill="none" stroke="black" stroke-width="7" stroke-linecap="round"></ellipse>
+
+  <!-- back curve of the hole -->
+  <path d="M 175 158
+       C 195 120, 305 120, 325 158" fill="none" stroke="black" stroke-width="7" stroke-linecap="round"></path>
+
+  <!-- front curve of the hole, longer and overhanging -->
+  <path d="M 150 150
+       C 185 200, 315 200, 350 150" fill="none" stroke="black" stroke-width="7" stroke-linecap="round"></path>
+</svg>
