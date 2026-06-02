@@ -1,8 +1,8 @@
 /**
- * Flat-samples demo — normalization test on the 7 seed tori.
+ * Flat-samples demo — normalization test on Rich's torus (column 0) + 7 seeds.
  *
- * Top row:    the 7 seeds as given (gauge-centered only, for framing).
- * Bottom row: the same 7 after normalize() — the canonical similarity pose
+ * Top row:    the 8 tori as given (gauge-centered only, for framing).
+ * Bottom row: the same 8 after normalize() — the canonical similarity pose
  *             v0→(0,0,0), v1→(1,0,0), v2→xy-plane (see src/math/normalize.ts).
  *
  * The three ANCHOR vertices that define the convention are marked:
@@ -21,6 +21,7 @@ import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 import { PaperTorus } from '../../src/math/embedding';
 import { RICH } from '../../src/tori';
 import { normalize } from '../../src/math/normalize';
+import { RICH_REFERENCE } from '../../src/math/reference';
 import { TorusView } from '../../src/viewer/TorusView';
 
 const DIM = RICH.vertexCount * 3;
@@ -73,8 +74,13 @@ function displayGauge(p: Float64Array): Float64Array {
   return q;
 }
 
-const seeds = parseRaw(seedsRaw);
-const N = seeds.length;
+// Column 0 = Rich's reference embedding, columns 1..7 = the seeds (in order).
+type Item = { raw: Float64Array; label: string; color: number };
+const items: Item[] = [
+  { raw: Float64Array.from(RICH_REFERENCE.positions), label: '0', color: 0xffffff },
+  ...parseRaw(seedsRaw).map((raw, i) => ({ raw, label: String(i + 1), color: PALETTE[i % PALETTE.length] })),
+];
+const N = items.length;
 
 // ---------------- scene ----------------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -114,17 +120,17 @@ function addTorus(p24: Float64Array, x: number, y: number, colHex: number): void
   scene.add(view);
 }
 
-seeds.forEach((raw, i) => {
+items.forEach((item, i) => {
   const x = (i - (N - 1) / 2) * SPACING;
-  addTorus(displayGauge(raw), x, TOP_Y, PALETTE[i % PALETTE.length]);   // top: raw
-  addTorus(normalize(raw), x, BOT_Y, PALETTE[i % PALETTE.length]);      // bottom: canonical
+  addTorus(displayGauge(item.raw), x, TOP_Y, item.color);   // top: raw
+  addTorus(normalize(item.raw), x, BOT_Y, item.color);      // bottom: canonical
 
   // coordinate frame under each normalized torus: its origin IS v0, +x carries v1.
   const axes = new THREE.AxesHelper(1.0);
   axes.position.set(x, BOT_Y, 0);
   scene.add(axes);
 
-  tags.push({ anchor: new THREE.Vector3(x, (TOP_Y + BOT_Y) / 2, 0), text: String(i + 1) });
+  tags.push({ anchor: new THREE.Vector3(x, (TOP_Y + BOT_Y) / 2, 0), text: item.label });
 });
 // row labels at the left end
 const leftX = (-(N - 1) / 2) * SPACING - SPACING * 0.75;
@@ -170,7 +176,7 @@ panel.style.cssText = [
 ].join(';');
 const swatch = (hex: string) => `<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${hex};vertical-align:middle;margin:0 5px 2px 0"></span>`;
 panel.innerHTML =
-  '<b>Normalization test — 7 seed tori</b><br>'
+  '<b>Normalization test — Rich (0) + 7 seeds</b><br>'
   + 'top: as given &nbsp;·&nbsp; bottom: canonical pose<br>'
   + '<div style="margin-top:6px">anchors:<br>'
   + `${swatch('#ffffff')}v0 → origin<br>`
