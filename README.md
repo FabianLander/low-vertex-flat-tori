@@ -100,5 +100,26 @@ a `PaperTorus`'s `positions`. Values round-trip to their double-precision repres
 
 The `.bin` files from `scripts/sample-embedded.mjs` are Float32, same 24-float packing
 (96 bytes/sample).
+
+## Normalization convention
+
+`src/math/normalize.ts` puts an 8-vertex torus into a **canonical pose** under the similarity
+group of ℝ³ (translation ⊕ rotation ⊕ uniform scale = 7 continuous degrees of freedom). This is
+the project-wide convention; use it whenever a torus needs a canonical representative.
+
+`normalize(p)` does, in order:
+
+1. **Translate** so vertex 0 is at the origin.
+2. **Rotate + uniformly scale** so vertex 1 is at (1, 0, 0) — scale by 1/|v₁−v₀|, then rotate that
+   direction onto the +x axis.
+3. **Rotate about the x-axis** so vertex 2 lies in the xy-plane (z₂ = 0), choosing the half-turn
+   that puts it on the +y side (**y₂ ≥ 0**).
+
+The three **anchor vertices** are then pinned to v₀ = (0,0,0), v₁ = (1,0,0), v₂ = (x₂, y₂, 0) with
+y₂ ≥ 0. This removes exactly the 7 similarity DOF (3 translation + 3 rotation + 1 scale), so the
+free data is **24 − 7 = 17** numbers: `[x₂, y₂, v3(3), v4(3), v5(3), v6(3), v7(3)]`.
+`toReduced(p)` returns those 17; `fromReduced(r)` rebuilds the full 24 (`fromReduced∘toReduced =
+normalize`). Only **proper** rotations are used (e₃ = e₁×e₂ right-handed), so reflection/chirality
+is preserved, not quotiented — a Z/2 that doesn't change the count of 17.
 </content>
 </invoke>
