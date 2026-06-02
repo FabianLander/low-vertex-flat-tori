@@ -75,7 +75,7 @@ const seedSources: { src: ArrayLike<number>; label: string; color: string; isRic
 ];
 parseRows(seedsRaw).forEach((p, i) =>
   seedSources.push({ src: p, label: String(i + 1), color: PALETTE[i % PALETTE.length], isRich: false }));
-const seeds: Seed[] = seedSources.map((s) => ({ label: s.label, color: s.color, isRich: s.isRich, tau: modulus(s.src).tau }));
+const seeds: Seed[] = seedSources.map((s) => ({ label: s.label, color: s.color, isRich: s.isRich, tau: modulus(RICH, s.src).tau }));
 
 // Data bounds over all τ (cloud points + seed markers), used for the initial fit.
 const bounds = (() => {
