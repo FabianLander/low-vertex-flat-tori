@@ -72,8 +72,12 @@ npm run build <demo>      # self-contained build → dist/<demo>/
 npm run preview <demo>
 ```
 
-> Heads-up: `npm run dev <demo>` rewrites `index.html` (a tracked file) to point at the chosen
-> demo, so `git status` will show `index.html` modified after switching demos.
+> `npm run dev <demo>` writes a private entry to `.dev/<demo>.html` (gitignored) and serves it on
+> a **stable per-demo port** (a hash of the name, in 5200–5599) — so each demo always lives at the
+> same URL and two demos never collide. Run them in separate terminals in parallel; re-running a
+> demo that's already up just prints its URL. `build`/`preview` still rewrite the tracked
+> `index.html` (they run one at a time and emit a self-contained `dist/<demo>/`), so `git status`
+> shows `index.html` modified after a build.
 
 Available demos: `reference`, `animate`, `grid`, `grid-25`, `flat-samples`, `develop`,
 `develop-orig-7`, `develop-walk4u`, `placeholder`.

@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+# Per-demo dev HTML entries from `npm run dev` (isolated so concurrent dev
+# servers don't clobber a shared index.html).
+/.dev
 # Raw sampler scratch at repo root only — curated finds live in
 # demos/flat-samples/samples/ and ARE tracked. Anchored with a leading
 # slash so it doesn't also match that nested directory.
