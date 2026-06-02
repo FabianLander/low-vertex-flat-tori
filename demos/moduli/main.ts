@@ -19,6 +19,8 @@
 
 import { VERTEX_COUNT } from '../../src/math/topology';
 import { modulus, type V2 } from '../../src/math/develop';
+import { RICH_REFERENCE } from '../../src/math/reference';
+import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 
 const DIM = VERTEX_COUNT * 3;
 const ROT_TOL = 1e-5; // skip any row whose holonomy isn't a pure translation
@@ -63,13 +65,27 @@ const classes: Klass[] = Object.keys(seedFiles)
 
 const totalPts = classes.reduce((s, c) => s + c.pts.length, 0);
 
-// Data bounds over all τ (used for the initial fit).
+// ---- the 8 SEED markers: 0 = Rich's reference embedding, 1..7 = seeds.csv ----
+// These are the starting tori of the seven explorations (plus Rich's). Overlaid
+// on the clouds so you can see where each seed lands — and that each cloud is
+// the orbit wandering out from its seed.
+type Seed = { label: string; tau: V2; color: string; isRich: boolean };
+const seedSources: { src: ArrayLike<number>; label: string; color: string; isRich: boolean }[] = [
+  { src: RICH_REFERENCE.positions, label: '0', color: '#ffffff', isRich: true },
+];
+parseRows(seedsRaw).forEach((p, i) =>
+  seedSources.push({ src: p, label: String(i + 1), color: PALETTE[i % PALETTE.length], isRich: false }));
+const seeds: Seed[] = seedSources.map((s) => ({ label: s.label, color: s.color, isRich: s.isRich, tau: modulus(s.src).tau }));
+
+// Data bounds over all τ (cloud points + seed markers), used for the initial fit.
 const bounds = (() => {
   let minRe = Infinity, maxRe = -Infinity, minIm = Infinity, maxIm = -Infinity;
-  for (const c of classes) for (const [re, im] of c.pts) {
+  const acc = (re: number, im: number) => {
     if (re < minRe) minRe = re; if (re > maxRe) maxRe = re;
     if (im < minIm) minIm = im; if (im > maxIm) maxIm = im;
-  }
+  };
+  for (const c of classes) for (const [re, im] of c.pts) acc(re, im);
+  for (const s of seeds) acc(s.tau[0], s.tau[1]);
   return { minRe, maxRe, minIm, maxIm };
 })();
 
@@ -175,6 +191,28 @@ function drawPoints(): void {
   ctx.globalAlpha = 1;
 }
 
+// ---- seed markers (0 = Rich, 1..7 = seeds), drawn on top of the clouds ----
+function relLum(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function drawSeeds(): void {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 10px ui-monospace, monospace';
+  for (const s of seeds) {
+    const X = sx(s.tau[0]), Y = sy(s.tau[1]);
+    ctx.beginPath(); ctx.arc(X, Y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = s.color; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#0e0e12'; ctx.stroke();          // dark rim for contrast on any cloud
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath(); ctx.arc(X, Y, 8.5, 0, Math.PI * 2); ctx.stroke();      // thin white halo
+    ctx.fillStyle = relLum(s.color) > 0.6 ? '#0e0e12' : '#ffffff';         // legible digit
+    ctx.fillText(s.label, X, Y + 0.5);
+  }
+}
+
 // ---- legend (top-left), click a row to toggle a class ----
 type LegendHit = { x: number; y: number; w: number; h: number; klass: Klass };
 let legendHits: LegendHit[] = [];
@@ -186,8 +224,11 @@ function drawLegend(): void {
   // title
   ctx.fillStyle = 'rgba(232,232,236,0.95)';
   ctx.fillText(`moduli τ ∈ ℍ — ${totalPts.toLocaleString()} tori, ${classes.length} classes`, x0, y0 + 8);
+  ctx.fillStyle = 'rgba(180,186,200,0.75)'; ctx.font = '11px ui-monospace, monospace';
+  ctx.fillText('◯ seed markers: 0 = Rich, 1–7 = seeds', x0, y0 + 26);
+  ctx.font = '13px ui-monospace, monospace';
   classes.forEach((c, i) => {
-    const y = y0 + 26 + i * rowH;
+    const y = y0 + 48 + i * rowH;
     legendHits.push({ x: x0 - 4, y: y - rowH / 2, w: 180, h: rowH, klass: c });
     ctx.globalAlpha = c.visible ? 1 : 0.35;
     ctx.fillStyle = c.color;
@@ -202,6 +243,29 @@ function drawLegend(): void {
 let hover: { x: number; y: number } | null = null;
 function drawHover(): void {
   if (!hover) return;
+
+  // Seed markers take priority (they sit on top of the clouds).
+  let bSeed: Seed | null = null, bSeedD = Infinity;
+  for (const s of seeds) {
+    const dx = sx(s.tau[0]) - hover.x, dy = sy(s.tau[1]) - hover.y, d2 = dx * dx + dy * dy;
+    if (d2 < 10 * 10 && d2 < bSeedD) { bSeedD = d2; bSeed = s; }
+  }
+  if (bSeed) {
+    const X = sx(bSeed.tau[0]), Y = sy(bSeed.tau[1]);
+    const name = bSeed.isRich ? 'Rich (seed 0)' : `seed-${bSeed.label}`;
+    const label = `${name}   τ = ${bSeed.tau[0].toFixed(4)} ${bSeed.tau[1] >= 0 ? '+' : '−'} ${Math.abs(bSeed.tau[1]).toFixed(4)}i`;
+    ctx.font = '12px ui-monospace, monospace';
+    const w = ctx.measureText(label).width + 14;
+    let bx = X + 12, by = Y - 30;
+    if (bx + w > window.innerWidth) bx = X - 12 - w;
+    if (by < 0) by = Y + 14;
+    ctx.fillStyle = 'rgba(20,22,30,0.95)'; ctx.fillRect(bx, by, w, 22);
+    ctx.strokeStyle = bSeed.color; ctx.lineWidth = 1.2; ctx.strokeRect(bx, by, w, 22);
+    ctx.fillStyle = '#e8e8ec'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, bx + 7, by + 12);
+    return;
+  }
+
   const pr = 14; // px search radius
   let best: { c: Klass; re: number; im: number; d2: number } | null = null;
   for (const c of classes) {
@@ -232,6 +296,7 @@ function draw(): void {
   ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
   drawAxes();
   drawPoints();
+  drawSeeds();
   drawLegend();
   drawHover();
 }
