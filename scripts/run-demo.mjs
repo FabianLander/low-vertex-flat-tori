@@ -1,32 +1,52 @@
-import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { execSync } from 'child_process';
 import net from 'net';
 
 const root = resolve(import.meta.dirname, '..');
-const demosDir = resolve(root, 'demos');
 const indexPath = resolve(root, 'index.html');
+
+// A view can live in demos/ (interactive tools for the search) or renders/
+// (render-oriented views, e.g. the path tracer). Both are discovered the same way.
+const BASE_DIRS = ['demos', 'renders'];
+
+function listViews() {
+  const out = [];
+  for (const base of BASE_DIRS) {
+    const dir = resolve(root, base);
+    if (!existsSync(dir)) continue;
+    for (const d of readdirSync(dir, { withFileTypes: true })) if (d.isDirectory()) out.push({ base, name: d.name });
+  }
+  return out;
+}
+function baseFor(name) {
+  for (const base of BASE_DIRS) if (existsSync(resolve(root, base, name, 'main.ts'))) return base;
+  return null;
+}
 
 const [command, demoName] = process.argv.slice(2);
 
 if (!demoName) {
-  const demos = readdirSync(demosDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
-  console.log('Usage: npm run dev <demo-name>\n');
-  console.log('Available demos:');
-  for (const d of demos) console.log(`  ${d}`);
+  console.log('Usage: npm run dev <name>\n');
+  console.log('Available:');
+  for (const { base, name } of listViews()) console.log(`  ${name.padEnd(20)} (${base}/)`);
   process.exit(1);
 }
 
-// Title-case the demo name for the page <title>: "develop-grid" → "Develop Grid".
+const base = baseFor(demoName);
+if (!base) {
+  console.error(`'${demoName}' not found in ${BASE_DIRS.map((d) => d + '/').join(' or ')}`);
+  process.exit(1);
+}
+
+// Title-case the name for the page <title>: "develop-grid" → "Develop Grid".
 const title = demoName.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-// Build a demo's HTML from the tracked index.html template (keeps styling in
-// one place) by swapping the entry script src and the <title>.
+// Build the HTML from the tracked index.html template (keeps styling in one
+// place) by swapping the entry script src (to demos/ or renders/) and the <title>.
 function htmlFor(name) {
   return readFileSync(indexPath, 'utf8')
-    .replace(/src="\/demos\/[^"]+\/main\.ts"/, `src="/demos/${name}/main.ts"`)
+    .replace(/src="\/(?:demos|renders)\/[^"]+\/main\.ts"/, `src="/${base}/${name}/main.ts"`)
     .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
 }
 

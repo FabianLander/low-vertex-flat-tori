@@ -75,13 +75,16 @@ function buildTorus(cx: number, cy: number, scale: number): PlaneCurve[] {
   ];
 }
 
+// ---- trace parameters (edit here) ----
+const CENTER: Vec2 = [0.07, 0.98]; // torus center in τ
+const DIAMETER = 0.05;             // outer-oval diameter in τ
+const N_POINTS = 100;              // points sampled along the outline
+const TUBE = 0.02;                 // max distance from the curve to accept a point
+
 // ---- state ----
-// Place the torus centered at (0.07, 0.98) with outer-oval diameter 0.05 in τ.
-const CENTER: Vec2 = [0.07, 0.98];
-const DIAMETER = 0.05;
 const baseScale = (DIAMETER / 2) / TORUS_HALF_W;
 let tx = CENTER[0], ty = CENTER[1], scale = baseScale;
-let count = 60, maxDist = 0.02;
+let count = N_POINTS, maxDist = TUBE;
 let showCloud = true, showCurve = true;
 let torus = buildTorus(tx, ty, scale);
 

@@ -16,13 +16,15 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@types/three": "^0.181.0",
+    "@types/three": "^0.184.1",
+    "three-gpu-pathtracer": "^0.0.24",
+    "three-mesh-bvh": "^0.9.10",
     "tsx": "^4.22.3",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "three": "^0.181.2"
+    "three": "^0.184.0"
   }
 }
