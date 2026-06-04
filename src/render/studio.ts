@@ -37,6 +37,9 @@ export interface StudioOptions {
   mode?: RenderMode;
   /** Called whenever the backend switches (e.g. to swap preview ↔ studio lights). */
   onModeChange?: (mode: RenderMode) => void;
+  /** Letterbox the canvas to this width/height aspect ratio inside the window
+   *  (e.g. 16/9, 1, 4/5) so it's framed precisely. Omit to fill the window. */
+  aspect?: number;
 }
 
 export class Studio {
@@ -47,38 +50,45 @@ export class Studio {
 
   private pathTracer?: WebGLPathTracer;
   private mode: RenderMode;
-  private readonly bounces: number;
+  private _bounces: number;
   private readonly pathTraceScale: number;
   private readonly basePixelRatio: number;
+  private _aspect?: number;
   private readonly onModeChange?: (mode: RenderMode) => void;
 
   // Auto-sync tracking (mirrors RenderManager).
   private lastEnvironment: THREE.Texture | null = null;
   private materialsDirty = false;
 
+  // Autosave-every-N-spp.
+  private _autosaveEvery = 0;
+  private _autosaveNext = 0;
+  private _autosaveName = 'render';
+
   private running = false;
 
   constructor(opts: StudioOptions = {}) {
     const container = opts.container ?? document.body;
-    this.bounces = opts.bounces ?? 5;
+    this._bounces = opts.bounces ?? 5;
     this.mode = opts.mode ?? 'webgl';
     this.onModeChange = opts.onModeChange;
 
     const pixelRatio = opts.pixelRatio ?? Math.min(window.devicePixelRatio, 2);
     this.basePixelRatio = pixelRatio;
     this.pathTraceScale = opts.pathTraceScale ?? 1 / pixelRatio;
+    this._aspect = opts.aspect;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(pixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     container.appendChild(this.renderer.domElement);
+    this.applyAspectStyle();
 
     this.scene = new THREE.Scene();
 
-    this.camera = new PhysicalCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+    this.camera = new PhysicalCamera(45, 1, 0.01, 100);
     this.camera.position.set(2.6, 1.8, 3.0);
-    // DOF effectively off until the caller dials it in (PhysicalCamera defaults to a wide f/1.4).
-    this.camera.fStop = 1e5;
+    this.camera.fStop = 1e5;   // DOF off until the caller dials it in
+    this.applySize();
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -146,6 +156,11 @@ export class Studio {
         this.resetAccumulation();
       }
       this.pathTracer.renderSample();
+      if (this._autosaveEvery > 0 && this.pathTracer.samples >= this._autosaveNext) {
+        const spp = Math.floor(this.pathTracer.samples);
+        this._autosaveNext += this._autosaveEvery;
+        this.screenshot(`${this._autosaveName}-${spp}spp.png`);
+      }
     } else {
       this.renderer.render(this.scene, this.camera);
     }
@@ -156,26 +171,99 @@ export class Studio {
     return this.mode === 'pathtracing' && this.pathTracer ? this.pathTracer.samples : 0;
   }
 
-  /** Multiply the render + screenshot resolution: 1 = screen, 2 = 2× per axis
-   *  (4× the pixels), etc. The canvas still displays at window size; the path
-   *  tracer re-targets to the bigger buffer on the next reset. Clamped so the
-   *  buffer stays within the GPU's max texture size. */
-  setResolutionScale(mult: number): void {
-    const safe = this.clampMult(mult);
-    // Full resize (mirrors onResize) so the drawing buffer, viewport, camera and
-    // the path-tracer target all stay in sync — otherwise the render fills only
-    // part of the enlarged buffer and a save shows blank margins.
-    this.renderer.setPixelRatio(this.basePixelRatio * safe);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    if (this.mode === 'pathtracing') this.pathTracer?.updateCamera(); // resizes target + resets
+  /** Max light bounces (path-trace quality/GI). */
+  get bounces(): number { return this._bounces; }
+  setBounces(n: number): void {
+    this._bounces = Math.max(1, Math.round(n));
+    if (this.pathTracer) { this.pathTracer.bounces = this._bounces; this.resetAccumulation(); }
   }
 
+  /** Letterbox aspect ratio (w/h), or undefined to fill the window. */
+  get aspect(): number | undefined { return this._aspect; }
+  setAspect(ratio: number | null): void {
+    this._aspect = ratio && ratio > 0 ? ratio : undefined;
+    this.applyAspectStyle();
+    this.applySize();
+    if (this.mode === 'pathtracing') this.pathTracer?.updateCamera();
+  }
+
+  /** Center + dark-surround the canvas when letterboxed; fill the window otherwise. */
+  private applyAspectStyle(): void {
+    const el = this.renderer.domElement;
+    if (this._aspect) {
+      el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%)';
+      document.body.style.background = '#1a1a1a';
+    } else {
+      el.style.cssText = '';
+      document.body.style.background = '';
+    }
+  }
+
+  /** Canvas size in CSS px: full window, or the largest `aspect` rect that fits. */
+  private viewportSize(): { w: number; h: number } {
+    const W = window.innerWidth, H = window.innerHeight;
+    if (!this._aspect) return { w: W, h: H };
+    let w = W, h = Math.round(W / this._aspect);
+    if (h > H) { h = H; w = Math.round(H * this._aspect); }
+    return { w, h };
+  }
+
+  /** Resize the renderer + camera to the current viewport (window or letterbox). */
+  private applySize(): void {
+    const { w, h } = this.viewportSize();
+    this.renderer.setSize(w, h);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** Auto-tile the path trace: ~1 tile per ~1.2 MP, so a small render stays a
+   *  single fast tile and a big one is split into enough pieces to keep each GPU
+   *  draw short (no watchdog freeze). Same total work, just chunked when needed. */
+  private applyTiles(): void {
+    if (!this.pathTracer) return;
+    const v = new THREE.Vector2();
+    this.renderer.getDrawingBufferSize(v);
+    const n = Math.max(1, Math.ceil(Math.sqrt((v.x * v.y) / 1.2e6)));
+    this.pathTracer.tiles.set(n, n);
+  }
+
+  /** Multiply the render + screenshot resolution: 1 = screen, 2 = 2× per axis
+   *  (4× the pixels), etc. The canvas still displays at its on-screen size; the
+   *  path tracer re-targets to the bigger buffer on the next reset. Clamped to
+   *  the GPU's limits. */
+  setResolutionScale(mult: number): void {
+    const safe = this.clampMult(mult);
+    if (safe < mult) {
+      const s = this.predictRenderSize(mult);
+      console.warn(`[studio] ${mult}× exceeds GPU limits; rendering at ${safe}× (${s.width}×${s.height}) instead.`);
+    }
+    // Full resize (mirrors onResize) so the drawing buffer, viewport, camera and
+    // the path-tracer target stay in sync — otherwise the render fills only part
+    // of the enlarged buffer and a save shows blank margins.
+    this.renderer.setPixelRatio(this.basePixelRatio * safe);
+    this.applySize();
+    if (this.mode === 'pathtracing') { this.pathTracer?.updateCamera(); this.applyTiles(); } // resize target + retile
+  }
+
+  /** Largest safe integer multiplier: limited by the GPU's max texture / viewport
+   *  size AND a total-pixel cap (the path tracer holds several float targets, so
+   *  an over-large buffer renders only partially or fails). */
   private clampMult(mult: number): number {
-    const max = this.renderer.capabilities.maxTextureSize || 8192;
-    const longest = Math.max(window.innerWidth, window.innerHeight) * this.basePixelRatio;
-    return Math.min(mult, Math.max(1, Math.floor(max / longest)));
+    const gl = this.renderer.getContext();
+    const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array | null;
+    const dimLimit = Math.min(
+      this.renderer.capabilities.maxTextureSize || 8192,
+      vp ? Math.min(vp[0], vp[1]) : Infinity,
+    );
+    const { w, h } = this.viewportSize();
+    const longest = Math.max(w, h) * this.basePixelRatio;
+    const byDim = Math.floor(dimLimit / longest);
+
+    const MAX_PIXELS = 100e6; // ~100 MP cap — big exports while keeping the float targets within memory
+    const baseArea = w * h * this.basePixelRatio * this.basePixelRatio;
+    const byArea = Math.floor(Math.sqrt(MAX_PIXELS / baseArea));
+
+    return Math.max(1, Math.min(mult, byDim, byArea));
   }
 
   /** Current render-target size in device pixels (= the size a screenshot will be). */
@@ -188,9 +276,10 @@ export class Studio {
   /** Predicted output size for a given multiplier (clamped to the GPU limit). */
   predictRenderSize(mult: number): { width: number; height: number } {
     const m = this.clampMult(mult);
+    const { w, h } = this.viewportSize();
     return {
-      width: Math.round(window.innerWidth * this.basePixelRatio * m),
-      height: Math.round(window.innerHeight * this.basePixelRatio * m),
+      width: Math.round(w * this.basePixelRatio * m),
+      height: Math.round(h * this.basePixelRatio * m),
     };
   }
 
@@ -213,11 +302,12 @@ export class Studio {
   enablePathTracing(): void {
     if (!this.pathTracer) {
       this.pathTracer = new WebGLPathTracer(this.renderer);
-      this.pathTracer.bounces = this.bounces;
+      this.pathTracer.bounces = this._bounces;
       this.pathTracer.renderScale = this.pathTraceScale;     // trace at logical res, not 4× for retina
     }
     this.mode = 'pathtracing';
     this.pathTracer.setScene(this.scene, this.camera);     // builds the BVH
+    this.applyTiles();
     this.pathTracer.updateMaterials();
     if (this.scene.environment) this.pathTracer.updateEnvironment();
     this.lastEnvironment = this.scene.environment;
@@ -239,7 +329,15 @@ export class Studio {
 
   // ---- the reset / sync contract -----------------------------------------
 
-  resetAccumulation(): void { this.pathTracer?.reset(); }
+  resetAccumulation(): void { this.pathTracer?.reset(); this._autosaveNext = this._autosaveEvery; }
+
+  /** Auto-download a PNG every `everySpp` accumulated samples (0 = off). Filenames
+   *  get the spp count, e.g. flat-tori-grid-1000spp.png — handy for long renders. */
+  setAutosave(everySpp: number, baseName = 'render'): void {
+    this._autosaveEvery = Math.max(0, Math.floor(everySpp));
+    this._autosaveName = baseName.replace(/\.png$/i, '');
+    this._autosaveNext = this._autosaveEvery;
+  }
 
   /** Materials changed while tracing — re-sync on the next frame. */
   notifyMaterialsChanged(): void { this.materialsDirty = true; }
@@ -254,9 +352,7 @@ export class Studio {
   }
 
   private onResize = (): void => {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.applySize();
     if (this.mode === 'pathtracing') this.pathTracer?.updateCamera();
   };
 

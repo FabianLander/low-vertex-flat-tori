@@ -32,7 +32,7 @@ export function plainFaceMaterial(color = 0xb8902a): THREE.MeshStandardMaterial 
   });
 }
 
-export function creaseEdgeMaterial(color = 0x3a2210): THREE.MeshStandardMaterial {
+export function creaseEdgeMaterial(color: THREE.ColorRepresentation = 0x3a2210): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.5 });
 }
 

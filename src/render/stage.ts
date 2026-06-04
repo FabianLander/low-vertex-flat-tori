@@ -52,10 +52,10 @@ export function softSpot(opts: SpotOptions = {}): PhysicalSpotLight {
 }
 
 /** A vertical backdrop plane (faces +Z toward the camera), set to receive shadows. */
-export function backWall(opts: { color?: number; width?: number; height?: number } = {}): THREE.Mesh {
+export function backWall(opts: { color?: THREE.ColorRepresentation; width?: number; height?: number; roughness?: number } = {}): THREE.Mesh {
   const wall = new THREE.Mesh(
     new THREE.PlaneGeometry(opts.width ?? 40, opts.height ?? 28),
-    new THREE.MeshStandardMaterial({ color: opts.color ?? 0xced3da, roughness: 0.8 }),
+    new THREE.MeshStandardMaterial({ color: opts.color ?? 0xced3da, roughness: opts.roughness ?? 0.8, metalness: 0 }),
   );
   wall.receiveShadow = true;
   return wall;
