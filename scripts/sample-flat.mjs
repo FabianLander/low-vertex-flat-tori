@@ -60,11 +60,11 @@
  * Ctrl-C flushes the pending buffer and exits cleanly.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
 import { RICH_REFERENCE } from '../src/math/reference.ts';
-import { mulberry32 } from '../src/math/perturb.ts';
+import { makeRng } from '../src/math/perturb.ts';
 import { byId } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
@@ -96,6 +96,7 @@ const torus = byId(num(flag('--type'), 7)); // which of the 7 types (default 7 =
 const N = torus.vertexCount * 3;             // 24
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
+const rngName = flag('--rng') ?? 'xoshiro';   // 'xoshiro' (default, 2^128) | 'mulberry' (legacy, 2^32)
 const seedMode = flag('--seed-mode') ?? 'rich';
 if (seedMode === 'rich' && torus.id !== 7) { console.error(`--seed-mode rich perturbs Rich's #7 reference embedding; type ${torus.id} has none — use --seed-mode uniform`); process.exit(1); }
 const seedSize = num(flag('--seed-size'), 1.0);
@@ -184,6 +185,8 @@ if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 const pathForPart = (n) => `${baseOut}-${n.toString().padStart(3, '0')}.csv`;
 
 console.log('sample-flat');
+console.log(`  type:           #${torus.id}`);
+console.log(`  rng:            ${rngName}`);
 console.log(`  seed:           ${seed}`);
 console.log(`  seed mode:      ${seedMode}`);
 if (seedMode === 'rich') {
@@ -215,7 +218,41 @@ console.log(`  report:         every ${reportSecs}s`);
 console.log('  ctrl-C to stop early; pending buffer is flushed.');
 console.log();
 
-const rng = mulberry32(seed);
+// Run manifest: a sidecar .params.txt next to the output documenting the exact
+// resolved configuration (no dates/timestamps). Written once at startup.
+{
+  const pairs = [
+    ['script', 'sample-flat'],
+    ['type', `#${torus.id} (${torus.name})`],
+    ['rng', rngName],
+    ['seed', seed],
+    ['seed-mode', seedMode],
+  ];
+  if (seedMode === 'uniform') pairs.push(['seed-size', seedSize]);
+  if (seedMode === 'rich' || seedMode === 'file') {
+    pairs.push(['sigma-dist', sigmaDist], ['sigma-min', sigmaMin], ['sigma-max', sigmaMax]);
+  }
+  if (seedMode === 'file') pairs.push(['seed-file', seedFileAbs], ['feedback', feedback]);
+  pairs.push(
+    ['unit-area', unitArea],
+    ['energy', energyName],
+    ['step-size', stepSize],
+    ['max-flow-iters', maxFlowIters],
+    ['momentum', momentum],
+    ['early-reject-iters', earlyRejectIters],
+    ['early-reject-ratio', earlyRejectRatio],
+    ['angle-tol', angleTol],
+    ['max-tries', maxTries === Infinity ? 'inf' : maxTries],
+    ['max-accepts', maxAccepts === Infinity ? 'inf' : maxAccepts],
+    ['max-per-file', maxPerFile],
+  );
+  const w = Math.max(...pairs.map(([k]) => k.length));
+  const text = pairs.map(([k, v]) => `${k.padEnd(w)}  ${v}`).join('\n') + '\n';
+  writeFileSync(`${baseOut}.params.txt`, text);
+  console.log(`  params:         ${baseOut}.params.txt`);
+}
+
+const rng = makeRng(rngName, seed);
 const base = RICH_REFERENCE.positions;       // Float64
 const p = new Float64Array(N);
 

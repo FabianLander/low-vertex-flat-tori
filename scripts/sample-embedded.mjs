@@ -31,11 +31,11 @@
  *   // sample i = arr.subarray(i * 24, (i + 1) * 24)
  */
 
-import { appendFileSync, existsSync, mkdirSync, statSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
 import { isEmbedded } from '../src/math/embedded.ts';
-import { mulberry32 } from '../src/math/perturb.ts';
+import { makeRng } from '../src/math/perturb.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { RICH } from '../src/tori/index.ts';
 
@@ -54,6 +54,7 @@ function num(value, defaultVal) {
 }
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
+const rngName = flag('--rng') ?? 'xoshiro';   // 'xoshiro' (default, 2^128) | 'mulberry' (legacy, 2^32)
 const size = num(flag('--size'), 1.0);
 const maxTries = num(flag('--max-tries'), Infinity);
 const maxAccepts = num(flag('--max-accepts'), 1_000_000);
@@ -71,6 +72,7 @@ if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 const pathForPart = (label, n) => `${baseOut}-${label}-${n.toString().padStart(3, '0')}.bin`;
 
 console.log('sample-embedded');
+console.log(`  rng:            ${rngName}`);
 console.log(`  seed:           ${seed}`);
 console.log(`  cube:           [-${size}, ${size}]^${N}`);
 console.log(`  embedded out:   ${baseOut}-emb-<NNN>.bin`);
@@ -86,7 +88,28 @@ console.log(`  max-per-file:   ${maxPerFile.toLocaleString()}`);
 console.log('  ctrl-C to stop early; pending buffers are flushed.');
 console.log();
 
-const rng = mulberry32(seed);
+// Run manifest: sidecar .params.txt next to the output (no dates/timestamps).
+{
+  const pairs = [
+    ['script', 'sample-embedded'],
+    ['type', `#${RICH.id} (${RICH.name})`],
+    ['rng', rngName],
+    ['seed', seed],
+    ['size', size],
+    ['flatten', flatten],
+  ];
+  if (flatten) pairs.push(['newton-tol', newtonTol]);
+  pairs.push(
+    ['max-tries', maxTries === Infinity ? 'inf' : maxTries],
+    ['max-accepts', maxAccepts === Infinity ? 'inf' : maxAccepts],
+    ['max-per-file', maxPerFile],
+  );
+  const w = Math.max(...pairs.map(([k]) => k.length));
+  const text = pairs.map(([k, v]) => `${k.padEnd(w)}  ${v}`).join('\n') + '\n';
+  writeFileSync(`${baseOut}.params.txt`, text);
+}
+
+const rng = makeRng(rngName, seed);
 const p = new Float64Array(N);
 const pCopy = new Float64Array(N);
 

@@ -39,10 +39,10 @@
  * Ctrl-C flushes the pending buffer and exits cleanly.
  */
 
-import { appendFileSync, existsSync, mkdirSync, rmSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
-import { mulberry32 } from '../src/math/perturb.ts';
+import { makeRng } from '../src/math/perturb.ts';
 import { byId } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
@@ -57,6 +57,7 @@ const N = torus.vertexCount * 3;             // 24
 
 const count = num(flag('--count'), 50_000);
 const seed = num(flag('--seed'), Date.now() >>> 0);
+const rngName = flag('--rng') ?? 'xoshiro';   // 'xoshiro' (default, 2^128) | 'mulberry' (legacy, 2^32)
 const tol = num(flag('--tol'), 1e-10);
 const minArea = num(flag('--min-area'), 1e-9);
 const maxNewton = num(flag('--max-newton'), 50);
@@ -70,6 +71,7 @@ if (existsSync(outPath)) rmSync(outPath);  // fresh file; we append as we go
 console.log('sample-immersed');
 console.log(`  torus:        type ${torus.id} (${torus.name}) deg[${torus.degreeSequence}]`);
 console.log(`  count:        ${count.toLocaleString()}`);
+console.log(`  rng:          ${rngName}`);
 console.log(`  seed:         ${seed}`);
 console.log(`  cube:         [-1, 1]^${N}  (uniform i.i.d. start, discard if flattened result leaves it)`);
 console.log(`  newton tol:   ${tol}  (max |2π − coneAngle|; cap ${maxNewton} iters)`);
@@ -77,7 +79,24 @@ console.log(`  min tri area: ${minArea}  (immersion guard: reject collapsed tria
 console.log(`  out:          ${outPath}`);
 console.log('  ctrl-C to stop early; pending buffer is flushed.\n');
 
-const rng = mulberry32(seed);
+// Run manifest: sidecar .params.txt next to the output (no dates/timestamps).
+{
+  const pairs = [
+    ['script', 'sample-immersed'],
+    ['type', `#${torus.id} (${torus.name})`],
+    ['rng', rngName],
+    ['seed', seed],
+    ['count', count],
+    ['tol', tol],
+    ['min-area', minArea],
+    ['max-newton', maxNewton],
+  ];
+  const w = Math.max(...pairs.map(([k]) => k.length));
+  const text = pairs.map(([k, v]) => `${k.padEnd(w)}  ${v}`).join('\n') + '\n';
+  writeFileSync(outPath.replace(/\.csv$/, '') + '.params.txt', text);
+}
+
+const rng = makeRng(rngName, seed);
 const p = new Float64Array(N);
 
 // --- smallest triangle area, to reject degenerate (non-immersion) realizations.
