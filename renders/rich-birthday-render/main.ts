@@ -1,6 +1,6 @@
 /**
- * render-grid — a fine-art grid of paper-textured flat tori, one per row of the
- * CSV(s) in this folder (each row = an embedding as 24 numbers of `CONFIG.torus`).
+ * rich-birthday-render — a fine-art grid of paper-textured flat tori, one per row
+ * of the CSV(s) in this folder (each row = an embedding as 24 numbers of `CONFIG.torus`).
  *
  * Everything tunable lives in CONFIG below — the four main COLORS are grouped at
  * the very top, then the paper surface, layout, plane, and lighting (a soft
@@ -225,7 +225,7 @@ function toggleEdges(): void {
 // Clean frame: no HUD, no color pickers — just the Render button. (Colors are
 // set in CONFIG above; V toggles the edge tubes.)
 attachRenderControls(studio, {
-  filename: 'flat-tori-grid.png',
+  filename: 'rich-birthday-render.png',
   hud: false,
   keys: { v: toggleEdges },
 });

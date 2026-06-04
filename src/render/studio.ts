@@ -21,9 +21,20 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { WebGLPathTracer, PhysicalCamera } from 'three-gpu-pathtracer';
 
 export type RenderMode = 'webgl' | 'pathtracing';
+
+/** Trigger a browser download of a Blob. */
+function download(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export interface StudioOptions {
   container?: HTMLElement;
@@ -53,6 +64,10 @@ export class Studio {
   private _bounces: number;
   private readonly pathTraceScale: number;
   private readonly basePixelRatio: number;
+  /** High-res render multiplier (1 = screen). Drives the path tracer's offscreen
+   *  target — NOT the on-screen canvas, which always stays at display size. */
+  private _renderScale = 1;
+  private _saveQuad?: FullScreenQuad;
   private _aspect?: number;
   private readonly onModeChange?: (mode: RenderMode) => void;
 
@@ -216,58 +231,68 @@ export class Studio {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Auto-tile the path trace: ~1 tile per ~1.2 MP, so a small render stays a
-   *  single fast tile and a big one is split into enough pieces to keep each GPU
-   *  draw short (no watchdog freeze). Same total work, just chunked when needed. */
+  /** Auto-tile the path trace: ~1 tile per ~1.2 MP of the *target* (which is
+   *  renderScale× the drawing buffer), so a small render stays a single fast tile
+   *  and a big one is split into enough pieces to keep each GPU draw short (no
+   *  watchdog freeze). Same total work, just chunked when needed. */
   private applyTiles(): void {
     if (!this.pathTracer) return;
     const v = new THREE.Vector2();
     this.renderer.getDrawingBufferSize(v);
-    const n = Math.max(1, Math.ceil(Math.sqrt((v.x * v.y) / 1.2e6)));
+    const s = this.pathTracer.renderScale;
+    const px = v.x * s * v.y * s;                  // target pixels
+    const n = Math.max(1, Math.ceil(Math.sqrt(px / 1.2e6)));
     this.pathTracer.tiles.set(n, n);
   }
 
-  /** Multiply the render + screenshot resolution: 1 = screen, 2 = 2× per axis
-   *  (4× the pixels), etc. The canvas still displays at its on-screen size; the
-   *  path tracer re-targets to the bigger buffer on the next reset. Clamped to
-   *  the GPU's limits. */
+  /** Multiply the render + screenshot resolution: 1 = screen (device pixels),
+   *  2 = 2× per axis (4× the pixels), etc.
+   *
+   *  Crucially this does NOT touch the on-screen canvas — it only scales the path
+   *  tracer's offscreen accumulation target (an FBO, bounded by maxTextureSize,
+   *  not by the much smaller browser/driver cap on a *canvas* drawing buffer).
+   *  The canvas keeps displaying the full image, downscaled; `screenshot()` reads
+   *  the full-resolution target back directly. This is what lets a 10000×5000
+   *  render display normally in the browser and save at full size. Clamped to the
+   *  GPU's texture-size and a total-pixel (memory) limit. */
   setResolutionScale(mult: number): void {
     const safe = this.clampMult(mult);
     if (safe < mult) {
       const s = this.predictRenderSize(mult);
       console.warn(`[studio] ${mult}× exceeds GPU limits; rendering at ${safe}× (${s.width}×${s.height}) instead.`);
     }
-    // Full resize (mirrors onResize) so the drawing buffer, viewport, camera and
-    // the path-tracer target stay in sync — otherwise the render fills only part
-    // of the enlarged buffer and a save shows blank margins.
-    this.renderer.setPixelRatio(this.basePixelRatio * safe);
-    this.applySize();
-    if (this.mode === 'pathtracing') { this.pathTracer?.updateCamera(); this.applyTiles(); } // resize target + retile
+    this._renderScale = safe;
+    if (this.pathTracer) {
+      this.pathTracer.renderScale = this.pathTraceScale * safe;
+      this.applyTiles();           // retile for the new target size
+      this.pathTracer.reset();     // re-accumulate at the new resolution
+    }
   }
 
-  /** Largest safe integer multiplier: limited by the GPU's max texture / viewport
-   *  size AND a total-pixel cap (the path tracer holds several float targets, so
-   *  an over-large buffer renders only partially or fails). */
+  /** Largest safe integer multiplier: limited by the GPU's max texture size AND a
+   *  total-pixel cap (the path tracer holds several float targets, so an over-large
+   *  target exhausts memory). Measured against the *target* size (= drawing buffer
+   *  × pathTraceScale × mult), since that's the FBO we actually allocate. */
   private clampMult(mult: number): number {
-    const gl = this.renderer.getContext();
-    const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array | null;
-    const dimLimit = Math.min(
-      this.renderer.capabilities.maxTextureSize || 8192,
-      vp ? Math.min(vp[0], vp[1]) : Infinity,
-    );
+    const dimLimit = this.renderer.capabilities.maxTextureSize || 8192;
     const { w, h } = this.viewportSize();
-    const longest = Math.max(w, h) * this.basePixelRatio;
+    const unit = this.basePixelRatio * this.pathTraceScale;   // target px per CSS px at 1×
+    const longest = Math.max(w, h) * unit;
     const byDim = Math.floor(dimLimit / longest);
 
     const MAX_PIXELS = 100e6; // ~100 MP cap — big exports while keeping the float targets within memory
-    const baseArea = w * h * this.basePixelRatio * this.basePixelRatio;
+    const baseArea = w * h * unit * unit;
     const byArea = Math.floor(Math.sqrt(MAX_PIXELS / baseArea));
 
     return Math.max(1, Math.min(mult, byDim, byArea));
   }
 
-  /** Current render-target size in device pixels (= the size a screenshot will be). */
+  /** Current saved-image size in pixels (the path-trace target while tracing). */
   renderSize(): { width: number; height: number } {
+    if (this.mode === 'pathtracing' && this.pathTracer) {
+      const t = this.pathTracer.target;
+      return { width: t.width, height: t.height };
+    }
     const v = new THREE.Vector2();
     this.renderer.getDrawingBufferSize(v);
     return { width: Math.round(v.x), height: Math.round(v.y) };
@@ -277,24 +302,58 @@ export class Studio {
   predictRenderSize(mult: number): { width: number; height: number } {
     const m = this.clampMult(mult);
     const { w, h } = this.viewportSize();
+    const unit = this.basePixelRatio * this.pathTraceScale;
     return {
-      width: Math.round(w * this.basePixelRatio * m),
-      height: Math.round(h * this.basePixelRatio * m),
+      width: Math.round(w * unit * m),
+      height: Math.round(h * unit * m),
     };
   }
 
-  /** Save the current frame as a PNG download — pixel-perfect at the render
-   *  resolution (= window size × pixelRatio × resolution-scale). */
+  /** Save the current frame as a PNG download. While path tracing this reads the
+   *  full-resolution accumulation target back directly (so a high-`renderScale`
+   *  export saves at its true size, independent of the on-screen canvas); in the
+   *  preview it just grabs the canvas. */
   screenshot(filename = 'render.png'): void {
-    this.renderer.domElement.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }, 'image/png');
+    if (this.mode === 'pathtracing' && this.pathTracer) {
+      this.savePathTraceTarget(filename);
+    } else {
+      this.renderer.domElement.toBlob((blob) => blob && download(blob, filename), 'image/png');
+    }
+  }
+
+  /** Tone-map the float accumulation target into an 8-bit sRGB target at full
+   *  resolution, read the pixels back, and download them as a PNG. Avoids the
+   *  browser's canvas-size cap entirely (FBO + 2D canvas, never a giant WebGL
+   *  canvas). */
+  private savePathTraceTarget(filename: string): void {
+    const src = this.pathTracer!.target;
+    const w = src.width, h = src.height;
+
+    // A plain textured quad: MeshBasicMaterial applies the renderer's tone mapping
+    // + output colorspace just like the on-screen blit, so the saved pixels match.
+    const quad = (this._saveQuad ??= new FullScreenQuad(new THREE.MeshBasicMaterial()));
+    (quad.material as THREE.MeshBasicMaterial).map = src.texture;
+
+    const out = new THREE.WebGLRenderTarget(w, h, { depthBuffer: false, stencilBuffer: false });
+    out.texture.colorSpace = THREE.SRGBColorSpace;   // store sRGB bytes ready for PNG
+    const prevTarget = this.renderer.getRenderTarget();
+    this.renderer.setRenderTarget(out);
+    quad.render(this.renderer);
+    this.renderer.setRenderTarget(prevTarget);
+
+    const buf = new Uint8Array(w * h * 4);
+    this.renderer.readRenderTargetPixels(out, 0, 0, w, h, buf);
+    out.dispose();
+
+    // GL pixels are bottom-up; flip rows into a 2D canvas (no WebGL size cap here).
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    const img = ctx.createImageData(w, h);
+    const row = w * 4;
+    for (let y = 0; y < h; y++) img.data.set(buf.subarray((h - 1 - y) * row, (h - y) * row), y * row);
+    ctx.putImageData(img, 0, 0);
+    canvas.toBlob((blob) => blob && download(blob, filename), 'image/png');
   }
 
   // ---- mode switching ----------------------------------------------------
@@ -303,8 +362,10 @@ export class Studio {
     if (!this.pathTracer) {
       this.pathTracer = new WebGLPathTracer(this.renderer);
       this.pathTracer.bounces = this._bounces;
-      this.pathTracer.renderScale = this.pathTraceScale;     // trace at logical res, not 4× for retina
     }
+    // renderScale targets an offscreen FBO: pathTraceScale is the base (e.g. 1/DPR
+    // for a logical-res preview), times the high-res export multiplier.
+    this.pathTracer.renderScale = this.pathTraceScale * this._renderScale;
     this.mode = 'pathtracing';
     this.pathTracer.setScene(this.scene, this.camera);     // builds the BVH
     this.applyTiles();
@@ -332,7 +393,7 @@ export class Studio {
   resetAccumulation(): void { this.pathTracer?.reset(); this._autosaveNext = this._autosaveEvery; }
 
   /** Auto-download a PNG every `everySpp` accumulated samples (0 = off). Filenames
-   *  get the spp count, e.g. flat-tori-grid-1000spp.png — handy for long renders. */
+   *  get the spp count, e.g. render-1000spp.png — handy for long renders. */
   setAutosave(everySpp: number, baseName = 'render'): void {
     this._autosaveEvery = Math.max(0, Math.floor(everySpp));
     this._autosaveName = baseName.replace(/\.png$/i, '');
@@ -353,13 +414,14 @@ export class Studio {
 
   private onResize = (): void => {
     this.applySize();
-    if (this.mode === 'pathtracing') this.pathTracer?.updateCamera();
+    if (this.mode === 'pathtracing') { this.pathTracer?.updateCamera(); this.applyTiles(); }
   };
 
   dispose(): void {
     this.stop();
     window.removeEventListener('resize', this.onResize);
     this.controls.dispose();
+    this._saveQuad?.dispose();
     this.pathTracer?.dispose();
     this.renderer.dispose();
   }
