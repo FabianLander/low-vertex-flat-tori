@@ -166,20 +166,37 @@ function buildSubject(reframe: boolean): void {
 type Mode = 'grid' | 'individual';
 let mode: Mode = url.get('view') === 'individual' ? 'individual' : 'grid';
 
+// Frame the grid front-on. The default fit only accounts for the camera's vertical
+// FOV, so on a narrow (portrait) screen the wide grid overflows sideways — here we
+// ALSO require the full width to fit and back off to whichever distance is farther.
+// On desktop/landscape the vertical/diagonal fit stays the limiter, so it's unchanged.
+function frameGrid(): void {
+  const box = new THREE.Box3().setFromObject(grid);
+  const fov = (studio.camera.fov * Math.PI) / 180;
+  const aspect = studio.camera.aspect || 1;
+  const r = box.getBoundingSphere(new THREE.Sphere()).radius || 1;
+  const fitDefault = (r / Math.sin(fov / 2)) * 1.1;
+  const fitWidth = (box.getSize(new THREE.Vector3()).x / 2) / (Math.tan(fov / 2) * aspect) * 1.1;
+  studio.frame(grid, { direction: new THREE.Vector3(0, 0, 1), distance: Math.max(fitDefault, fitWidth) });
+}
+
 function setMode(next: Mode): void {
   mode = next;
   const solo = mode === 'individual';
   grid.visible = !solo;
   chevrons.style.display = solo ? '' : 'none';
   if (solo) buildSubject(true);
-  else { if (single) single.visible = false; studio.frame(grid, { direction: new THREE.Vector3(0, 0, 1) }); aimKey(grid); }
+  else { if (single) single.visible = false; frameGrid(); aimKey(grid); }
   syncToggle();
 }
 
 function step(d: number): void { if (mode === 'individual') { soloIdx = (soloIdx + d + papers.length) % papers.length; buildSubject(false); } }
 
-studio.frame(grid, { direction: new THREE.Vector3(0, 0, 1) });
+frameGrid();
 studio.start();
+
+// keep the whole grid in frame across orientation / window-size changes (phones)
+window.addEventListener('resize', () => { if (mode === 'grid') frameGrid(); });
 
 // ---- dedication (top-left, small) ----
 const caption = document.createElement('div');
