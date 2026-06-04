@@ -43,15 +43,17 @@ import { appendFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname } from 'path';
 
 import { mulberry32 } from '../src/math/perturb.ts';
-import { RICH } from '../src/tori/index.ts';
+import { byId } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 
-const N = RICH.vertexCount * 3;  // 24
 
 const args = process.argv.slice(2);
 function flag(name) { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; }
 function num(v, d) { return v === undefined ? d : Number(v); }
+
+const torus = byId(num(flag('--type'), 7)); // which of the 7 types (default 7 = Rich)
+const N = torus.vertexCount * 3;             // 24
 
 const count = num(flag('--count'), 50_000);
 const seed = num(flag('--seed'), Date.now() >>> 0);
@@ -66,6 +68,7 @@ if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 if (existsSync(outPath)) rmSync(outPath);  // fresh file; we append as we go
 
 console.log('sample-immersed');
+console.log(`  torus:        type ${torus.id} (${torus.name}) deg[${torus.degreeSequence}]`);
 console.log(`  count:        ${count.toLocaleString()}`);
 console.log(`  seed:         ${seed}`);
 console.log(`  cube:         [-1, 1]^${N}  (uniform i.i.d. start, discard if flattened result leaves it)`);
@@ -80,8 +83,8 @@ const p = new Float64Array(N);
 // --- smallest triangle area, to reject degenerate (non-immersion) realizations.
 function minTriArea(q) {
   let m = Infinity;
-  for (let t = 0; t < RICH.triangles.length; t++) {
-    const [a, b, c] = RICH.triangles[t];
+  for (let t = 0; t < torus.triangles.length; t++) {
+    const [a, b, c] = torus.triangles[t];
     const ux = q[3 * b] - q[3 * a], uy = q[3 * b + 1] - q[3 * a + 1], uz = q[3 * b + 2] - q[3 * a + 2];
     const vx = q[3 * c] - q[3 * a], vy = q[3 * c + 1] - q[3 * a + 1], vz = q[3 * c + 2] - q[3 * a + 2];
     const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
@@ -141,7 +144,7 @@ while (saved < count) {
   for (let i = 0; i < N; i++) p[i] = rng() * 2 - 1;   // 1. uniform in cube
   tries++;
 
-  const r = newtonFlatten(RICH, p, { tolerance: tol, maxIters: maxNewton });  // 2.
+  const r = newtonFlatten(torus, p, { tolerance: tol, maxIters: maxNewton });  // 2.
   if (r.status !== 'converged') { notConverged++; }          // 3.
   else if (!inCube(p)) { leftCube++; }                       // 4.
   else if (minTriArea(p) < minArea) { degenerate++; }        // 5.

@@ -24,7 +24,7 @@
  */
 
 import type { Torus } from '../tori/defineTorus';
-import { edgeKey } from '../tori/defineTorus';
+import { edgeKey, edgeEnds } from '../tori/defineTorus';
 
 export type XY = [number, number];
 
@@ -144,7 +144,7 @@ export function tutteLayout(torus: Torus): TutteLayout {
     (cutSides.get(k) ?? cutSides.set(k, []).get(k)!).push(seg);
   }
   const cutPairs: CutPair[] = [...cutSides.entries()].map(([k, sides]) => ({
-    edge: [Math.floor(k / torus.vertexCount), k % torus.vertexCount] as const,
+    edge: edgeEnds(k),
     sides,
   }));
 

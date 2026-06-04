@@ -11,61 +11,81 @@
  */
 
 import * as THREE from 'three';
-import { GradientEquirectTexture, PhysicalSpotLight } from 'three-gpu-pathtracer';
 
 import { RICH } from '../../src/tori';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
-import { styledTorus, type StyledTorusOptions } from '../../src/render/styledTorus';
+import { styledTorus, creaseEdgeMaterial, type StyledTorusOptions } from '../../src/render/styledTorus';
+import { graphPaperTexture } from '../../src/render/grid';
+import { skyEnvironment, softSpot, backWall } from '../../src/render/stage';
+import { loadNormalMap } from '../../src/render/textures';
+import { attachRenderControls } from '../../src/render/controls';
 import { Studio } from '../../src/render/studio';
 import seed7 from '../../data/explore-from-seeds/seed-7.csv?raw';
 
-// ---- studio ----
+// ============================ tweak the whole look here ============================
+const url = new URLSearchParams(location.search);
+const CONFIG = {
+  // paper surface
+  paperColor: '#f0e8d2',          // warm cream (reads as paper, not pure white)
+  roughness: 0.92,                // 0 = glossy … 1 = matte paper
+  // graph lines
+  gridRepeat: 6,                  // major blocks across the torus (INTEGER ⟹ seamless)
+  minorColor: '#9fb4d4', majorColor: '#5f82b4',
+  minorWidth: 0.006, majorWidth: 0.015,
+  // paper-grain normal map (file in assets/textures/)
+  normalMapFile: 'crease-rough.png',
+  normalRepeat: Number(url.get('nr')) || 4,    // low = large creases (?nr=)
+  normalScale: Number(url.get('ns')) || 1.,   // tooth strength (?ns=)
+  // crease cylinders
+  creaseColor: 0xf4f1e8, creaseRadius: 0.004,
+  // stage
+  background: 0xeef0f3, wallColor: 0xced3da,
+  envIntensity: 0.5, spotIntensity: 6,
+};
+// ===================================================================================
+
+// ---- studio + stage ----
 const studio = new Studio({ bounces: 6, pathTraceScale: 1, onModeChange: updateForMode });
 studio.renderer.shadowMap.enabled = true;
 studio.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+skyEnvironment(studio.scene, { intensity: CONFIG.envIntensity, background: CONFIG.background });
 
-// ---- environment ----
-const env = new GradientEquirectTexture();
-env.topColor.set(0x9fb8d6);
-env.bottomColor.set(0xe9e4da);
-env.update();
-studio.scene.environment = env;
-studio.scene.environmentIntensity = 0.5;
-studio.scene.background = new THREE.Color(0xeef0f3);
-
-// ---- back wall + light (positions re-fit per subject) ----
-const wall = new THREE.Mesh(
-  new THREE.PlaneGeometry(40, 28),
-  new THREE.MeshStandardMaterial({ color: 0xced3da, roughness: 0.7 }),
-);
-wall.receiveShadow = true;
+// back wall + key spotlight (positions re-fit per subject)
+const wall = backWall({ color: CONFIG.wallColor });
 studio.scene.add(wall);
-
-const spot = new PhysicalSpotLight(0xffffff);
-spot.angle = Math.PI / 4;
-spot.penumbra = 0.8;
-spot.decay = 0;
-spot.distance = 0;
-spot.intensity = 6;
-spot.radius = 0.5;
-spot.castShadow = true;
-spot.shadow.mapSize.set(2048, 2048);
-spot.shadow.camera.near = 0.5;
-spot.shadow.camera.far = 20;
-spot.shadow.radius = 8;
-spot.shadow.bias = -0.0001;
+const spot = softSpot({ intensity: CONFIG.spotIntensity });
 studio.scene.add(spot, spot.target);
-
 const ambient = new THREE.AmbientLight(0xffffff, 0.4);
 studio.scene.add(ambient);
 
-// ---- subjects: 3 styles × many moduli ----
-const GRID = { levels: [6, 12, 24, 48], cellColor: '#b8902a', lineColor: '#5a3415', majorWidth: 0.008 };
+// ---- paper materials (all knobs come from CONFIG above) ----
+const paperTex = graphPaperTexture({
+  bg: CONFIG.paperColor, minor: CONFIG.minorColor, major: CONFIG.majorColor,
+  minorWidth: CONFIG.minorWidth, majorWidth: CONFIG.majorWidth,
+});
+paperTex.repeat.set(CONFIG.gridRepeat, CONFIG.gridRepeat);
+const matBase = { roughness: CONFIG.roughness, metalness: 0.0, flatShading: true, side: THREE.DoubleSide } as const;
+const paperGrid = new THREE.MeshStandardMaterial({ map: paperTex, ...matBase });
+const paperBlank = new THREE.MeshStandardMaterial({ color: new THREE.Color(CONFIG.paperColor), ...matBase });
+const paperMats = [paperGrid, paperBlank];
+const edgeMat = creaseEdgeMaterial(CONFIG.creaseColor);   // shared across subjects
+
+// Paper-grain normal map, loaded from assets/textures by name (CONFIG.normalMapFile).
+const normalTex = loadNormalMap(CONFIG.normalMapFile, { repeat: CONFIG.normalRepeat }, () => studio.notifyMaterialsChanged());
+if (normalTex) {
+  for (const m of paperMats) {
+    m.normalMap = normalTex;
+    m.normalScale.set(CONFIG.normalScale, CONFIG.normalScale);
+    m.needsUpdate = true;
+  }
+}
+
+// ---- styles × moduli (surface defaults to 'grid' ⟹ lattice UVs for both map + normal) ----
 const STYLES: { label: string; opts: StyledTorusOptions }[] = [
-  { label: 'plain + creases', opts: { surface: 'plain', edges: true } },
-  { label: 'grid',            opts: { surface: 'grid', edges: false, grid: GRID } },
-  { label: 'grid + creases',  opts: { surface: 'grid', edges: true,  grid: GRID } },
+  { label: 'blank paper + creases', opts: { edges: true,  faceMaterial: paperBlank, edgeMaterial: edgeMat, edgeRadius: CONFIG.creaseRadius } },
+  { label: 'graph paper',           opts: { edges: false, faceMaterial: paperGrid } },
+  { label: 'graph paper + creases', opts: { edges: true,  faceMaterial: paperGrid,  edgeMaterial: edgeMat, edgeRadius: CONFIG.creaseRadius } },
 ];
 const moduli = [RICH_REFERENCE, ...parseEmbeddings(seed7, RICH)];
 
@@ -82,12 +102,8 @@ let subject: THREE.Object3D | null = null;
 function setSubject(): void {
   if (subject) {
     studio.scene.remove(subject);
-    subject.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      mesh.geometry?.dispose();
-      const m = mesh.material as THREE.MeshStandardMaterial | undefined;
-      if (m) { m.map?.dispose(); m.dispose(); }
-    });
+    // dispose only geometry — materials/textures are shared across moduli
+    subject.traverse((o) => { (o as THREE.Mesh).geometry?.dispose(); });
   }
 
   // centered TorusMesh ⟹ rotation rolls about its own center
@@ -117,23 +133,17 @@ function updateForMode(mode: 'webgl' | 'pathtracing'): void {
   if (mode === 'pathtracing') studio.notifyMaterialsChanged();
 }
 
-// ---- input + HUD ----
-const hud = document.createElement('div');
-hud.style.cssText = 'position:fixed;top:10px;left:12px;font:12px ui-monospace,monospace;color:#cdd;background:rgba(0,0,0,.45);padding:5px 9px;border-radius:6px;white-space:pre';
-document.body.appendChild(hud);
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'p' || e.key === 'P') studio.toggleMode();
-  else if (e.key === 'v' || e.key === 'V') { styleIdx = (styleIdx + 1) % STYLES.length; setSubject(); }
-  else if (e.key === 'ArrowRight') { modIdx = (modIdx + 1) % moduli.length; setSubject(); }
-  else if (e.key === 'ArrowLeft') { modIdx = (modIdx - 1 + moduli.length) % moduli.length; setSubject(); }
-  else if (e.key === 's' || e.key === 'S') studio.screenshot('flat-torus.png');
+// ---- render controls (resolution popup + high-res save + HUD), with the
+//      style/modulus explorer keys passed through ----
+attachRenderControls(studio, {
+  filename: 'flat-torus.png',
+  hudLine: () => {
+    const where = modIdx === 0 ? 'reference' : `seed-7 #${modIdx}`;
+    return `${STYLES[styleIdx].label}  ·  modulus: ${where} (${modIdx + 1}/${moduli.length})  ·  V: style  ← →: modulus`;
+  },
+  keys: {
+    v: () => { styleIdx = (styleIdx + 1) % STYLES.length; setSubject(); },
+    ArrowRight: () => { modIdx = (modIdx + 1) % moduli.length; setSubject(); },
+    ArrowLeft: () => { modIdx = (modIdx - 1 + moduli.length) % moduli.length; setSubject(); },
+  },
 });
-
-function tickHud(): void {
-  const mode = studio.isPathTracing() ? `path trace — ${Math.floor(studio.samples)} spp` : 'webgl preview';
-  const where = modIdx === 0 ? 'reference' : `seed-7 #${modIdx}`;
-  hud.textContent = `${STYLES[styleIdx].label}   ·   modulus: ${where} (${modIdx + 1}/${moduli.length})\n${mode}   (V: style   ← →: modulus   P: render   S: save)`;
-  requestAnimationFrame(tickHud);
-}
-tickHud();

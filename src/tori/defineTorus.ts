@@ -1,29 +1,43 @@
 /**
  * Torus descriptor + `defineTorus` builder.
  *
- * A `Torus` bundles one 8-vertex triangulation with everything derivable from
- * it (edges, oriented vertex links, dual adjacency, degree sequence, the
- * unfolding attachment tree) plus the small amount of hand-authored data that
- * is genuinely a choice (the developing order and the two homology generators).
+ * A `Torus` bundles ONE triangulation of the torus with everything derivable
+ * from it (vertex count, edges, oriented vertex links, dual adjacency, degree
+ * sequence, the unfolding attachment tree) plus the small amount of data that
+ * is genuinely a choice (the developing order and the two homology generators)
+ * — and even those are auto-derived if you don't supply them. So you can grab
+ * any new triangulation and `defineTorus({ triangles })` to get a fully working
+ * torus; nothing here is hard-wired to a particular vertex/edge/face count.
  *
  * This replaces the old global singleton in `topology.ts`: instead of one
  * module-level `TRIANGLES`, every torus is a value you pass around. The seven
- * combinatorial types live in `tori.ts` (`TORUS_8V`); each `src/tori/torusN.ts`
- * pairs one of them with its authored develop order + generators.
+ * 8-vertex combinatorial types live in `tori.ts` (`TORUS_8V`); each
+ * `src/tori/torusN.ts` pairs one of them with its develop order + generators.
  *
  * Pure data/combinatorics — no three.js, no DOM, no metric (3D coords).
  *
- * NB: only Rich's torus (#7) is degree-6-regular; the other six have degree
- * 5/7 vertices, so NOTHING here may assume degree 6.
+ * NB: degree is NEVER assumed — among the 8-vertex types only Rich's (#7) is
+ * degree-6-regular; the rest mix degree 5/7. Every count is derived/validated
+ * from the triangle list (Euler characteristic V−E+F = 0 for the torus), so a
+ * triangulation of any size drops in cleanly.
  */
 
 export type Tri = readonly [number, number, number];
 export type Edge = readonly [number, number];
 export type Vec3 = readonly [number, number, number];
 
-export const VERTEX_COUNT = 8;
-const F = 16; // faces
-const E = 24; // edges
+/** Radix for packing an undirected edge {u,v} into one integer key. Fixed and
+ *  decoupled from the vertex count, so `edgeKey`/`edgeEnds` stay exact inverses
+ *  for any triangulation up to KEY_RADIX vertices. */
+const KEY_RADIX = 1 << 16;
+
+/** Vertex count of a triangulation = highest vertex index + 1 (vertices are the
+ *  contiguous range 0..n−1). */
+function vertexCountOf(triangles: readonly Tri[]): number {
+  let max = -1;
+  for (const t of triangles) for (const v of t) if (v > max) max = v;
+  return max + 1;
+}
 
 /** Triangle `t` is glued onto `parent` across global edge (u, v). */
 export type Attach = {
@@ -51,16 +65,23 @@ export type CellPairs = {
   readonly faceFace: readonly [number, number][];     // = disjointTrianglePairs
 };
 
-/** Hand-authored part of a torus — the genuine choices. */
+/** Specification of a torus: just the triangulation, plus optional choices. The
+ *  triangle list is the only required field — everything else is derived (or
+ *  auto-derived, for the develop order / generators) when omitted, so a brand
+ *  new triangulation needs only `defineTorus({ triangles })`. */
 export type TorusSpec = {
-  readonly id: number;
-  readonly name: string;
+  /** Stable id for the registry; defaults to 0 for ad-hoc/one-off tori. */
+  readonly id?: number;
+  /** Display name; defaults to `torus-<F>f`. */
+  readonly name?: string;
   readonly triangles: readonly Tri[];
-  /** Unfolding order: a permutation of 0..15, root first. Must be a valid dual
-   *  spanning tree (each non-root triangle edge-adjacent to an earlier one). */
-  readonly developOrder: readonly number[];
-  /** Two oriented vertex edge-loops generating H₁(T²); e.g. [[0,3,6,0],[0,2,1,0]]. */
-  readonly generatorLoops: readonly (readonly number[])[];
+  /** Unfolding order: a permutation of 0..F−1, root first, forming a valid dual
+   *  spanning tree (each non-root triangle edge-adjacent to an earlier one).
+   *  Omit to auto-derive a BFS spanning tree (`autoDevelopOrder`). */
+  readonly developOrder?: readonly number[];
+  /** Two oriented vertex edge-loops generating H₁(T²); e.g. [[0,3,6,0],[0,2,1,0]].
+   *  Omit to auto-derive a tree–cotree basis (`homologyGenerators`). */
+  readonly generatorLoops?: readonly (readonly number[])[];
   /** A reference 3D embedding, if one exists (only #7 today). */
   readonly referenceCoords?: readonly Vec3[];
   /** Symmetry vertex pairing of the reference embedding (#7 Z/2). */
@@ -97,9 +118,14 @@ export type Torus = {
   readonly lattice?: { readonly periodBasis: readonly [number, number][] };
 };
 
-/** Symmetric key for an undirected edge {u,v}. */
+/** Symmetric integer key for an undirected edge {u,v}. */
 export function edgeKey(u: number, v: number): number {
-  return u < v ? u * VERTEX_COUNT + v : v * VERTEX_COUNT + u;
+  return u < v ? u * KEY_RADIX + v : v * KEY_RADIX + u;
+}
+
+/** Inverse of `edgeKey`: recover the endpoints {u,v} (ascending). */
+export function edgeEnds(k: number): readonly [number, number] {
+  return [Math.floor(k / KEY_RADIX), k % KEY_RADIX];
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +144,6 @@ function deriveEdges(triangles: readonly Tri[]): Edge[] {
       }
     }
   }
-  if (out.length !== E) throw new Error(`expected ${E} edges, got ${out.length}`);
   return out;
 }
 
@@ -128,9 +153,9 @@ function deriveEdges(triangles: readonly Tri[]): Edge[] {
  * single cycle of length = degree(i). Works for any degree (NO degree-6
  * assumption).
  */
-function deriveVertexLinks(triangles: readonly Tri[]): number[][] {
+function deriveVertexLinks(triangles: readonly Tri[], vertexCount: number): number[][] {
   const next: Map<number, number>[] = Array.from(
-    { length: VERTEX_COUNT },
+    { length: vertexCount },
     () => new Map<number, number>(),
   );
   for (const [a, b, c] of triangles) {
@@ -139,7 +164,7 @@ function deriveVertexLinks(triangles: readonly Tri[]): number[][] {
     next[c].set(a, b);
   }
   const links: number[][] = [];
-  for (let i = 0; i < VERTEX_COUNT; i++) {
+  for (let i = 0; i < vertexCount; i++) {
     const m = next[i];
     const deg = m.size;
     if (deg < 3) throw new Error(`vertex ${i} has degree ${deg}, expected ≥3`);
@@ -251,20 +276,21 @@ function classifyTrianglePairs(triangles: readonly Tri[]): {
 
 function deriveCellPairs(
   triangles: readonly Tri[],
+  vertexCount: number,
   edges: readonly Edge[],
   disjointTrianglePairs: readonly [number, number][],
 ): CellPairs {
   const vertexVertex: [number, number][] = [];
-  for (let i = 0; i < VERTEX_COUNT; i++) for (let j = i + 1; j < VERTEX_COUNT; j++) vertexVertex.push([i, j]);
+  for (let i = 0; i < vertexCount; i++) for (let j = i + 1; j < vertexCount; j++) vertexVertex.push([i, j]);
 
   const vertexEdge: [number, number][] = [];
-  for (let v = 0; v < VERTEX_COUNT; v++) for (let e = 0; e < edges.length; e++) {
+  for (let v = 0; v < vertexCount; v++) for (let e = 0; e < edges.length; e++) {
     const [a, b] = edges[e];
     if (v !== a && v !== b) vertexEdge.push([v, e]);
   }
 
   const vertexFace: [number, number][] = [];
-  for (let v = 0; v < VERTEX_COUNT; v++) for (let f = 0; f < triangles.length; f++) {
+  for (let v = 0; v < vertexCount; v++) for (let f = 0; f < triangles.length; f++) {
     const [a, b, c] = triangles[f];
     if (v !== a && v !== b && v !== c) vertexFace.push([v, f]);
   }
@@ -320,13 +346,14 @@ export function autoDevelopOrder(triangles: readonly Tri[], root = 0): number[] 
  * each loop as a closed vertex walk [u, …, v, u].
  */
 export function homologyGenerators(triangles: readonly Tri[]): number[][] {
+  const vertexCount = vertexCountOf(triangles);
   const edges = deriveEdges(triangles);
   const edgeToTris = deriveEdgeToTris(triangles);
 
   // primal spanning tree (BFS over vertices)
-  const adj: number[][] = Array.from({ length: VERTEX_COUNT }, () => []);
+  const adj: number[][] = Array.from({ length: vertexCount }, () => []);
   for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }
-  const parent = new Array<number>(VERTEX_COUNT).fill(-1);
+  const parent = new Array<number>(vertexCount).fill(-1);
   const inPrimalTree = new Set<number>();
   const vSeen = new Set<number>([0]);
   const vq = [0];
@@ -378,11 +405,11 @@ export function homologyGenerators(triangles: readonly Tri[]): number[][] {
 // Validation guards on the hand-authored data
 // ---------------------------------------------------------------------------
 
-function checkDevelopOrder(developOrder: readonly number[], name: string): void {
-  if (developOrder.length !== F) throw new Error(`[${name}] developOrder must have ${F} entries, got ${developOrder.length}`);
+function checkDevelopOrder(developOrder: readonly number[], faceCount: number, name: string): void {
+  if (developOrder.length !== faceCount) throw new Error(`[${name}] developOrder must have ${faceCount} entries, got ${developOrder.length}`);
   const seen = new Set(developOrder);
-  if (seen.size !== F) throw new Error(`[${name}] developOrder has duplicates`);
-  for (const t of developOrder) if (t < 0 || t >= F) throw new Error(`[${name}] developOrder entry ${t} out of range`);
+  if (seen.size !== faceCount) throw new Error(`[${name}] developOrder has duplicates`);
+  for (const t of developOrder) if (t < 0 || t >= faceCount) throw new Error(`[${name}] developOrder entry ${t} out of range`);
 }
 
 function checkGeneratorLoops(
@@ -408,25 +435,41 @@ function checkGeneratorLoops(
 // ---------------------------------------------------------------------------
 
 export function defineTorus(spec: TorusSpec): Torus {
-  const { triangles, developOrder, generatorLoops, name } = spec;
-  if (triangles.length !== F) throw new Error(`[${name}] expected ${F} triangles, got ${triangles.length}`);
+  const { triangles } = spec;
+  const id = spec.id ?? 0;
+  const name = spec.name ?? `torus-${triangles.length}f`;
 
-  const edges = deriveEdges(triangles);
-  const vertexLinks = deriveVertexLinks(triangles);
+  // Derive every count from the triangle list — nothing is hard-wired.
+  const vertexCount = vertexCountOf(triangles);
+  const edges = deriveEdges(triangles);            // each edge in exactly 2 triangles (manifold)
+  const V = vertexCount, E = edges.length, F = triangles.length;
+  // The torus has Euler characteristic 0: V − E + F = 0. This (with the
+  // manifold/single-cycle-link checks in the derivations) is the only structural
+  // gate — replacing the old hard-coded V=8, E=24, F=16 asserts.
+  if (V - E + F !== 0) {
+    throw new Error(`[${name}] V−E+F = ${V}−${E}+${F} = ${V - E + F} ≠ 0 — not a torus triangulation`);
+  }
+
+  const vertexLinks = deriveVertexLinks(triangles, vertexCount);
   const edgeToTris = deriveEdgeToTris(triangles);
   const degreeSequence = vertexLinks.map((l) => l.length).slice().sort((a, b) => a - b);
 
-  checkDevelopOrder(developOrder, name);
+  // Develop order + generators are genuine choices, but valid ones are derivable;
+  // auto-derive when the spec leaves them out (see autoDevelopOrder / homologyGenerators).
+  const developOrder = spec.developOrder ?? autoDevelopOrder(triangles);
+  checkDevelopOrder(developOrder, F, name);
   const attach = deriveAttach(triangles, developOrder, edgeToTris);
+
+  const generatorLoops = spec.generatorLoops ?? homologyGenerators(triangles);
   checkGeneratorLoops(generatorLoops, edgeToTris, name);
 
   const { disjoint, sharedVertex } = classifyTrianglePairs(triangles);
-  const cellPairs = deriveCellPairs(triangles, edges, disjoint);
+  const cellPairs = deriveCellPairs(triangles, vertexCount, edges, disjoint);
 
   return {
-    id: spec.id,
+    id,
     name,
-    vertexCount: VERTEX_COUNT,
+    vertexCount,
     triangles,
     edges,
     vertexLinks,

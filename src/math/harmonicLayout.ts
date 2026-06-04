@@ -25,7 +25,7 @@
  */
 
 import type { Torus } from '../tori/defineTorus';
-import { edgeKey } from '../tori/defineTorus';
+import { edgeKey, edgeEnds } from '../tori/defineTorus';
 
 export type XY = [number, number];
 
@@ -286,7 +286,7 @@ export type WindingNet = {
 
 export function windingNet(torus: Torus, layout: HarmonicLayout, center?: XY): WindingNet {
   const dom = fundamentalDomain(layout, center);
-  const { triangles, edgeToTris, vertexCount } = torus;
+  const { triangles, edgeToTris } = torus;
   const F = triangles.length;
   const byId = new Map(dom.map((t) => [t.id, t]));
   const cornerOf = (t: number, g: number): XY => byId.get(t)!.corners[triangles[t].indexOf(g)];
@@ -296,7 +296,7 @@ export function windingNet(torus: Torus, layout: HarmonicLayout, center?: XY): W
   // coincident-edge adjacency within the fundamental domain
   const adj: { nbr: number; u: number; v: number }[][] = Array.from({ length: F }, () => []);
   for (const [k, [t1, t2]] of edgeToTris) {
-    const u = Math.floor(k / vertexCount), v = k % vertexCount;
+    const [u, v] = edgeEnds(k);
     if (close(cornerOf(t1, u), cornerOf(t2, u)) && close(cornerOf(t1, v), cornerOf(t2, v))) {
       adj[t1].push({ nbr: t2, u, v });
       adj[t2].push({ nbr: t1, u, v });

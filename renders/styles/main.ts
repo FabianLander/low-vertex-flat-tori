@@ -6,28 +6,21 @@
  *   middle creases, no grid
  *   right  grid + creases
  *
- * A deliberately simple companion to renders/features (which explores styles ×
- * moduli interactively). Press P to path-trace.
+ * A deliberately simple companion to renders/portrait. Render… → path trace.
  */
 
 import * as THREE from 'three';
-import { GradientEquirectTexture } from 'three-gpu-pathtracer';
 
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { styledTorus, type StyledTorusOptions } from '../../src/render/styledTorus';
+import { skyEnvironment } from '../../src/render/stage';
+import { attachRenderControls } from '../../src/render/controls';
 import { Studio } from '../../src/render/studio';
 
 const studio = new Studio({ bounces: 6, pathTraceScale: 1, onModeChange });
+skyEnvironment(studio.scene, { intensity: 0.9, background: 0xeef0f3 });
 
-// even sky lighting (IBL); cheap fill lights for the preview only
-const env = new GradientEquirectTexture();
-env.topColor.set(0x9fb8d6);
-env.bottomColor.set(0xe9e4da);
-env.update();
-studio.scene.environment = env;
-studio.scene.environmentIntensity = 0.9;
-studio.scene.background = new THREE.Color(0xeef0f3);
-
+// cheap fill lights for the preview only
 const ambient = new THREE.AmbientLight(0xffffff, 0.5);
 const key = new THREE.DirectionalLight(0xffffff, 0.8);
 key.position.set(3, 5, 4);
@@ -65,19 +58,7 @@ function onModeChange(mode: 'webgl' | 'pathtracing'): void {
   if (!preview) studio.notifyMaterialsChanged();
 }
 
-// ---- HUD ----
-const hud = document.createElement('div');
-hud.style.cssText = 'position:fixed;top:10px;left:12px;font:12px ui-monospace,monospace;color:#cdd;background:rgba(0,0,0,.45);padding:5px 9px;border-radius:6px;white-space:pre';
-document.body.appendChild(hud);
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'p' || e.key === 'P') studio.toggleMode();
-  else if (e.key === 's' || e.key === 'S') studio.screenshot('flat-tori-styles.png');
+attachRenderControls(studio, {
+  filename: 'flat-tori-styles.png',
+  hudLine: () => 'grid · creases · both',
 });
-
-function tickHud(): void {
-  const mode = studio.isPathTracing() ? `path trace — ${Math.floor(studio.samples)} spp` : 'webgl preview';
-  hud.textContent = `grid · creases · both\n${mode}   (P: render   S: save png)`;
-  requestAnimationFrame(tickHud);
-}
-tickHud();

@@ -31,7 +31,7 @@
  */
 
 import type { Torus, Attach } from '../tori/defineTorus';
-import { edgeKey } from '../tori/defineTorus';
+import { edgeKey, edgeEnds } from '../tori/defineTorus';
 import { totalArea } from './energies/cellMargin';
 
 export type V2 = readonly [number, number];
@@ -196,7 +196,7 @@ export function developNet(
   const cutEdges: CutEdge[] = [];
   for (const [k, [t1, t2]] of torus.edgeToTris) {
     if (treeKeys.has(k)) continue;
-    const u = Math.floor(k / torus.vertexCount), v = k % torus.vertexCount;
+    const [u, v] = edgeEnds(k);
     const P1u = corners[t1][localIndex(torus, t1, u)], P1v = corners[t1][localIndex(torus, t1, v)];
     const P2u = corners[t2][localIndex(torus, t2, u)], P2v = corners[t2][localIndex(torus, t2, v)];
     const translation: V2 = [P1u[0] - P2u[0], P1u[1] - P2u[1]];

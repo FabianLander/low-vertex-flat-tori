@@ -7,7 +7,7 @@
  */
 
 export type { Torus, TorusSpec, Tri, Edge, Vec3, Attach } from './defineTorus';
-export { defineTorus, edgeKey, autoDevelopOrder, homologyGenerators, VERTEX_COUNT } from './defineTorus';
+export { defineTorus, edgeKey, edgeEnds, autoDevelopOrder, homologyGenerators } from './defineTorus';
 
 import type { Torus } from './defineTorus';
 import { torus1 } from './torus1';

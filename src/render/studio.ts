@@ -49,6 +49,7 @@ export class Studio {
   private mode: RenderMode;
   private readonly bounces: number;
   private readonly pathTraceScale: number;
+  private readonly basePixelRatio: number;
   private readonly onModeChange?: (mode: RenderMode) => void;
 
   // Auto-sync tracking (mirrors RenderManager).
@@ -64,6 +65,7 @@ export class Studio {
     this.onModeChange = opts.onModeChange;
 
     const pixelRatio = opts.pixelRatio ?? Math.min(window.devicePixelRatio, 2);
+    this.basePixelRatio = pixelRatio;
     this.pathTraceScale = opts.pathTraceScale ?? 1 / pixelRatio;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(pixelRatio);
@@ -154,8 +156,46 @@ export class Studio {
     return this.mode === 'pathtracing' && this.pathTracer ? this.pathTracer.samples : 0;
   }
 
+  /** Multiply the render + screenshot resolution: 1 = screen, 2 = 2× per axis
+   *  (4× the pixels), etc. The canvas still displays at window size; the path
+   *  tracer re-targets to the bigger buffer on the next reset. Clamped so the
+   *  buffer stays within the GPU's max texture size. */
+  setResolutionScale(mult: number): void {
+    const safe = this.clampMult(mult);
+    // Full resize (mirrors onResize) so the drawing buffer, viewport, camera and
+    // the path-tracer target all stay in sync — otherwise the render fills only
+    // part of the enlarged buffer and a save shows blank margins.
+    this.renderer.setPixelRatio(this.basePixelRatio * safe);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    if (this.mode === 'pathtracing') this.pathTracer?.updateCamera(); // resizes target + resets
+  }
+
+  private clampMult(mult: number): number {
+    const max = this.renderer.capabilities.maxTextureSize || 8192;
+    const longest = Math.max(window.innerWidth, window.innerHeight) * this.basePixelRatio;
+    return Math.min(mult, Math.max(1, Math.floor(max / longest)));
+  }
+
+  /** Current render-target size in device pixels (= the size a screenshot will be). */
+  renderSize(): { width: number; height: number } {
+    const v = new THREE.Vector2();
+    this.renderer.getDrawingBufferSize(v);
+    return { width: Math.round(v.x), height: Math.round(v.y) };
+  }
+
+  /** Predicted output size for a given multiplier (clamped to the GPU limit). */
+  predictRenderSize(mult: number): { width: number; height: number } {
+    const m = this.clampMult(mult);
+    return {
+      width: Math.round(window.innerWidth * this.basePixelRatio * m),
+      height: Math.round(window.innerHeight * this.basePixelRatio * m),
+    };
+  }
+
   /** Save the current frame as a PNG download — pixel-perfect at the render
-   *  resolution (= window size × pixelRatio). Needs preserveDrawingBuffer (on). */
+   *  resolution (= window size × pixelRatio × resolution-scale). */
   screenshot(filename = 'render.png'): void {
     this.renderer.domElement.toBlob((blob) => {
       if (!blob) return;

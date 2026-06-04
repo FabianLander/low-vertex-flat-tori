@@ -11,12 +11,13 @@
  */
 
 import * as THREE from 'three';
-import { GradientEquirectTexture } from 'three-gpu-pathtracer';
 
 import { RICH } from '../../src/tori';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus, gridFaceMaterial, creaseEdgeMaterial, type StyledTorusOptions } from '../../src/render/styledTorus';
+import { skyEnvironment, backWall } from '../../src/render/stage';
+import { attachRenderControls } from '../../src/render/controls';
 import { Studio } from '../../src/render/studio';
 
 // ---- config ----
@@ -29,13 +30,7 @@ const SPACING = 1.7;
 
 // ---- studio + even sky lighting ----
 const studio = new Studio({ bounces: 5, pathTraceScale: 1, onModeChange: updateForMode });
-const env = new GradientEquirectTexture();
-env.topColor.set(0x9fb8d6);
-env.bottomColor.set(0xe9e4da);
-env.update();
-studio.scene.environment = env;
-studio.scene.environmentIntensity = 0.9;
-studio.scene.background = new THREE.Color(0xeef0f3);
+skyEnvironment(studio.scene, { intensity: 0.9, background: 0xeef0f3 });
 studio.renderer.shadowMap.enabled = true;
 studio.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const ambient = new THREE.AmbientLight(0xffffff, 0.4);
@@ -74,12 +69,8 @@ const gsize = gbox.getSize(new THREE.Vector3());
 const gcenter = gbox.getCenter(new THREE.Vector3());
 const reach = Math.max(gsize.x, gsize.y);
 
-const wall = new THREE.Mesh(
-  new THREE.PlaneGeometry(gsize.x * 1.4, gsize.y * 1.4),
-  new THREE.MeshStandardMaterial({ color: 0xced3da, roughness: 0.85 }),
-);
+const wall = backWall({ width: gsize.x * 1.4, height: gsize.y * 1.4 });
 wall.position.set(gcenter.x, gcenter.y, gbox.min.z - 0.8);
-wall.receiveShadow = true;
 studio.scene.add(wall);
 
 // directional key throws the shadow onto the wall (works in preview + path tracer)
@@ -106,19 +97,7 @@ function updateForMode(mode: 'webgl' | 'pathtracing'): void {
   if (mode === 'pathtracing') studio.notifyMaterialsChanged();
 }
 
-// ---- HUD ----
-const hud = document.createElement('div');
-hud.style.cssText = 'position:fixed;top:10px;left:12px;font:12px ui-monospace,monospace;color:#cdd;background:rgba(0,0,0,.45);padding:5px 9px;border-radius:6px;white-space:pre';
-document.body.appendChild(hud);
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'p' || e.key === 'P') studio.toggleMode();
-  else if (e.key === 's' || e.key === 'S') studio.screenshot('flat-tori-grid.png');
+attachRenderControls(studio, {
+  filename: 'flat-tori-grid.png',
+  hudLine: () => `${papers.length} tori · ${cols}×${rows} grid`,
 });
-
-function tickHud(): void {
-  const mode = studio.isPathTracing() ? `path trace — ${Math.floor(studio.samples)} spp` : 'webgl preview';
-  hud.textContent = `${papers.length} tori · ${cols}×${rows} grid\n${mode}   (P: render   S: save png)`;
-  requestAnimationFrame(tickHud);
-}
-tickHud();

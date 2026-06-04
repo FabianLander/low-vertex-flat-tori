@@ -9,6 +9,7 @@
     "preview": "node scripts/run-demo.mjs preview",
     "sample": "tsx scripts/sample-embedded.mjs",
     "sample-flat": "tsx scripts/sample-flat.mjs",
+    "sample-flat-nonrich": "node scripts/sample-flat-nonrich.mjs",
     "sample-immersed": "tsx scripts/sample-immersed.mjs",
     "fatten": "tsx scripts/fatten.mjs",
     "barrier": "tsx scripts/barrier-fatten.mjs",
