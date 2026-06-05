@@ -11,6 +11,7 @@
  *   npm run sample -- [options]
  *
  * Options:
+ *   --type N                Combinatorial type 1..7 (default: 7 = Rich, degree-6-regular)
  *   --seed N                RNG seed (default: clock-derived)
  *   --out PATH              Output base (default: samples/run-<timestamp>)
  *   --size N                Half-size of the cube (default: 1.0)
@@ -37,10 +38,7 @@ import { resolve, dirname } from 'path';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { makeRng } from '../src/math/perturb.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
-import { RICH } from '../src/tori/index.ts';
-
-const N = RICH.vertexCount * 3;     // 24
-const SAMPLE_BYTES = N * 4;     // 96
+import { byId } from '../src/tori/index.ts';
 
 const args = process.argv.slice(2);
 function flag(name) {
@@ -52,6 +50,10 @@ function hasFlag(name) { return args.indexOf(name) !== -1; }
 function num(value, defaultVal) {
   return value === undefined ? defaultVal : Number(value);
 }
+
+const torus = byId(num(flag('--type'), 7));   // combinatorial type 1..7 (default 7 = Rich)
+const N = torus.vertexCount * 3;     // 24
+const SAMPLE_BYTES = N * 4;     // 96
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
 const rngName = flag('--rng') ?? 'xoshiro';   // 'xoshiro' (default, 2^128) | 'mulberry' (legacy, 2^32)
@@ -72,6 +74,7 @@ if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 const pathForPart = (label, n) => `${baseOut}-${label}-${n.toString().padStart(3, '0')}.bin`;
 
 console.log('sample-embedded');
+console.log(`  type:           #${torus.id} (${torus.name})`);
 console.log(`  rng:            ${rngName}`);
 console.log(`  seed:           ${seed}`);
 console.log(`  cube:           [-${size}, ${size}]^${N}`);
@@ -92,7 +95,7 @@ console.log();
 {
   const pairs = [
     ['script', 'sample-embedded'],
-    ['type', `#${RICH.id} (${RICH.name})`],
+    ['type', `#${torus.id} (${torus.name})`],
     ['rng', rngName],
     ['seed', seed],
     ['size', size],
@@ -184,11 +187,13 @@ function report() {
   const elapsed = (now - start) / 1000;
   const embSize = formatSize(totalSize('emb', embPartNum));
   const flatSize = formatSize(totalSize('flat', flatPartNum));
+  const embPct = tries > 0 ? (embAccepts / tries * 100).toPrecision(3) : '0';
   const flatStr = flatten ? `flat=${flatAccepts.toLocaleString().padStart(5)} (${flatSize.padStart(8)})` : '';
   console.log(
     `[${elapsed.toFixed(0).padStart(5)}s] `
     + `tries=${tries.toLocaleString().padStart(13)} `
     + `emb=${embAccepts.toLocaleString().padStart(7)} (${embSize.padStart(8)}) `
+    + `emb%=${embPct.padStart(8)} `
     + flatStr + ' '
     + `rate=${tps.toFixed(0).padStart(7)}/s`,
   );
@@ -210,7 +215,7 @@ process.on('SIGINT', () => {
 while (tries < maxTries && embAccepts < maxAccepts) {
   for (let i = 0; i < N; i++) p[i] = (rng() * 2 - 1) * size;
   tries++;
-  if (isEmbedded(RICH, p)) {
+  if (isEmbedded(torus, p)) {
     // Stage 1: save the embedded random torus.
     embStaging.set(p, embStagingCount * N);
     embStagingCount++;
@@ -222,10 +227,10 @@ while (tries < maxTries && embAccepts < maxAccepts) {
     // Stage 2: copy, Newton-flatten, re-check embedded.
     if (flatten) {
       pCopy.set(p);
-      const r = newtonFlatten(RICH, pCopy, { tolerance: newtonTol });
+      const r = newtonFlatten(torus, pCopy, { tolerance: newtonTol });
       if (r.status === 'converged') {
         newtonConverged++;
-        if (isEmbedded(RICH, pCopy)) {
+        if (isEmbedded(torus, pCopy)) {
           flatStaging.set(pCopy, flatStagingCount * N);
           flatStagingCount++;
           flatAccepts++;

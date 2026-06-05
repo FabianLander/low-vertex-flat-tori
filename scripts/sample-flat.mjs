@@ -68,11 +68,11 @@ import { makeRng } from '../src/math/perturb.ts';
 import { byId } from '../src/tori/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
-import { isEmbedded } from '../src/math/embedded.ts';
+import { isEmbedded, allViolations } from '../src/math/embedded.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 import { makeChordLengthSquared } from '../src/math/energies/chordLengthSquared.ts';
 import { makeCutOffArea } from '../src/math/energies/cutOffArea.ts';
-import { linearSize } from '../src/math/energies/cellMargin.ts';
+import { linearSize, totalArea } from '../src/math/energies/cellMargin.ts';
 
 
 /** Scale positions in place to total surface area 1 (uniform scaling, so it
@@ -127,6 +127,15 @@ const feedback = hasFlag('--feedback');
 const unitArea = hasFlag('--unit-area');   // normalize every saved torus (and loaded seeds) to area 1
 if (feedback && seedMode !== 'file') {
   console.error(`--feedback only valid with --seed-mode file`);
+  process.exit(1);
+}
+// Sweep: walk the seed pool deterministically (each seed --sweep-reps times)
+// and EXIT when the pool is exhausted, instead of sampling with replacement
+// forever. Lets you do one finite pass over the seeds and know when it's done.
+const sweep = hasFlag('--sweep');
+const sweepReps = num(flag('--sweep-reps'), 1);
+if (sweep && seedMode !== 'file') {
+  console.error(`--sweep requires --seed-mode file`);
   process.exit(1);
 }
 
@@ -276,6 +285,18 @@ let flowRejected = 0;
 let verificationFailed = 0;
 let saved = 0;
 
+// Closeness-to-embedding scores over the flat configs the flow settles at:
+//   #1 normalized intersection energy E = repulsionEnergy/area  (→ 0 as embedded)
+//   #2 number of intersecting triangle pairs (allViolations count)
+// They can disagree (lowest-E config ≠ fewest-crossings config), so each is a
+// separate best, per report interval and globally. allViolations is cheap next
+// to the per-attempt flow, so we evaluate it every flowed attempt.
+let intMinE = Infinity, intMinEViol = -1;     // lowest E this interval (+ its crossings)
+let intMinV = Infinity, intMinVE = Infinity;  // fewest crossings this interval (+ its E)
+let gMinE = Infinity, gMinEViol = -1;         // lowest E since start (+ its crossings)
+let gMinV = Infinity, gMinVE = Infinity;      // fewest crossings since start (+ its E)
+const gBestP = new Float64Array(N);           // the lowest-E config (available to save)
+
 const start = Date.now();
 let lastReport = start;
 let lastReportTries = 0;
@@ -351,6 +372,22 @@ function report() {
     + `${triesPerSec.toFixed(1)} tries/s, ${savedPerHr.toFixed(0)} saves/hr, `
     + `size=${sz}`,
   );
+  // Closest-to-embedding, interval vs global. E = normalized intersection
+  // energy (0 ⟺ embedded); crossings = # intersecting triangle pairs. The (…)
+  // shows the companion metric for that same best config.
+  const fE = (x) => (x === Infinity ? 'n/a' : x.toExponential(2));
+  const fV = (x) => (x === Infinity || x < 0 ? '-' : x);
+  console.log(
+    `          closest  E[0=embed]:  interval ${fE(intMinE)} (${fV(intMinEViol)}x)   global ${fE(gMinE)} (${fV(gMinEViol)}x)`,
+  );
+  console.log(
+    `                   crossings:   interval ${fV(intMinV)} (E=${fE(intMinVE)})   global ${fV(gMinV)} (E=${fE(gMinVE)})`,
+  );
+  if (sweep) {
+    const si = Math.floor(sweepIdx / sweepReps);
+    console.log(`          sweep:    seed ${si}/${seedPool.length} (${(100 * si / seedPool.length).toFixed(1)}%), ${sweepReps} rep(s) each`);
+  }
+  intMinE = Infinity; intMinEViol = -1; intMinV = Infinity; intMinVE = Infinity; // reset interval bests
   lastReport = now;
   lastReportTries = tries;
   lastReportSaved = saved;
@@ -371,8 +408,10 @@ const reportMs = reportSecs * 1000;
 // Captured per-attempt for the per-save log line.
 let lastSigma = 0;
 let lastSeedIdx = -1;
+let sweepIdx = 0;          // sweep mode: total seed-attempts dispatched so far
+let sweepDone = false;     // set true once every seed has had its reps
 
-while (tries < maxTries && saved < maxAccepts) {
+while (tries < maxTries && saved < maxAccepts && !sweepDone) {
   // 1. Sample seed according to mode.
   if (seedMode === 'rich') {
     lastSigma = drawSigma();
@@ -383,6 +422,16 @@ while (tries < maxTries && saved < maxAccepts) {
     lastSigma = 0;
     lastSeedIdx = -1;
     for (let i = 0; i < N; i++) p[i] = (rng() * 2 - 1) * seedSize;
+  } else if (sweep) {
+    // file + sweep: walk the pool in order, --sweep-reps attempts per seed,
+    // then stop. Deterministic coverage with a definite end.
+    const si = Math.floor(sweepIdx / sweepReps);
+    if (si >= seedPool.length) { sweepDone = true; break; }
+    lastSeedIdx = si;
+    sweepIdx++;
+    const seedRow = seedPool[si];
+    lastSigma = drawSigma();
+    for (let i = 0; i < N; i++) p[i] = seedRow[i] + lastSigma * gaussian();
   } else {
     // file: pick a random row from the loaded seed pool and add Gaussian noise.
     lastSeedIdx = Math.floor(rng() * seedPool.length);
@@ -415,6 +464,14 @@ while (tries < maxTries && saved < maxAccepts) {
   else if (fr.status === 'max-iters') flowMaxIter++;
   else if (fr.status === 'stalled') flowStalled++;
   else if (fr.status === 'rejected') flowRejected++;
+
+  // Closeness scores for the flat config the flow settled at (eNorm = 0 ⟺ embedded).
+  const eNorm = fr.energy / totalArea(torus, p);
+  const viol = allViolations(torus, p).length;
+  if (eNorm < intMinE) { intMinE = eNorm; intMinEViol = viol; }
+  if (viol < intMinV) { intMinV = viol; intMinVE = eNorm; }
+  if (eNorm < gMinE) { gMinE = eNorm; gMinEViol = viol; gBestP.set(p); }
+  if (viol < gMinV) { gMinV = viol; gMinVE = eNorm; }
 
   // 4. Explicit verification: only write if flat to high precision AND embedded.
   if (fr.status === 'converged') {
@@ -463,6 +520,10 @@ while (tries < maxTries && saved < maxAccepts) {
 flushBuf();
 console.log('\n— done —');
 report();
+if (sweep) {
+  console.log(`sweep:          ${sweepDone ? 'COMPLETE' : 'stopped early'} — `
+    + `${Math.floor(sweepIdx / sweepReps)}/${seedPool.length} seeds covered (${sweepReps} rep(s) each)`);
+}
 console.log(`flow status:    converged=${flowConverged}  diverged=${flowDiverged}  `
   + `max-iters=${flowMaxIter}  stalled=${flowStalled}  rejected=${flowRejected}`);
 console.log(`verify fails:   ${verificationFailed} (flow said converged but check rejected)`);

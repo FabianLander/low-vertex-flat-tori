@@ -1,0 +1,21 @@
+script              sample-flat
+type                #2 (type2)
+rng                 xoshiro
+seed                3
+seed-mode           file
+sigma-dist          uniform
+sigma-min           0.005
+sigma-max           0.15
+seed-file           /Users/lander/src/low-complexity-paper-tori/samples/type2-seeds/type2-seeds-3.csv
+feedback            false
+unit-area           false
+energy              cutoff
+step-size           0.001
+max-flow-iters      500
+momentum            0.5
+early-reject-iters  60
+early-reject-ratio  0.5
+angle-tol           1e-10
+max-tries           inf
+max-accepts         100000
+max-per-file        100000
