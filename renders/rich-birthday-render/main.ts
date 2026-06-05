@@ -15,10 +15,9 @@ import { PhysicalSpotLight } from 'three-gpu-pathtracer';
 import { RICH } from '../../src/tori';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
-import { styledTorus, creaseEdgeMaterial } from '../../src/render/styledTorus';
-import { graphPaperTexture } from '../../src/render/grid';
+import { styledTorus } from '../../src/render/styledTorus';
+import { paperMaterials } from '../../src/render/paper';
 import { skyEnvironment, backWall } from '../../src/render/stage';
-import { loadNormalMap } from '../../src/render/textures';
 import { attachRenderControls } from '../../src/render/controls';
 import { Studio } from '../../src/render/studio';
 
@@ -105,21 +104,13 @@ if (papers.length === 0) papers = [RICH_REFERENCE];
 papers = papers.slice(0, CONFIG.maxTori);
 
 // ---- shared paper material (per-torus UVs live on the geometry, so it's shared) ----
-let faceMaterial: THREE.MeshStandardMaterial;
-if (CONFIG.surface === 'grid') {
-  const tex = graphPaperTexture({
-    bg: CONFIG.torusColor, minor: CONFIG.gridMinorColor, major: CONFIG.gridColor,
-    squares: CONFIG.gridSubdivisions,
-    minorWidth: CONFIG.gridMinorWidth, majorWidth: CONFIG.gridMajorWidth,
-  });
-  tex.repeat.set(CONFIG.gridRepeat, CONFIG.gridRepeat);
-  faceMaterial = new THREE.MeshStandardMaterial({ map: tex, roughness: CONFIG.roughness, metalness: 0, flatShading: true, side: THREE.DoubleSide });
-} else {
-  faceMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(CONFIG.torusColor), roughness: CONFIG.roughness, metalness: 0, flatShading: true, side: THREE.DoubleSide });
-}
-const edgeMaterial = creaseEdgeMaterial(CONFIG.torusColor);   // match the paper color (for now)
-const nrm = loadNormalMap(CONFIG.normalMapFile, { repeat: CONFIG.normalRepeat }, () => studio.notifyMaterialsChanged());
-if (nrm) { faceMaterial.normalMap = nrm; faceMaterial.normalScale.set(CONFIG.normalScale, CONFIG.normalScale); faceMaterial.needsUpdate = true; }
+const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
+  surface: CONFIG.surface,
+  paperColor: CONFIG.torusColor, gridColor: CONFIG.gridColor, gridMinorColor: CONFIG.gridMinorColor,
+  roughness: CONFIG.roughness, gridRepeat: CONFIG.gridRepeat, gridSubdivisions: CONFIG.gridSubdivisions,
+  gridMinorWidth: CONFIG.gridMinorWidth, gridMajorWidth: CONFIG.gridMajorWidth,
+  normalMapFile: CONFIG.normalMapFile, normalRepeat: CONFIG.normalRepeat, normalScale: CONFIG.normalScale,
+}, () => studio.notifyMaterialsChanged());
 
 // ---- build the grid (surface always 'grid' so lattice UVs exist for the normal map) ----
 const cols = Math.ceil(Math.sqrt(papers.length));

@@ -20,15 +20,17 @@
  */
 
 import type { Torus } from '../tori/defineTorus';
-import { developNet, modulus } from '../math/develop';
+import { developNet, modulus, type DevelopedNet } from '../math/develop';
 
 export function latticeUV(
   torus: Torus,
   positions: ArrayLike<number>,
-  opts: { repeat?: number } = {},
+  opts: { repeat?: number; net?: DevelopedNet } = {},
 ): Float32Array {
   const repeat = opts.repeat ?? 1;
-  const net = developNet(torus, positions);
+  // Reuse a caller-supplied net (e.g. unfolded with a specific attachment) so the
+  // UVs line up with that exact net; otherwise unfold with the default tree.
+  const net = opts.net ?? developNet(torus, positions);
   const { v1, v2 } = modulus(torus, positions);
 
   // Invert M = [v1 v2] (columns) so uv = M⁻¹·P gives lattice coordinates.

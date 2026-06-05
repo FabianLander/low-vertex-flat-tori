@@ -17,9 +17,8 @@ import { RICH_REFERENCE } from '../../src/math/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus, creaseEdgeMaterial } from '../../src/render/styledTorus';
 import { developedSheet } from '../../src/render/developedSheet';
-import { graphPaperTexture } from '../../src/render/grid';
+import { paperMaterials } from '../../src/render/paper';
 import { skyEnvironment } from '../../src/render/stage';
-import { loadNormalMap } from '../../src/render/textures';
 import { Studio } from '../../src/render/studio';
 
 // ============================ tweak the whole piece here ============================
@@ -90,17 +89,13 @@ if (papers.length === 0) papers = [RICH_REFERENCE];
 papers = papers.slice(0, CONFIG.maxTori);
 
 // ---- shared paper material (per-torus UVs live on the geometry, so it's shared) ----
-const tex = graphPaperTexture({
-  bg: CONFIG.torusColor, minor: CONFIG.gridMinorColor, major: CONFIG.gridColor,
-  squares: CONFIG.gridSubdivisions,
-  minorWidth: CONFIG.gridMinorWidth, majorWidth: CONFIG.gridMajorWidth,
-});
-tex.repeat.set(CONFIG.gridRepeat, CONFIG.gridRepeat);
-const faceMaterial = new THREE.MeshStandardMaterial({ map: tex, roughness: CONFIG.roughness, metalness: 0, flatShading: true, side: THREE.DoubleSide });
-const edgeMaterial = creaseEdgeMaterial(CONFIG.torusColor);     // 3D torus creases match the paper
+const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
+  paperColor: CONFIG.torusColor, gridColor: CONFIG.gridColor, gridMinorColor: CONFIG.gridMinorColor,
+  roughness: CONFIG.roughness, gridRepeat: CONFIG.gridRepeat, gridSubdivisions: CONFIG.gridSubdivisions,
+  gridMinorWidth: CONFIG.gridMinorWidth, gridMajorWidth: CONFIG.gridMajorWidth,
+  normalMapFile: CONFIG.normalMapFile, normalRepeat: CONFIG.normalRepeat, normalScale: CONFIG.normalScale,
+});   // 3D torus creases match the paper (edge defaults to paperColor)
 const foldLineMaterial = creaseEdgeMaterial(CONFIG.foldLineColor);   // flat-net fold lines: thin dark gray
-const nrm = loadNormalMap(CONFIG.normalMapFile, { repeat: CONFIG.normalRepeat });
-if (nrm) { faceMaterial.normalMap = nrm; faceMaterial.normalScale.set(CONFIG.normalScale, CONFIG.normalScale); faceMaterial.needsUpdate = true; }
 
 // ---- build the grid (same layout as rich-birthday-render) ----
 const cols = Math.ceil(Math.sqrt(papers.length));

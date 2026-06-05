@@ -19,8 +19,9 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { PaperTorus } from '../math/embedding';
 import type { V2 } from '../math/develop';
-import { developNet, modulus } from '../math/develop';
+import { developNet } from '../math/develop';
 import { latticeLayout } from '../math/latticeLayout';
+import { latticeUV } from '../mesh/uv';
 
 export interface DevelopedSheetOptions {
   faceMaterial: THREE.Material;
@@ -40,24 +41,15 @@ export function developedSheet(paper: PaperTorus, opts: DevelopedSheetOptions): 
   const net = developNet(torus, paper.positions, attach);
   const F = torus.triangles.length;
 
-  // M⁻¹ maps planar net points → lattice coords (seamless grid), as in mesh/uv.
-  const { v1, v2 } = modulus(torus, paper.positions);
-  const det = v1[0] * v2[1] - v1[1] * v2[0];
-  if (Math.abs(det) < 1e-12) throw new Error('developedSheet: degenerate lattice basis');
-  const inv = 1 / det;
-  const m00 = v2[1] * inv, m01 = -v2[0] * inv, m10 = -v1[1] * inv, m11 = v1[0] * inv;
-  const repeat = opts.uvRepeat ?? 1;
-
-  // ---- flat face mesh: net corners at z=0, with matching lattice UVs ----
+  // ---- flat face mesh: net corners at z=0, with the torus's lattice UVs (M⁻¹·P,
+  //      computed from THIS net so geometry and texture always agree). ----
+  const uv = latticeUV(torus, paper.positions, { repeat: opts.uvRepeat ?? 1, net });
   const pos = new Float32Array(F * 3 * 3);
-  const uv = new Float32Array(F * 3 * 2);
   for (let t = 0; t < F; t++) {
     for (let k = 0; k < 3; k++) {
       const [x, y] = net.corners[t][k];
-      const o3 = (t * 3 + k) * 3, o2 = (t * 3 + k) * 2;
+      const o3 = (t * 3 + k) * 3;
       pos[o3] = x; pos[o3 + 1] = y; pos[o3 + 2] = 0;
-      uv[o2] = (m00 * x + m01 * y) * repeat;
-      uv[o2 + 1] = (m10 * x + m11 * y) * repeat;
     }
   }
   const geo = new THREE.BufferGeometry();
