@@ -14,6 +14,7 @@ import * as THREE from 'three';
 
 import { RICH } from '../../src/tori';
 import { RICH_REFERENCE } from '../../src/math/reference';
+import { modulus } from '../../src/math/develop';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus, creaseEdgeMaterial } from '../../src/render/styledTorus';
 import { developedSheet } from '../../src/render/developedSheet';
@@ -125,6 +126,69 @@ papers.forEach((paper, i) => {
 });
 studio.add(grid);
 
+// ---- each torus's modulus τ = v₂/v₁ ∈ ℍ (the trace-tori, so they outline the
+//      cartoon torus); used as the morph destination below. ----
+const taus = papers.map((p) => modulus(RICH, p.positions).tau as readonly [number, number]);
+
+// ---- morph: slide every torus from its grid cell (morph=0) to its τ point in ℍ²
+//      (morph=1), where the 100 points form the cartoon-torus donut. Only each
+//      pivot's POSITION is animated, so per-torus rotation (its quaternion) and
+//      camera pan keep working throughout, donut included. ----
+const gridPos = pivots.map((p) => p.position.clone());
+
+// τ → world: center the cloud on the origin, uniform scale so the donut's wider
+// extent ≈ 90% of the grid width (full-size tori, grid-sized footprint, in place).
+const targetPos: THREE.Vector3[] = (() => {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [x, y] of taus) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  const gw = new THREE.Box3().setFromObject(grid).getSize(new THREE.Vector3()).x;
+  const s = (gw * 0.9) / Math.max(x1 - x0 || 1, y1 - y0 || 1);
+  return taus.map(([x, y]) => new THREE.Vector3((x - cx) * s, (y - cy) * s, 0));   // Im → +y
+})();
+
+// path is pluggable (linear for now; arcs / staggered timing can swap in here)
+type MorphPath = (i: number, from: THREE.Vector3, to: THREE.Vector3, t: number) => THREE.Vector3;
+const smootherstep = (t: number): number => t * t * t * (t * (6 * t - 15) + 10);
+const linearPath: MorphPath = (_i, from, to, t) => from.clone().lerp(to, smootherstep(t));
+const morphPath: MorphPath = linearPath;
+
+const MORPH_DURATION = 2.6;        // seconds, end to end (whole row-by-row sweep)
+let morph = 0;                     // 0 = grid wall, 1 = moduli donut (global clock)
+let morphTarget = 0;
+let morphAnimating = false;
+let morphLast = 0;                 // last RAF timestamp (ms)
+
+// row-by-row stagger: each torus's own [start, start+WIN] window inside the global
+// clock, keyed on its grid row. STAGGER=0 ⟹ all at once; →1 ⟹ fully sequential.
+// (The wall and the donut overlap mid-sweep — fine for now.)
+const STAGGER = 0.8;
+const rowStart = papers.map((_, i) => (rows > 1 ? Math.floor(i / cols) / (rows - 1) : 0) * STAGGER);
+const WIN = Math.max(1e-3, 1 - STAGGER);
+const localT = (i: number): number => Math.min(1, Math.max(0, (morph - rowStart[i]) / WIN));
+
+function applyMorph(): void {
+  for (let i = 0; i < pivots.length; i++) {
+    const t = localT(i);
+    pivots[i].position.copy(morphPath(i, gridPos[i], targetPos[i], t));
+    pivots[i].scale.setScalar(1 - 0.5 * t);   // shrink with its own progress (linear in its window)
+  }
+}
+function morphTick(now: number): void {
+  if (!morphAnimating) return;
+  const dt = morphLast ? (now - morphLast) / 1000 : 0;
+  morphLast = now;
+  const dir = Math.sign(morphTarget - morph);
+  morph += dir * (dt / MORPH_DURATION);
+  if ((dir >= 0 && morph >= morphTarget) || (dir < 0 && morph <= morphTarget)) { morph = morphTarget; morphAnimating = false; }
+  applyMorph();
+  if (morphAnimating) requestAnimationFrame(morphTick);
+}
+function setMorph(target: 0 | 1): void {
+  morphTarget = target;
+  if (!morphAnimating) { morphAnimating = true; morphLast = 0; requestAnimationFrame(morphTick); }
+}
+
 // ---- single-subject view: the folded torus hovering ABOVE its developed net,
 //      which lies flat on the "ground" (the XZ plane). Built on demand and
 //      centered at the origin so stepping the census keeps the camera/orbit put. ----
@@ -199,6 +263,7 @@ function setMode(next: Mode): void {
   mode = next;
   const solo = mode === 'individual';
   grid.visible = !solo;
+  morphBtn.style.display = solo ? 'none' : '';   // the wall↔moduli button is meaningless in individual view
   chevrons.style.display = solo ? '' : 'none';
   // grid: pan/zoom only (no scene rotation — you rotate the tori, not the camera);
   // individual: keep orbit so the torus + net can be viewed from any angle.
@@ -316,6 +381,22 @@ function makeSlider(left: string, right: string, top: number, onToggle: () => vo
 const gridSlider = makeSlider('grid', 'individual', 54, () => setMode(mode === 'grid' ? 'individual' : 'grid'));
 function syncToggle(): void { gridSlider.sync(mode === 'individual'); }
 syncToggle();
+
+// ---- bottom-center button: animate the tori between the wall and their moduli
+//      points. Label flips To Moduli ↔ To Grid; hidden in individual view. ----
+const morphBtn = document.createElement('button');
+morphBtn.className = 'morph-btn';
+morphBtn.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translate(-50%,0);font:11px ui-serif,Georgia,serif;letter-spacing:.05em;color:#5e4626;background:#f7f5f0;border:1px solid #c9bd9e;border-radius:7px;padding:6px 15px;cursor:pointer;user-select:none;box-shadow:0 2px 4px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.65)';
+const morphBtnCss = document.createElement('style');
+morphBtnCss.textContent =
+  '.morph-btn{transition:background .15s,box-shadow .12s,transform .06s}' +
+  '.morph-btn:hover{background:#efece2;box-shadow:0 3px 8px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.65)}' +
+  '.morph-btn:active{transform:translate(-50%,1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.18)}';
+document.head.appendChild(morphBtnCss);
+function syncMorphBtn(): void { morphBtn.textContent = morphTarget === 1 ? '→ Grid' : '→ Moduli'; }
+morphBtn.onclick = () => { setMorph(morphTarget === 1 ? 0 : 1); syncMorphBtn(); };
+syncMorphBtn();
+document.body.appendChild(morphBtn);
 
 // ---- subtle ‹ › arrows (individual mode only) ----
 const chevrons = document.createElement('div');
