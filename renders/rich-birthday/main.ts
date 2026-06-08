@@ -38,7 +38,7 @@ const CONFIG = {
   maxTori: 100,                // cap (10×10)
   cell: 1.0,                   // each torus normalized to this size
   spacing: 1.9,                // cell-to-cell gap (× cell)
-  creases: true,
+  creases: false,              // edges off in both views (no crease tubes / fold lines)
   creaseRadius: 0.004,
   // developed (flat) mode: thin dark-gray crease/fold lines
   foldLineColor: '#4d4d4d',
@@ -101,6 +101,7 @@ const foldLineMaterial = creaseEdgeMaterial(CONFIG.foldLineColor);   // flat-net
 const cols = Math.ceil(Math.sqrt(papers.length));
 const rows = Math.ceil(papers.length / cols);
 const grid = new THREE.Group();
+const pivots: THREE.Object3D[] = [];   // one center-pivot per torus (the rotatable handle)
 papers.forEach((paper, i) => {
   const t = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
   t.setEdgesVisible(CONFIG.creases);
@@ -109,7 +110,18 @@ papers.forEach((paper, i) => {
   t.rotation.z = Math.PI / 2;
   const c = i % cols, r = Math.floor(i / cols);
   t.position.set((c - (cols - 1) / 2) * CONFIG.spacing, ((rows - 1) / 2 - r) * CONFIG.spacing, 0);
-  grid.add(t);
+
+  // Wrap each torus in a pivot AT its center so a click-drag spins it in place. The
+  // layout is identical (pivot.position + the torus's local offset reproduce the
+  // cell); only the rotation origin moves to the center. pivot.quaternion is this
+  // torus's independent pose, mutated by the raycast-driven drag below.
+  const center = new THREE.Box3().setFromObject(t).getCenter(new THREE.Vector3());
+  t.position.sub(center);
+  const pivot = new THREE.Group();
+  pivot.position.copy(center);
+  pivot.add(t);
+  grid.add(pivot);
+  pivots.push(pivot);
 });
 studio.add(grid);
 
@@ -120,6 +132,7 @@ const TORUS_SIZE = 1.7;    // folded torus, floating above
 const NET_SIZE = 2.6;      // developed sheet, on the ground
 const TORUS_LIFT = 1.6;    // gap between the ground net and the torus
 let single: THREE.Object3D | null = null;
+let soloPivot: THREE.Object3D | null = null;   // center-pivot of the lifted torus (the rotatable handle in individual mode)
 let soloIdx = (() => { const k = Number(url.get('i')); return Number.isInteger(k) && k >= 0 && k < papers.length ? k : 0; })();
 
 /** Scale obj so its largest extent = size, then recenter it on its local origin. */
@@ -140,10 +153,17 @@ function buildSubject(reframe: boolean): void {
   torus.rotation.z = Math.PI / 2;
   fitInPlace(torus, TORUS_SIZE);
   torus.position.y += TORUS_LIFT;
-  group.add(torus);
+  // wrap in a center pivot so a drag spins it in place (the net stays put on the ground)
+  const tcenter = new THREE.Box3().setFromObject(torus).getCenter(new THREE.Vector3());
+  torus.position.sub(tcenter);
+  soloPivot = new THREE.Group();
+  soloPivot.position.copy(tcenter);
+  soloPivot.add(torus);
+  group.add(soloPivot);
 
-  // developed net, laid flat on the "ground" (rotate its XY plane down into XZ)
-  const sheet = developedSheet(papers[soloIdx], { faceMaterial, edgeMaterial: CONFIG.creases ? foldLineMaterial : undefined, edgeRadius: CONFIG.foldLineRadius });
+  // developed net, laid flat on the "ground" (rotate its XY plane down into XZ).
+  // Fold lines stay ON here (the dark net edges) even though the 3D tori are edgeless.
+  const sheet = developedSheet(papers[soloIdx], { faceMaterial, edgeMaterial: foldLineMaterial, edgeRadius: CONFIG.foldLineRadius });
   fitInPlace(sheet, NET_SIZE);
   sheet.rotation.x = -Math.PI / 2;
   group.add(sheet);
@@ -180,6 +200,9 @@ function setMode(next: Mode): void {
   const solo = mode === 'individual';
   grid.visible = !solo;
   chevrons.style.display = solo ? '' : 'none';
+  // grid: pan/zoom only (no scene rotation — you rotate the tori, not the camera);
+  // individual: keep orbit so the torus + net can be viewed from any angle.
+  studio.controls.enableRotate = solo;
   if (solo) buildSubject(true);
   else { if (single) single.visible = false; frameGrid(); aimKey(grid); }
   syncToggle();
@@ -192,6 +215,73 @@ studio.start();
 
 // keep the whole grid in frame across orientation / window-size changes (phones)
 window.addEventListener('resize', () => { if (mode === 'grid') frameGrid(); });
+
+// ---- click-drag a torus to spin THAT one in place; empty-space drags still pan ----
+// OrbitControls keeps pan/zoom; we only steal a drag that lands on a torus. A
+// capture-phase pointerdown picks the pivot first and stopPropagation()s so the
+// controls never start a pan for that gesture — misses fall through to pan as before.
+const ROT_SPEED = 0.01;            // radians per pixel of drag
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const canvas = studio.renderer.domElement;
+
+let active: THREE.Object3D | null = null;   // pivot currently being dragged
+let lastX = 0, lastY = 0;
+
+// The rotatable handles for the current mode (grid → every cell; individual → the lone torus).
+function pickTargets(): THREE.Object3D[] { return mode === 'grid' ? pivots : soloPivot ? [soloPivot] : []; }
+
+// Cursor-ray → the pivot under the pointer (null if the ray misses every torus).
+// Walks up from the hit mesh to the pivot in pickTargets().
+function pickPivot(e: PointerEvent | MouseEvent): THREE.Object3D | null {
+  const targets = pickTargets();
+  if (targets.length === 0) return null;
+  const rect = canvas.getBoundingClientRect();
+  ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(ndc, studio.camera);
+  const hits = raycaster.intersectObjects(targets, true);
+  if (hits.length === 0) return null;
+  let o: THREE.Object3D = hits[0].object;
+  const set = new Set(targets);
+  while (o.parent && !set.has(o)) o = o.parent;
+  return set.has(o) ? o : null;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;      // left button only
+  const pivot = pickPivot(e);
+  if (!pivot) return;              // missed → let OrbitControls pan/zoom keep it
+  e.stopPropagation();             // hit → don't let the controls start a pan this drag
+  active = pivot;
+  lastX = e.clientX; lastY = e.clientY;
+  canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing';
+}, { capture: true });
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!active) { canvas.style.cursor = pickPivot(e) ? 'grab' : 'default'; return; }
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  // world-axis trackball: horizontal drag yaws about world-up, vertical pitches about world-right
+  const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dx * ROT_SPEED);
+  const qPitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), dy * ROT_SPEED);
+  active.quaternion.premultiply(qYaw).premultiply(qPitch);
+});
+
+const endDrag = (e: PointerEvent): void => {
+  if (!active) return;
+  active = null;
+  try { canvas.releasePointerCapture(e.pointerId); } catch { /* already released */ }
+  canvas.style.cursor = pickPivot(e) ? 'grab' : 'default';
+};
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+
+// double-click a torus to reset just that one to its upright pose
+canvas.addEventListener('dblclick', (e) => {
+  const pivot = pickPivot(e);
+  if (pivot) pivot.quaternion.identity();
+});
 
 // ---- dedication (top-left, small) ----
 const caption = document.createElement('div');
