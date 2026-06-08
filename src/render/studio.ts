@@ -81,6 +81,9 @@ export class Studio {
   private _autosaveName = 'render';
 
   private running = false;
+  /** While a tiled export is in flight, the RAF loop's render() is a no-op so it
+   *  doesn't fight the export's manual renderSample() calls. */
+  private _exporting = false;
 
   constructor(opts: StudioOptions = {}) {
     const container = opts.container ?? document.body;
@@ -159,6 +162,7 @@ export class Studio {
   stop(): void { this.running = false; }
 
   render(): void {
+    if (this._exporting) return;   // a tiled export is driving the path tracer manually
     if (this.mode === 'pathtracing' && this.pathTracer) {
       if (this.lastEnvironment !== this.scene.environment) {
         this.pathTracer.updateEnvironment();
@@ -328,22 +332,7 @@ export class Studio {
   private savePathTraceTarget(filename: string): void {
     const src = this.pathTracer!.target;
     const w = src.width, h = src.height;
-
-    // A plain textured quad: MeshBasicMaterial applies the renderer's tone mapping
-    // + output colorspace just like the on-screen blit, so the saved pixels match.
-    const quad = (this._saveQuad ??= new FullScreenQuad(new THREE.MeshBasicMaterial()));
-    (quad.material as THREE.MeshBasicMaterial).map = src.texture;
-
-    const out = new THREE.WebGLRenderTarget(w, h, { depthBuffer: false, stencilBuffer: false });
-    out.texture.colorSpace = THREE.SRGBColorSpace;   // store sRGB bytes ready for PNG
-    const prevTarget = this.renderer.getRenderTarget();
-    this.renderer.setRenderTarget(out);
-    quad.render(this.renderer);
-    this.renderer.setRenderTarget(prevTarget);
-
-    const buf = new Uint8Array(w * h * 4);
-    this.renderer.readRenderTargetPixels(out, 0, 0, w, h, buf);
-    out.dispose();
+    const buf = this.readbackSRGB(src.texture, w, h);   // bottom-up sRGB bytes
 
     // GL pixels are bottom-up; flip rows into a 2D canvas (no WebGL size cap here).
     const canvas = document.createElement('canvas');
@@ -354,6 +343,156 @@ export class Studio {
     for (let y = 0; y < h; y++) img.data.set(buf.subarray((h - 1 - y) * row, (h - y) * row), y * row);
     ctx.putImageData(img, 0, 0);
     canvas.toBlob((blob) => blob && download(blob, filename), 'image/png');
+  }
+
+  /** Tone-map a float texture into 8-bit sRGB and read the pixels back (bottom-up,
+   *  GL order), matching the on-screen image EXACTLY.
+   *
+   *  Subtlety: three.js disables tone mapping when rendering to a render target
+   *  (WebGLRenderer only applies `renderer.toneMapping` when `_currentRenderTarget
+   *  === null`, i.e. the canvas). Since we read back from an offscreen target, we
+   *  must apply ACES OURSELVES — calling `ACESFilmicToneMapping` directly rather
+   *  than the renderer's gated `toneMapping()` dispatcher — then encode to the
+   *  target's sRGB colorspace via `linearToOutputTexel`. (A plain MeshBasicMaterial
+   *  here would skip ACES and the saved image would look brighter / more saturated.) */
+  private readbackSRGB(srcTexture: THREE.Texture, w: number, h: number): Uint8Array {
+    const quad = (this._saveQuad ??= new FullScreenQuad(new THREE.ShaderMaterial({
+      uniforms: { map: { value: null }, toneMappingExposure: { value: 1 } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader: /* glsl */`
+        uniform sampler2D map; varying vec2 vUv;
+        #include <tonemapping_pars_fragment>
+        void main() {
+          gl_FragColor = linearToOutputTexel( vec4( ACESFilmicToneMapping( texture2D( map, vUv ).rgb ), 1.0 ) );
+        }`,
+    })));
+    const mat = quad.material as THREE.ShaderMaterial;
+    mat.uniforms.map.value = srcTexture;
+    mat.uniforms.toneMappingExposure.value = this.renderer.toneMappingExposure;
+
+    const out = new THREE.WebGLRenderTarget(w, h, { depthBuffer: false, stencilBuffer: false });
+    out.texture.colorSpace = THREE.SRGBColorSpace;
+    const prevTarget = this.renderer.getRenderTarget();
+    this.renderer.setRenderTarget(out);
+    quad.render(this.renderer);
+    this.renderer.setRenderTarget(prevTarget);
+    const buf = new Uint8Array(w * h * 4);
+    this.renderer.readRenderTargetPixels(out, 0, 0, w, h, buf);
+    out.dispose();
+    return buf;
+  }
+
+  /** The UNCAPPED pixel size a multiplier would produce — what a tiled export
+   *  yields. Unlike `predictRenderSize`, this is not clamped to the GPU's
+   *  single-buffer limits, because the tiled exporter never allocates a full-size
+   *  buffer. */
+  exportSize(mult: number): { width: number; height: number } {
+    const { w, h } = this.viewportSize();
+    const unit = this.basePixelRatio * this.pathTraceScale;
+    const m = Math.max(1, Math.round(mult));
+    return { width: Math.round(w * unit * m), height: Math.round(h * unit * m) };
+  }
+
+  /**
+   * Render an arbitrarily large image by tiling the camera and compositing on the
+   * CPU, then download it as a PNG. The GPU only ever holds one tile-sized set of
+   * buffers, so memory is flat regardless of the final dimensions — this is how we
+   * go past the single-buffer ceiling that caps `setResolutionScale`.
+   *
+   * Each tile is a sub-rectangle selected with `camera.setViewOffset`, accumulated
+   * to `spp` samples, read back tone-mapped, and blitted into one big 2D canvas.
+   * The path tracer is driven manually here (the RAF loop is suspended), and the
+   * call is async — it awaits a frame between samples so the page stays responsive
+   * and `onProgress` can drive a UI.
+   */
+  async saveTiled(opts: {
+    width: number; height: number; spp: number;
+    tile?: number; filename?: string;
+    onProgress?: (info: { tile: number; tiles: number; samples: number; spp: number }) => void;
+  }): Promise<void> {
+    const { width, height, spp } = opts;
+    const filename = opts.filename ?? 'render.png';
+    const cap = this.renderer.capabilities.maxTextureSize || 8192;
+    const tile = Math.max(256, Math.min(opts.tile ?? 2048, cap));
+
+    if (!this.pathTracer) this.enablePathTracing();
+    const pt = this.pathTracer!;
+
+    // ---- save state to restore afterward ----
+    const prevSize = this.renderer.getSize(new THREE.Vector2());
+    const prevPR = this.renderer.getPixelRatio();
+    const prevScale = pt.renderScale;
+    const prevTiles = pt.tiles.clone();
+    const prevAspect = this.camera.aspect;
+    const prevRenderToCanvas = pt.renderToCanvas;
+    const wasTracing = this.mode === 'pathtracing';
+
+    this._exporting = true;
+    try {
+      // ---- configure for fixed tile-size rendering ----
+      this.mode = 'pathtracing';
+      this.camera.aspect = width / height;
+      this.renderer.setPixelRatio(1);
+      this.renderer.setSize(tile, tile, false);   // drawing buffer = tile; leave CSS size
+      pt.renderScale = 1;
+      pt.tiles.set(1, 1);
+      pt.renderToCanvas = false;                   // we read the target directly; no on-screen blit
+      pt.setScene(this.scene, this.camera);        // builds BVH + sizes targets to the tile (once)
+
+      const big = document.createElement('canvas');
+      big.width = width; big.height = height;
+      const bctx = big.getContext('2d')!;
+      const tmp = document.createElement('canvas');
+      tmp.width = tile; tmp.height = tile;
+      const tctx = tmp.getContext('2d')!;
+
+      const cols = Math.ceil(width / tile), rows = Math.ceil(height / tile);
+      const tiles = cols * rows;
+      const row = tile * 4;
+
+      for (let ry = 0; ry < rows; ry++) {
+        for (let cx = 0; cx < cols; cx++) {
+          const ox = cx * tile, oy = ry * tile;
+          // aim the camera at this sub-rectangle of the full width×height image
+          this.camera.setViewOffset(width, height, ox, oy, tile, tile);
+          this.camera.updateProjectionMatrix();
+          pt.updateCamera();
+          pt.reset();
+          while (pt.samples < spp) {
+            pt.renderSample();
+            if (Math.floor(pt.samples) % 8 === 0) {
+              opts.onProgress?.({ tile: ry * cols + cx, tiles, samples: pt.samples, spp });
+              await new Promise((r) => requestAnimationFrame(() => r(null)));
+            }
+          }
+          // read the tile (bottom-up), flip into tmp (top-down), blit the in-bounds part
+          const buf = this.readbackSRGB(pt.target.texture, tile, tile);
+          const img = tctx.createImageData(tile, tile);
+          for (let y = 0; y < tile; y++) img.data.set(buf.subarray((tile - 1 - y) * row, (tile - y) * row), y * row);
+          tctx.putImageData(img, 0, 0);
+          const cw = Math.min(tile, width - ox), ch = Math.min(tile, height - oy);
+          bctx.drawImage(tmp, 0, 0, cw, ch, ox, oy, cw, ch);
+          opts.onProgress?.({ tile: ry * cols + cx + 1, tiles, samples: pt.samples, spp });
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+        }
+      }
+
+      await new Promise<void>((res) => big.toBlob((b) => { if (b) download(b, filename); res(); }, 'image/png'));
+    } finally {
+      // ---- restore live state ----
+      this.camera.clearViewOffset();
+      this.camera.aspect = prevAspect;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setPixelRatio(prevPR);
+      this.renderer.setSize(prevSize.x, prevSize.y, true);
+      pt.renderScale = prevScale;
+      pt.tiles.copy(prevTiles);
+      pt.renderToCanvas = prevRenderToCanvas;
+      pt.setScene(this.scene, this.camera);
+      this._exporting = false;
+      if (!wasTracing) this.enableWebGL();
+      this.resetAccumulation();
+    }
   }
 
   // ---- mode switching ----------------------------------------------------

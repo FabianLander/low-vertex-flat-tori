@@ -45,12 +45,14 @@ export class TorusMesh extends THREE.Group {
 
   private readonly paper: PaperTorus;
   private readonly faceGeomOpts: { uv?: boolean; uvRepeat?: number; thickness?: number };
+  private readonly edgeOffset?: number;
   private readonly ownedMaterials: THREE.Material[] = [];
 
   constructor(paper: PaperTorus, opts: TorusMeshOptions = {}) {
     super();
     this.paper = paper;
     this.faceGeomOpts = { uv: opts.uv, uvRepeat: opts.uvRepeat, thickness: opts.thickness };
+    this.edgeOffset = opts.edgeOffset;
     const showFaces = opts.faces ?? true;
     const showEdges = opts.edges ?? true;
     const showVertices = opts.vertices ?? true;
@@ -97,6 +99,14 @@ export class TorusMesh extends THREE.Group {
     this.faceGeomOpts.thickness = Math.max(0, thickness);
     const old = this.faces.geometry;
     this.faces.geometry = facesGeometry(this.paper, this.faceGeomOpts);
+    old.dispose();
+  }
+
+  /** Rebuild the edge tubes at a new radius (0 ⟹ zero-radius ⟹ effectively invisible). */
+  setEdgeRadius(radius: number): void {
+    if (!this.edges) return;
+    const old = this.edges.geometry;
+    this.edges.geometry = edgesGeometry(this.paper, { radius, offset: this.edgeOffset });
     old.dispose();
   }
 
