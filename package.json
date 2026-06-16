@@ -24,6 +24,7 @@
     "teich-moduli": "tsx scripts/teich-moduli.mjs",
     "fatten": "tsx scripts/fatten.mjs",
     "barrier": "tsx scripts/barrier-fatten.mjs",
+    "semi-solutions": "tsx scripts/semi-solutions.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
