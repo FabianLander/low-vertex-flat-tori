@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { newtonFlatten } from './newton';
 import { maxConeDeficit, coneAngleDeficits, coneAngleJacobian } from './angles';
+import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from './develop';
 import { RICH_REFERENCE } from './reference';
 import { mulberry32 } from './perturb';
 import { RICH } from '../tori';
@@ -94,5 +95,49 @@ describe('newtonFlatten (K=7 projection onto the flat manifold)', () => {
         for (let i = 0; i < 24; i++) expect(Math.abs(xAn[i] - xFd[i])).toBeLessThan(1e-7);
       }
     }
+  });
+});
+
+describe('newtonFlatten with extraConstraints', () => {
+  it('drives an extra coordinate constraint to 0 alongside flatness', () => {
+    const rng = mulberry32(7);
+    for (let trial = 0; trial < 10; trial++) {
+      const x = Float64Array.from(RICH_REFERENCE.positions, (v) => v + 0.05 * (rng() * 2 - 1));
+      const target = x[0] + 0.02;
+      const r = newtonFlatten(RICH, x, {
+        extraConstraints: [{ label: 'x0', value: (p) => p[0] - target }],
+      });
+      expect(r.status).toBe('converged');
+      expect(maxConeDeficit(RICH, x)).toBeLessThan(1e-9);
+      expect(Math.abs(x[0] - target)).toBeLessThan(1e-9);
+    }
+  });
+
+  it('projects onto the rectangular-modulus locus: flat AND Re τ̂ = 0', () => {
+    const rng = mulberry32(99);
+    let converged = 0;
+    for (let trial = 0; trial < 10; trial++) {
+      const x = Float64Array.from(RICH_REFERENCE.positions, (v) => v + 0.03 * (rng() * 2 - 1));
+      // Freeze the SL(2,ℤ) chart at the seed so the constraint is smooth.
+      const { m } = reduceModulusWithMatrix(modulus(RICH, x).tau);
+      const r = newtonFlatten(RICH, x, {
+        extraConstraints: [{ label: 'Re(g·τ)', value: (p) => applyMobius(m, modulus(RICH, p).tau)[0] }],
+      });
+      if (r.status !== 'converged') continue; // far seeds may legitimately fail
+      converged++;
+      expect(maxConeDeficit(RICH, x)).toBeLessThan(1e-9);
+      expect(Math.abs(reduceModulus(modulus(RICH, x).tau)[0])).toBeLessThan(1e-9);
+    }
+    expect(converged).toBeGreaterThan(5);
+  });
+
+  it('with no extras, behaves exactly like the plain flattening', () => {
+    const seed = Float64Array.from(RICH_REFERENCE.positions, (v) => v + 0.04 * Math.sin(7 * v));
+    const xPlain = Float64Array.from(seed);
+    const xEmpty = Float64Array.from(seed);
+    const rPlain = newtonFlatten(RICH, xPlain);
+    const rEmpty = newtonFlatten(RICH, xEmpty, { extraConstraints: [] });
+    expect(rEmpty.status).toBe(rPlain.status);
+    for (let i = 0; i < 24; i++) expect(xEmpty[i]).toBe(xPlain[i]);
   });
 });

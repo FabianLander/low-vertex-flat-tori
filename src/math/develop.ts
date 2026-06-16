@@ -313,18 +313,48 @@ export function modulus(torus: Torus, p: ArrayLike<number>): Modulus {
 // SL(2,ℤ) reduction (for the moduli-space view)
 // ---------------------------------------------------------------------------
 
+/** An element of SL(2,ℤ) as [a, b, c, d] acting by τ ↦ (aτ + b)/(cτ + d). */
+export type Sl2z = readonly [number, number, number, number];
+
+/** Apply the Möbius transformation of m ∈ SL(2,ℤ) to τ (complex arithmetic). */
+export function applyMobius(m: Sl2z, tau: V2): V2 {
+  const [a, b, c, d] = m;
+  const nx = a * tau[0] + b, ny = a * tau[1];
+  const dx = c * tau[0] + d, dy = c * tau[1];
+  const den = dx * dx + dy * dy;
+  return [(nx * dx + ny * dy) / den, (ny * dx - nx * dy) / den];
+}
+
+/**
+ * Reduce τ ∈ ℍ into the standard fundamental domain
+ * { |Re τ| ≤ ½, |τ| ≥ 1 } via the generators T: τ↦τ+1 and S: τ↦−1/τ,
+ * also returning the SL(2,ℤ) element m with applyMobius(m, τ) = τ̂.
+ *
+ * The matrix is what makes τ̂ usable as a smooth constraint: the reduction
+ * map itself is only piecewise-smooth (it switches group elements at the
+ * fundamental-domain walls), but Re/Im of applyMobius(m, τ(p)) with m FROZEN
+ * is a smooth function of positions — freeze m at a seed, then constrain.
+ */
+export function reduceModulusWithMatrix(tau: V2): { tau: V2; m: Sl2z } {
+  let re = tau[0], im = tau[1];
+  let a = 1, b = 0, c = 0, d = 1;
+  for (let guard = 0; guard < 1000; guard++) {
+    const shift = Math.round(re);          // T^{-shift}: bring Re into [-½, ½]
+    re -= shift;
+    a -= shift * c; b -= shift * d;        // [1,-shift;0,1] · m
+    const n = re * re + im * im;
+    if (n >= 1 - 1e-15) break;             // already |τ| ≥ 1
+    re = -re / n; im = im / n;             // S: τ ↦ −1/τ
+    const na = -c, nb = -d;                // [0,-1;1,0] · m
+    c = a; d = b; a = na; b = nb;
+  }
+  return { tau: [re, im], m: [a, b, c, d] };
+}
+
 /**
  * Reduce τ ∈ ℍ into the standard fundamental domain
  * { |Re τ| ≤ ½, |τ| ≥ 1 } via the generators T: τ↦τ+1 and S: τ↦−1/τ.
  */
 export function reduceModulus(tau: V2): V2 {
-  let re = tau[0], im = tau[1];
-  for (let guard = 0; guard < 1000; guard++) {
-    const shift = Math.round(re);          // T: bring Re into [-½, ½]
-    re -= shift;
-    const n = re * re + im * im;
-    if (n >= 1 - 1e-15) break;             // already |τ| ≥ 1
-    re = -re / n; im = im / n;             // S: τ ↦ −1/τ
-  }
-  return [re, im];
+  return reduceModulusWithMatrix(tau).tau;
 }

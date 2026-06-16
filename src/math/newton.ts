@@ -37,6 +37,11 @@
  * Adapted from point-clouds/src/math/sampleIntersection.ts (newtonCorrectSystem),
  * which uses the same min-norm Gauss-Newton structure over CPⁿ. Dropped to reals.
  *
+ * Optionally, `opts.extraConstraints` appends further scalar residuals (each
+ * with an FD Jacobian row) so the projection lands on the intersection of the
+ * flat manifold with their zero sets — e.g. flat AND Re τ̂ = 0 (rectangular
+ * modulus). Convergence is then measured over deficits and extras together.
+ *
  * Mutates `positions` in place.
  */
 
@@ -44,6 +49,31 @@ import { coneAngleDeficits, coneAngleJacobian } from './angles';
 import type { Torus } from '../tori/defineTorus';
 
 export type NewtonStatus = 'converged' | 'diverged' | 'max-iters';
+
+/**
+ * The practical machine-precision floor of the flatness residual, measured
+ * empirically (500 perturbed seeds, σ = 0.003): tol 1e-14 converges 100% of
+ * the time with worst final deficit ≈ 1e-14 and avg ≈ 4e-15, at no extra cost
+ * (3.5 vs 3.1 iterations); stricter values hit the floating-point floor of
+ * the cone-angle sums and start failing to terminate (1e-15 → 64%). The
+ * pipeline runs at the 1e-12 default, which already yields ~1e-13 deficits —
+ * this constant records the measured floor for when maximum precision is
+ * explicitly wanted (e.g. pass it as `tolerance` for a final polish).
+ */
+export const MACHINE_FLAT_TOL = 1e-14;
+
+/**
+ * An extra scalar constraint appended to the cone-angle residual: the solver
+ * drives value(positions) → 0 alongside flatness. Must be smooth in the
+ * positions (e.g. Re of a Möbius-FROZEN modulus — see develop.ts
+ * reduceModulusWithMatrix). Its Jacobian row is built by central finite
+ * differences with opts.fdStep.
+ */
+export type NewtonConstraint = {
+  /** Label for debugging / logging. */
+  readonly label?: string;
+  value(positions: ArrayLike<number>): number;
+};
 
 export type NewtonOptions = {
   /** Stop when ||R||∞ < tolerance. Default 1e-12. */
@@ -63,6 +93,13 @@ export type NewtonOptions = {
    *  finite differences (the original; kept as a reference / escape hatch).
    *  Both produce the same min-norm step — validated row-by-row in the tests. */
   jacobian?: 'fd' | 'analytic';
+  /** Extra scalar constraints appended to the residual (each driven to 0
+   *  alongside the cone deficits). The projection then lands on the
+   *  intersection of the flat manifold with their zero sets — e.g. the
+   *  rectangular-modulus locus. Jacobian rows for these are always built by
+   *  central FD. Default none. Forwarded automatically by embeddedFlow via
+   *  newtonOpts, so the repulsion flow can run inside the constrained locus. */
+  extraConstraints?: readonly NewtonConstraint[];
 };
 
 export type NewtonResult = {
@@ -78,7 +115,10 @@ export function newtonFlatten(
 ): NewtonResult {
   const N = torus.vertexCount * 3;     // coordinate count
   const KFULL = torus.vertexCount;     // full deficit vector (honest convergence check)
-  const K = torus.vertexCount - 1;     // independent constraints driving the step (Gauss–Bonnet)
+  const KD = torus.vertexCount - 1;    // independent cone constraints (Gauss–Bonnet)
+  const extras = opts.extraConstraints ?? [];
+  const KE = extras.length;
+  const K = KD + KE;                   // total constraints driving the step
   if (positions.length !== N) {
     throw new Error(`newtonFlatten: expected ${N} positions, got ${positions.length}`);
   }
@@ -90,19 +130,36 @@ export function newtonFlatten(
   const invTwoH = 1 / (2 * h);
   const analytic = opts.jacobian !== 'fd';   // analytic is the default
 
-  // F/Fp/Fm hold the full 8-vector deficit; only the first K=7 entries feed the
-  // solve. coneAngleDeficits writes all 8, so these must be length KFULL.
+  // F/Fp/Fm hold the full 8-vector deficit; only the first KD=7 entries feed
+  // the solve. coneAngleDeficits writes all 8, so these must be length KFULL.
   const F = new Float64Array(KFULL);
   const Fp = new Float64Array(KFULL);
   const Fm = new Float64Array(KFULL);
-  // J is sized KFULL×N so the analytic builder can fill all 8 rows; the solve
-  // (and the FD branch) only read the first K=7. Row 7 is computed-but-unused.
-  const J = new Float64Array(KFULL * N);          // row-major, stride N
+  // Extra-constraint residuals (evaluated with the deficits) + FD staging.
+  const FX = new Float64Array(KE);
+  const FXp = new Float64Array(KE);
+  const FXm = new Float64Array(KE);
+  // J is sized (KFULL+KE)×N: the analytic builder fills all KFULL cone rows
+  // (row KD is computed-but-unused), extra-constraint rows live at KFULL+e.
+  // row(i) maps solve-row i to its storage row.
+  const J = new Float64Array((KFULL + KE) * N);   // row-major, stride N
+  const row = (i: number) => (i < KD ? i : KFULL + (i - KD));
   const aug = new Float64Array(K * (K + 1));      // augmented [G | F], K × (K+1)
   const w = new Float64Array(K);
 
-  coneAngleDeficits(torus, positions, F);
-  let curNorm = infNorm(F);                       // ‖·‖∞ over all deficits
+  // Full residual: all deficits + extras. ‖·‖∞ over everything, so
+  // convergence is honest on flatness AND the extra constraints.
+  const evalResidual = (): number => {
+    coneAngleDeficits(torus, positions, F);
+    let m = infNorm(F);
+    for (let e = 0; e < KE; e++) {
+      FX[e] = extras[e].value(positions);
+      const a = Math.abs(FX[e]);
+      if (a > m) m = a;
+    }
+    return m;
+  };
+  let curNorm = evalResidual();
 
   for (let iter = 0; iter <= maxIters; iter++) {
     if (curNorm < tol) {
@@ -127,23 +184,38 @@ export function newtonFlatten(
         positions[c] = saved - h;
         coneAngleDeficits(torus, positions, Fm);
         positions[c] = saved;
-        for (let r = 0; r < K; r++) {
+        for (let r = 0; r < KD; r++) {
           J[r * N + c] = (Fp[r] - Fm[r]) * invTwoH;
         }
+      }
+    }
+
+    // ---- extra-constraint rows: always central FD ----
+    if (KE > 0) {
+      for (let c = 0; c < N; c++) {
+        const saved = positions[c];
+        positions[c] = saved + h;
+        for (let e = 0; e < KE; e++) FXp[e] = extras[e].value(positions);
+        positions[c] = saved - h;
+        for (let e = 0; e < KE; e++) FXm[e] = extras[e].value(positions);
+        positions[c] = saved;
+        for (let e = 0; e < KE; e++) J[(KFULL + e) * N + c] = (FXp[e] - FXm[e]) * invTwoH;
       }
     }
 
     // ---- aug = [G + λI | F], with G = J Jᵀ (K×K symmetric) ----
     const stride = K + 1;
     for (let i = 0; i < K; i++) {
+      const ri = row(i);
       for (let j = i; j < K; j++) {
+        const rj = row(j);
         let s = 0;
-        for (let c = 0; c < N; c++) s += J[i * N + c] * J[j * N + c];
+        for (let c = 0; c < N; c++) s += J[ri * N + c] * J[rj * N + c];
         aug[i * stride + j] = s;
         aug[j * stride + i] = s;
       }
       aug[i * stride + i] += lambda;
-      aug[i * stride + K] = F[i];
+      aug[i * stride + K] = i < KD ? F[i] : FX[i - KD];
     }
 
     // ---- Solve aug → w via Gauss elim with partial pivoting ----
@@ -154,12 +226,11 @@ export function newtonFlatten(
     // ---- x ← x − Jᵀ w ----
     for (let c = 0; c < N; c++) {
       let s = 0;
-      for (let r = 0; r < K; r++) s += J[r * N + c] * w[r];
+      for (let r = 0; r < K; r++) s += J[row(r) * N + c] * w[r];
       positions[c] -= s;
     }
 
-    coneAngleDeficits(torus, positions, F);
-    curNorm = infNorm(F);
+    curNorm = evalResidual();
   }
 
   return { status: 'max-iters', iters: maxIters, residualNorm: curNorm };
