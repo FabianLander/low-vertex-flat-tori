@@ -141,3 +141,48 @@ describe('newtonFlatten with extraConstraints', () => {
     for (let i = 0; i < 24; i++) expect(xEmpty[i]).toBe(xPlain[i]);
   });
 });
+
+describe('newtonFlatten with frozenCoords', () => {
+  it('holds frozen coordinates exactly fixed while flattening the rest', () => {
+    const rng = mulberry32(31);
+    const FROZEN = [5, 8, 11, 14, 17, 20];   // the six planar z-coords
+    for (let trial = 0; trial < 10; trial++) {
+      const x = Float64Array.from(RICH_REFERENCE.positions, (v) => v + 0.04 * (rng() * 2 - 1));
+      const frozenEntry = FROZEN.map((c) => x[c]);
+      const r = newtonFlatten(RICH, x, { frozenCoords: FROZEN });
+      if (r.status !== 'converged') continue;
+      // Frozen coords are byte-for-byte unchanged (no step ever touches them).
+      FROZEN.forEach((c, i) => expect(x[c]).toBe(frozenEntry[i]));
+    }
+  });
+
+  it('default (no frozenCoords) is identical to passing an empty list', () => {
+    const seed = Float64Array.from(RICH_REFERENCE.positions, (v) => v + 0.03 * Math.cos(5 * v));
+    const xa = Float64Array.from(seed);
+    const xb = Float64Array.from(seed);
+    newtonFlatten(RICH, xa);
+    newtonFlatten(RICH, xb, { frozenCoords: [] });
+    for (let i = 0; i < 24; i++) expect(xb[i]).toBe(xa[i]);
+  });
+
+  it('composes with extraConstraints (freeze a column AND satisfy an extra row)', () => {
+    const rng = mulberry32(53);
+    const FROZEN = [5, 8, 11, 14, 17, 20];
+    let converged = 0;
+    for (let trial = 0; trial < 10; trial++) {
+      const x = Float64Array.from(RICH_REFERENCE.positions, (v) => v + 0.03 * (rng() * 2 - 1));
+      for (const c of FROZEN) x[c] = 0;
+      const target = x[0] + 0.015;
+      const r = newtonFlatten(RICH, x, {
+        frozenCoords: FROZEN,
+        extraConstraints: [{ label: 'x0', value: (p) => p[0] - target }],
+      });
+      if (r.status !== 'converged') continue;
+      converged++;
+      expect(maxConeDeficit(RICH, x)).toBeLessThan(1e-9);
+      expect(Math.abs(x[0] - target)).toBeLessThan(1e-9);  // extra row satisfied
+      for (const c of FROZEN) expect(x[c]).toBe(0);          // column stayed frozen
+    }
+    expect(converged).toBeGreaterThan(5);
+  });
+});
