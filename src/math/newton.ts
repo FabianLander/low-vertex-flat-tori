@@ -42,6 +42,12 @@
  * flat manifold with their zero sets — e.g. flat AND Re τ̂ = 0 (rectangular
  * modulus). Convergence is then measured over deficits and extras together.
  *
+ * Orthogonally, `opts.frozenCoords` zeroes the named coordinate columns of J
+ * before the solve, so the min-norm step never touches them (a hard linear
+ * constraint by projection — e.g. z = 0 for planar vertices). Frozen columns
+ * are zeroed across the cone rows AND the extra-constraint rows, so the two
+ * features compose.
+ *
  * Mutates `positions` in place.
  */
 
@@ -100,6 +106,13 @@ export type NewtonOptions = {
    *  central FD. Default none. Forwarded automatically by embeddedFlow via
    *  newtonOpts, so the repulsion flow can run inside the constrained locus. */
   extraConstraints?: readonly NewtonConstraint[];
+  /** Coordinate indices to hold fixed throughout the iteration. Those columns
+   *  of J are zeroed before forming the normal equations, so the min-norm step
+   *  never moves them — each keeps its entry value. Indices are into the flat
+   *  positions array (vertex i, coordinate k → index 3i+k). Composes with
+   *  extraConstraints (columns zeroed across cone AND extra rows). Useful for
+   *  hard linear constraints, e.g. z=0 for planar vertices. Default none. */
+  frozenCoords?: readonly number[];
 };
 
 export type NewtonResult = {
@@ -129,6 +142,7 @@ export function newtonFlatten(
   const h = opts.fdStep ?? 1e-7;
   const invTwoH = 1 / (2 * h);
   const analytic = opts.jacobian !== 'fd';   // analytic is the default
+  const frozen = opts.frozenCoords ?? [];
 
   // F/Fp/Fm hold the full 8-vector deficit; only the first KD=7 entries feed
   // the solve. coneAngleDeficits writes all 8, so these must be length KFULL.
@@ -201,6 +215,12 @@ export function newtonFlatten(
         positions[c] = saved;
         for (let e = 0; e < KE; e++) J[(KFULL + e) * N + c] = (FXp[e] - FXm[e]) * invTwoH;
       }
+    }
+
+    // ---- Zero frozen columns across every solve row (cone + extra) so those
+    //      coordinates receive no step. row(i) maps solve-row → storage row. ----
+    for (const c of frozen) {
+      for (let i = 0; i < K; i++) J[row(i) * N + c] = 0;
     }
 
     // ---- aug = [G + λI | F], with G = J Jᵀ (K×K symmetric) ----
