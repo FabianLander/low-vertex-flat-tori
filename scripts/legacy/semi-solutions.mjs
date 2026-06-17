@@ -21,10 +21,10 @@
  *   npm run semi-solutions -- 2>/dev/null   # suppress progress to stderr
  */
 
-import { torus7 as torus } from '../src/topology/torus7.ts';
-import { scanSemiSolutions } from '../src/math/semiSolution.ts';
-import { doyleSchwartzPositions } from '../src/configuration/doyleSchwartz.ts';
-import { modulus, reduceModulus } from '../src/topology/develop.ts';
+import { torus7 as torus } from '../../src/topology/torus7.ts';
+import { scanSemiSolutions } from '../../src/math/semiSolution.ts';
+import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
+import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 
 // ---------------------------------------------------------------------------
 // Seeds: points in the DS fundamental domain F = {x≥0, x≤½, (x−1)²+y²≥1}

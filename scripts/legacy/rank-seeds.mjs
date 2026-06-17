@@ -20,8 +20,8 @@
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, statSync } from 'fs';
 import { resolve, join } from 'path';
-import { byId } from '../src/triangulations/index.ts';
-import { coneAngleDeficits, maxConeDeficit } from '../src/functions/coneDeficit.ts';
+import { byId } from '../../src/triangulations/index.ts';
+import { coneAngleDeficits, maxConeDeficit } from '../../src/functions/coneDeficit.ts';
 
 const args = process.argv.slice(2);
 const flag = (n) => { const i = args.indexOf(n); return i === -1 ? undefined : args[i + 1]; };

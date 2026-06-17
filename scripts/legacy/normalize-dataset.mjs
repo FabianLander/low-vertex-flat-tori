@@ -18,8 +18,8 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-import { RICH } from '../src/triangulations/index.ts';
-import { toReduced, REDUCED_DIM } from '../src/configuration/gauge.ts';
+import { RICH } from '../../src/triangulations/index.ts';
+import { toReduced, REDUCED_DIM } from '../../src/configuration/gauge.ts';
 
 const DIM = RICH.vertexCount * 3; // 24
 

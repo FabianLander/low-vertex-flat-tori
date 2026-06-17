@@ -14,10 +14,10 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-import { RICH } from '../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../src/math/reference.ts';
-import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
-import { modulus, developNet, reduceModulus } from '../src/topology/develop.ts';
+import { RICH } from '../../src/triangulations/index.ts';
+import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { modulus, developNet, reduceModulus } from '../../src/topology/develop.ts';
 
 const DIM = RICH.vertexCount * 3;
 const inPath = resolve(process.argv[2] ?? 'data/explore-from-seeds/seeds.csv');

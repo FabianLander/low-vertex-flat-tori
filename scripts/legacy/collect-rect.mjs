@@ -54,13 +54,13 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 
-import { makeRng } from '../src/configuration/rng.ts';
-import { byId } from '../src/triangulations/index.ts';
-import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../src/topology/develop.ts';
-import { newtonFlatten } from '../src/math/newton.ts';
-import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
-import { isEmbedded } from '../src/math/embedded.ts';
-import { minMargin, linearSize } from '../src/functions/minMargin.ts';
+import { makeRng } from '../../src/configuration/rng.ts';
+import { byId } from '../../src/triangulations/index.ts';
+import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../../src/topology/develop.ts';
+import { newtonFlatten } from '../../src/math/newton.ts';
+import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { isEmbedded } from '../../src/math/embedded.ts';
+import { minMargin, linearSize } from '../../src/functions/minMargin.ts';
 
 const args = process.argv.slice(2);
 function flags(name) {

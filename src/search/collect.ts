@@ -1,0 +1,62 @@
+/**
+ * collect — the rejection-sampling search driver. Draw seeds, run an `attempt`
+ * recipe on each, keep the ones it certifies. This is the whole control flow a
+ * discovery search needs; everything problem-specific lives in the two callbacks
+ * (`drawSeed`, `attempt`) and everything IO-specific in `onAccept`/`onTry`, so the
+ * driver itself is pure — no files, no torus, no conditions.
+ *
+ *   while not done:
+ *     seed = drawSeed()                 // null ⇒ source exhausted, stop
+ *     cert = attempt(seed)              // runs project/flow/…; mutates seed in place
+ *     if cert: accept (onAccept), else: reject
+ *
+ * `attempt` returns a `Certificate` to accept or `null` to reject; on accept the
+ * `seed` buffer holds the accepted configuration (copy it in `onAccept` if you
+ * persist it — the buffer may be reused on the next draw).
+ *
+ * Pure: no three.js, no DOM.
+ */
+
+import type { Certificate } from './certify.ts';
+
+export interface CollectStats {
+  tries: number;
+  accepts: number;
+  rejects: number;
+}
+
+export interface CollectOptions {
+  /** Stop after this many attempts. Default ∞. */
+  maxTries?: number;
+  /** Stop after this many accepts. Default ∞. */
+  maxAccepts?: number;
+  /** Each accepted attempt: the certificate and the live config buffer (copy to persist). */
+  onAccept?: (cert: Certificate, positions: Float64Array) => void;
+  /** Every attempt (accept or reject): for progress, closeness scoring, etc. */
+  onTry?: (accepted: boolean, positions: Float64Array, stats: Readonly<CollectStats>) => void;
+}
+
+export function collect(
+  drawSeed: () => Float64Array | null,
+  attempt: (seed: Float64Array) => Certificate | null,
+  opts: CollectOptions = {},
+): CollectStats {
+  const maxTries = opts.maxTries ?? Infinity;
+  const maxAccepts = opts.maxAccepts ?? Infinity;
+  const stats: CollectStats = { tries: 0, accepts: 0, rejects: 0 };
+
+  while (stats.tries < maxTries && stats.accepts < maxAccepts) {
+    const seed = drawSeed();
+    if (seed === null) break;
+    stats.tries++;
+    const cert = attempt(seed);
+    if (cert) {
+      stats.accepts++;
+      opts.onAccept?.(cert, seed);
+    } else {
+      stats.rejects++;
+    }
+    opts.onTry?.(cert !== null, seed, stats);
+  }
+  return stats;
+}

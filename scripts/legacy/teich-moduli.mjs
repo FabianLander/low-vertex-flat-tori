@@ -27,8 +27,8 @@
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
-import { byId } from '../src/triangulations/index.ts';
-import { modulus } from '../src/topology/develop.ts';
+import { byId } from '../../src/triangulations/index.ts';
+import { modulus } from '../../src/topology/develop.ts';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const flag = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : d; };

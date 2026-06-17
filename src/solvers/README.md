@@ -7,9 +7,10 @@ know **nothing** about a `Triangulation` — problem data lives in the implement
 (`functions/`, `configuration/`, `submanifolds/`, `regions/`), each depending on this
 module for its contract; `solvers/` depends on no implementation.
 
-- `types.ts` — the contracts the solvers consume: `Chart`, `Region`, `Energy`, and
+- `types.ts` — the contracts the solvers consume: `Chart`, `Region`, and
   `Held`/`Constraint` (a `Fn` from `functions/` plus how to use it). There is no
-  separate constraint *interface* — a constraint IS an `Fn` driven to zero.
+  separate constraint *or energy* interface — a constraint IS an `Fn` driven to zero,
+  an energy IS a scalar `Fn` descended (`flow` takes a `ScalarFn`).
 - `held.ts` — normalize a `Constraint` (bare `Fn` or `Fn`+usage) into the driven-rows
   form the steppers stack.
 - `project.ts` / `flow.ts` / `march.ts` / `tangentProject.ts` — the steppers, all on

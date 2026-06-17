@@ -63,17 +63,17 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
-import { RICH_REFERENCE } from '../src/math/reference.ts';
-import { makeRng } from '../src/configuration/rng.ts';
-import { byId } from '../src/triangulations/index.ts';
-import { newtonFlatten } from '../src/math/newton.ts';
-import { embeddedFlow } from '../src/math/embeddedFlow.ts';
-import { isEmbedded, allViolations } from '../src/math/embedded.ts';
-import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
-import { makeChordLengthSquared } from '../src/functions/energies/chordLengthSquared.ts';
-import { makeCutOffArea } from '../src/functions/energies/cutOffArea.ts';
-import { linearSize } from '../src/functions/minMargin.ts';
-import { totalArea } from '../src/topology/develop.ts';
+import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { makeRng } from '../../src/configuration/rng.ts';
+import { byId } from '../../src/triangulations/index.ts';
+import { newtonFlatten } from '../../src/math/newton.ts';
+import { embeddedFlow } from '../../src/math/embeddedFlow.ts';
+import { isEmbedded, allViolations } from '../../src/math/embedded.ts';
+import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { makeChordLengthSquared } from '../../src/functions/energies/chordLengthSquared.ts';
+import { makeCutOffArea } from '../../src/functions/energies/cutOffArea.ts';
+import { linearSize } from '../../src/functions/minMargin.ts';
+import { totalArea } from '../../src/topology/develop.ts';
 
 
 /** Scale positions in place to total surface area 1 (uniform scaling, so it

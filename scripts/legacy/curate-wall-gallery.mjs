@@ -31,11 +31,11 @@
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
-import { byId } from '../src/triangulations/index.ts';
-import { modulus, reduceModulus } from '../src/topology/develop.ts';
-import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
-import { isEmbedded } from '../src/math/embedded.ts';
-import { minMargin, linearSize } from '../src/functions/minMargin.ts';
+import { byId } from '../../src/triangulations/index.ts';
+import { modulus, reduceModulus } from '../../src/topology/develop.ts';
+import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { isEmbedded } from '../../src/math/embedded.ts';
+import { minMargin, linearSize } from '../../src/functions/minMargin.ts';
 
 const argv = process.argv.slice(2);
 const flags = (n) => argv.flatMap((a, i) => (a === n ? [argv[i + 1]] : []));

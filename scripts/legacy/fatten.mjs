@@ -27,16 +27,16 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 
-import { RICH } from '../src/triangulations/index.ts';
-import { newtonFlatten } from '../src/math/newton.ts';
-import { embeddedFlow } from '../src/math/embeddedFlow.ts';
-import { isEmbedded, allViolations } from '../src/math/embedded.ts';
-import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
-import { makeCellMargin } from '../src/functions/minMargin.ts';
-import { minMargin, linearSize } from '../src/functions/minMargin.ts';
-import { makeCutOffArea } from '../src/functions/energies/cutOffArea.ts';
-import { makeChordLengthSquared } from '../src/functions/energies/chordLengthSquared.ts';
-import { weightedSum } from '../src/math/energies/weightedSum.ts';
+import { RICH } from '../../src/triangulations/index.ts';
+import { newtonFlatten } from '../../src/math/newton.ts';
+import { embeddedFlow } from '../../src/math/embeddedFlow.ts';
+import { isEmbedded, allViolations } from '../../src/math/embedded.ts';
+import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { makeCellMargin } from '../../src/functions/minMargin.ts';
+import { minMargin, linearSize } from '../../src/functions/minMargin.ts';
+import { makeCutOffArea } from '../../src/functions/energies/cutOffArea.ts';
+import { makeChordLengthSquared } from '../../src/functions/energies/chordLengthSquared.ts';
+import { weightedSum } from '../../src/math/energies/weightedSum.ts';
 
 const DIM = RICH.vertexCount * 3; // 24
 

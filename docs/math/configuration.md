@@ -15,7 +15,7 @@ continuous DOF) acts on `C`, and every condition we care about is `G`-invariant 
 study is really `C/G`. We never form that quotient. Instead the gauge is handled *implicitly*: the
 solvers' minimum-norm step is orthogonal to the `G`-orbit directions, so projecting onto a condition
 never drifts along gauge; scale is pinned only at measurement (unit-area). A canonical pose
-(`math/normalize.ts`, the `v0→0, v1→ê₁, v2∈xy` convention) is used only for *storage/dedup* — a
+(`configuration/gauge.ts`, the `v0→0, v1→ê₁, v2∈xy` convention) is used only for *storage/dedup* — a
 representative of a `G`-orbit — never on the search path. (If one ever wanted explicit gauge-fixing
 it would just be a chart of pinned coordinates — no new mechanism.)
 

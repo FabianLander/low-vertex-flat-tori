@@ -69,19 +69,24 @@ src/triangulations/  the specific triangulations we study, as DATA — scales to
   markings.generated.ts  the derived marking cache (npm run compute-markings)
   (depends on topology)
 
-src/math/            the EXTRINSIC analytic substrate — realization in ℝ³ and its measurements:
-  embedding.ts (PaperTorus), angles.ts (cone-angle flatness), embedded.ts (self-intersection),
-  newton.ts (flatten), energies/, embeddedFlow.ts (legacy descent), normalize.ts (canonical pose),
-  reference.ts (Rich's known embedding, a fixture/seed)
-  (being rehomed into functions/ geometry/ regions/ during the refactor)
-
-THE SEARCH SYSTEM — a modular, problem-agnostic kit for constrained search (see docs/math):
-  src/solvers/         the engine, on the constraint Jacobian: project (corrector), tangentProject,
-                       flow (Riemannian descent), march (continuation); types.ts holds the contracts
-  src/configuration/   the search space C=ℝ³ⱽ and its charts: identity, pinCoords, symmetry
+THE SEARCH SYSTEM — a modular, problem-agnostic kit for constrained search (see docs/math).
+The extrinsic stack, in dependency order geometry → functions → {configuration, submanifolds,
+regions} → solvers → search:
+  src/geometry/        torus-blind ℝ²/ℝ³ kernels: point/segment/triangle distances, the tri–tri chord
+  src/functions/       the differentiable maps C→ℝᵏ (`Fn`): coneDeficit, tau, minMargin, energies/.
+                       ONE concept — a constraint is an `Fn` driven to 0, an energy a scalar `Fn` descended
+  src/configuration/   the search space C=ℝ³ⱽ & its structure: charts (identity, pinCoords, symmetry),
+                       gauge (canonical pose), perturb, rng, the Doyle–Schwartz seed family
   src/submanifolds/    closed conditions {g=0}: flat, collinear, modulus (fixed point / wall)
-  src/regions/         open conditions: embedded (the gate + its enter/stay energies)
-  src/search/          composition & measurement: certify (raw τ AND reduced τ̂); drivers — WIP
+  src/regions/         open conditions: embedded (the topological gate + its enter/stay energies)
+  src/solvers/         the engine, on the held Jacobian: project (corrector), tangentProject,
+                       flow (Riemannian descent), march (continuation); types.ts holds the contracts
+  src/search/          composition & measurement: certify (raw τ AND reduced τ̂), seeds, drivers
+
+src/math/            legacy substrate still being drained into the stack above:
+  newton.ts (dense solve + newtonFlatten), embedded.ts (isEmbedded), embedding.ts (PaperTorus),
+  reference.ts (Rich's fixture), semiSolution.ts, embeddedFlow.ts (dormant),
+  energies/ (cellMargin · cellBarrier · weightedSum — parked, awaiting a clean rebuild)
 
 src/mesh|render|viewer|io   three.js geometry, the path-traced Studio, the preview viewer, CSV ⇄ PaperTorus
 demos/ renders/      browser entry points (interactive demos; path-traced figures)
@@ -91,14 +96,17 @@ data/                CSV result sets (one torus per row, 24 floats)
 
 The dependency rule: **`src/topology` and `src/triangulations` never import three.js or touch the
 DOM**, and `topology` depends on nothing — so every intrinsic algorithm runs headless under `tsx`.
-The arrow is one-way: `triangulations → topology`; `src/math` builds on both; rendering sits on top.
+The arrows are one-way: `triangulations → topology`; the search stack `geometry → functions →
+{configuration, submanifolds, regions} → solvers → search` builds on top (and `solvers/` depends on
+no condition — it takes the abstract contracts); rendering sits on top of all of it.
 
 ## Two pipelines
 
-**1. Discovery — find a flat embedded torus.** `scripts/sample-flat.mjs`: sample a seed →
-`newtonFlatten` (land on the flatness manifold, cone angles → 2π) → `embeddedFlow` (descend a
-repulsion energy, re-flattening each step) → verify `maxConeDeficit < tol` **and** `isEmbedded`.
-Accepted tori are written as CSV rows.
+**1. Discovery — find a flat embedded torus.** Seed → `project` onto the flat manifold (cone angles
+→ 2π) → `flow` (Riemannian descent into the embedded region, re-projecting each step) → `certify`
+(`maxConeDeficit < tol` **and** `isEmbedded`, with τ/τ̂). Composed from the search kit (`src/solvers`
++ the conditions); the older `scripts/sample-flat.mjs` (`newtonFlatten` + `embeddedFlow`) is the
+legacy version being retired onto it.
 
 **2. Develop — compute the modulus τ.** `develop.ts` unfolds a flat torus along its fundamental
 domain and reads the holonomy of the two generator loops to get its point τ ∈ ℍ in Teichmüller
@@ -143,8 +151,9 @@ in Float32.
 
 ## Normalization convention
 
-`src/math/normalize.ts` puts an 8-vertex torus into a **canonical pose** under the similarity
+`src/configuration/gauge.ts` puts an 8-vertex torus into a **canonical pose** under the similarity
 group of ℝ³ (translation ⊕ rotation ⊕ uniform scale = 7 DOF): vertex 0 at the origin, vertex 1 at
 (1,0,0), vertex 2 in the xy-plane with y₂ ≥ 0. That removes the 7 similarity DOF, leaving **24 − 7
 = 17** free numbers (`toReduced`/`fromReduced`). Only proper rotations are used, so chirality is
-preserved, not quotiented.
+preserved, not quotiented. It's for storage/dedup only — off the search path, where the gauge is
+handled implicitly by the solvers' minimum-norm step.
