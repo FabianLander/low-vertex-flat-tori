@@ -21,7 +21,7 @@
 
 import type { Triangulation } from '../topology/triangulation.ts';
 import { flat } from '../conditions/flat.ts';
-import { modulusWall } from '../submanifolds/modulus.ts';
+import { modulusWall } from '../conditions/modulus.ts';
 import { flattenFlowEmbed, type FlowSearchOptions } from './recipe.ts';
 import type { Certificate } from './certify.ts';
 

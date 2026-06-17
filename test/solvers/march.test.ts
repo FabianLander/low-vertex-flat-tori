@@ -15,7 +15,7 @@ import type { Region } from '../../src/solvers/types.ts';
 import type { Fn } from '../../src/functions/types.ts';
 import { scalarFn } from '../../src/functions/compose.ts';
 import { flat } from '../../src/conditions/flat.ts';
-import { modulusWall } from '../../src/submanifolds/modulus.ts';
+import { modulusWall } from '../../src/conditions/modulus.ts';
 import { embedded } from '../../src/regions/embedded.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { isEmbedded } from '../../src/math/embedded.ts';

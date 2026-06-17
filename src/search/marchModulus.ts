@@ -23,7 +23,7 @@ import type { ScalarFn } from '../functions/types.ts';
 import type { Family } from '../solvers/march.ts';
 import { identity } from '../configuration/chart.ts';
 import { flat } from '../conditions/flat.ts';
-import { modulusWall } from '../submanifolds/modulus.ts';
+import { modulusWall } from '../conditions/modulus.ts';
 import { embedded } from '../regions/embedded.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';

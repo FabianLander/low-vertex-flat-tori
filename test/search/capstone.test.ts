@@ -14,7 +14,7 @@ import { flow } from '../../src/solvers/flow.ts';
 import { march, type Family } from '../../src/solvers/march.ts';
 import { identity } from '../../src/configuration/chart.ts';
 import { flat } from '../../src/conditions/flat.ts';
-import { modulusWall } from '../../src/submanifolds/modulus.ts';
+import { modulusWall } from '../../src/conditions/modulus.ts';
 import { embedded } from '../../src/regions/embedded.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { isEmbedded } from '../../src/math/embedded.ts';
