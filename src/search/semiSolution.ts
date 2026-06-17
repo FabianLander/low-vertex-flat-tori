@@ -22,7 +22,7 @@
 import type { Triangulation } from '../topology/triangulation.ts';
 import { pinCoords } from '../configuration/chart.ts';
 import { flat } from '../conditions/flat.ts';
-import { collinear } from '../submanifolds/collinear.ts';
+import { collinear } from '../conditions/collinear.ts';
 import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
 import { gaussian } from '../configuration/rng.ts';
 import { project } from '../solvers/project.ts';

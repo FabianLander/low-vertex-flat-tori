@@ -1,0 +1,40 @@
+/**
+ * collinear — the condition that a vertex triple lies on a line in the XY-plane:
+ * the signed-area *measurement* and the *constraint* that drives it to zero.
+ *
+ * The signed area 2·area(Pi,Pj,Pk) = (Pj−Pi) × (Pk−Pi) (the z-component of the
+ * planar cross product) vanishes iff the three are collinear. It's bilinear in the
+ * coordinates, so its gradient is closed-form — no finite differences. Used by the
+ * Doyle–Schwartz semi-solution search (the two planar triples {1,2,3}, {4,5,6}).
+ *
+ * Pure: no three.js, no DOM.
+ */
+
+import type { Fn } from '../functions/types.ts';
+
+/** Twice the signed area of (Pi, Pj, Pk) in the XY-plane; zero iff collinear. */
+export function signedArea2(p: ArrayLike<number>, i: number, j: number, k: number): number {
+  const oi = 3 * i, oj = 3 * j, ok = 3 * k;
+  return (p[oj] - p[oi]) * (p[ok + 1] - p[oi + 1])
+       - (p[oj + 1] - p[oi + 1]) * (p[ok] - p[oi]);
+}
+
+/** Collinearity of the vertex triple (i, j, k): planar signed area = 0. codim 1, analytic. */
+export function collinear(i: number, j: number, k: number): Fn {
+  const oi = 3 * i, oj = 3 * j, ok = 3 * k;
+  return {
+    label: `collinear-${i}${j}${k}`,
+    dim: 1,
+    value: (c, out) => { out[0] = signedArea2(c, i, j, k); },
+    jacobian: (c, out) => {
+      out.fill(0);
+      const xi = c[oi], yi = c[oi + 1];
+      const xj = c[oj], yj = c[oj + 1];
+      const xk = c[ok], yk = c[ok + 1];
+      // ∂A/∂Pi, ∂A/∂Pj, ∂A/∂Pk for A = (Pj−Pi)×(Pk−Pi); z-partials are 0.
+      out[oi] = yj - yk; out[oi + 1] = xk - xj;
+      out[oj] = yk - yi; out[oj + 1] = xi - xk;
+      out[ok] = yi - yj; out[ok + 1] = xj - xi;
+    },
+  };
+}
