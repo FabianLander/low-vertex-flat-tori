@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius, developNet } from './develop';
 import { totalArea } from './develop';
-import { RICH_REFERENCE } from './reference';
-import { RICH } from '../tori';
+import { RICH_REFERENCE } from '../math/reference';
+import { RICH } from '../triangulations';
 
 describe('develop → modulus τ', () => {
   it('Rich: covolume = intrinsic area (unit-index basis) and holonomy is a pure translation', () => {

@@ -22,9 +22,9 @@
  * the Re = ±½ walls. Hover for τ, reduced Re τ̂, cone deficit, and margin.
  */
 
-import { byId } from '../../src/tori';
-import type { Triangulation } from '../../src/tori';
-import { modulus, reduceModulus } from '../../src/math/develop';
+import { byId } from '../../src/triangulations';
+import type { Triangulation } from '../../src/topology/triangulation';
+import { modulus, reduceModulus } from '../../src/topology/develop';
 import { newtonFlatten } from '../../src/math/newton';
 import { maxConeDeficit } from '../../src/math/angles';
 import { isEmbedded } from '../../src/math/embedded';

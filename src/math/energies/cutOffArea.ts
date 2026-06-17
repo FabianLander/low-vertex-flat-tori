@@ -20,7 +20,7 @@
  * instead — same shape but uniform weight per pair.
  */
 
-import type { Triangulation } from '../../tori/triangulation';
+import type { Triangulation } from '../../topology/triangulation';
 import { triTriChord } from '../intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';

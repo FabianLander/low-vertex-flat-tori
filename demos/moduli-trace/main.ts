@@ -12,8 +12,8 @@
  *            b cloud · c curve · w download selected tori (CSV)
  */
 
-import { RICH } from '../../src/tori';
-import { modulus } from '../../src/math/develop';
+import { RICH } from '../../src/triangulations';
+import { modulus } from '../../src/topology/develop';
 import { makeCurve, type PlaneCurve } from '../../src/math/plane/curve';
 import { sampleAlongCurve, type CloudPoint, type Match } from '../../src/math/plane/curveCloudSample';
 import type { Vec2 } from '../../src/math/plane/vec2';

@@ -19,7 +19,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 import { PaperTorus } from '../../src/math/embedding';
-import { RICH } from '../../src/tori';
+import { RICH } from '../../src/triangulations';
 import { normalize } from '../../src/math/normalize';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { TorusView } from '../../src/viewer/TorusView';

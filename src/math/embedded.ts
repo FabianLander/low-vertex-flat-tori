@@ -23,7 +23,7 @@
  * to keep the predicate robust on generic embeddings.
  */
 
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 
 export type EmbeddingViolation = {
   /** 'tri-tri' = disjoint pair's interiors intersect.

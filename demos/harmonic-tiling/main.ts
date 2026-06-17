@@ -5,7 +5,7 @@
  *
  * This is the inspector for a triangulation's auto develop-cut / markings: it
  * works for ANY triangulation with no embedding needed. Built on
- * src/math/harmonicLayout (flat layout + lattice + `periodicTiles`) and
+ * src/topology/harmonicLayout (flat layout + lattice + `periodicTiles`) and
  * `exactMinCutDomain` (the minimal-cut fundamental domain). #7 comes out as the
  * equilateral triangular lattice; the others are their harmonic flat structures
  * (genuinely non-equilateral).
@@ -14,9 +14,9 @@
  *           t triangle ids · v vertex ids · r reset view
  */
 
-import { ALL_TORI } from '../../src/tori';
-import { harmonicLayout, periodicTiles, type XY } from '../../src/math/harmonicLayout';
-import { exactMinCutDomain } from '../../src/math/fundamentalDomain';
+import { ALL_TORI } from '../../src/triangulations';
+import { harmonicLayout, periodicTiles, type XY } from '../../src/topology/harmonicLayout';
+import { exactMinCutDomain } from '../../src/topology/fundamentalDomain';
 
 const data = ALL_TORI.map((t) => {
   const layout = harmonicLayout(t);

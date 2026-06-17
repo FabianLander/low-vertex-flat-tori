@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { makeChordLengthSquared } from './chordLengthSquared';
 import { makeCutOffArea } from './cutOffArea';
 import { makeCellMargin, minMargin, linearSize } from './cellMargin';
-import { totalArea } from '../develop';
+import { totalArea } from '../../topology/develop';
 import { RICH_REFERENCE } from '../reference';
 import { mulberry32 } from '../perturb';
-import { RICH } from '../../tori';
+import { RICH } from '../../triangulations';
 
 const CHORD_LENGTH_SQUARED = makeChordLengthSquared(RICH);
 const CUTOFF_AREA = makeCutOffArea(RICH);

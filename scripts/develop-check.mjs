@@ -1,5 +1,5 @@
 /**
- * Validate src/math/develop.ts on the Rich reference + every row of a CSV
+ * Validate src/topology/develop.ts on the Rich reference + every row of a CSV
  * (default data/explore-from-seeds/seeds.csv).
  *
  * For each torus we assert the development is sound and print its modulus:
@@ -14,10 +14,10 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-import { RICH } from '../src/tori/index.ts';
+import { RICH } from '../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../src/math/reference.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
-import { modulus, developNet, reduceModulus } from '../src/math/develop.ts';
+import { modulus, developNet, reduceModulus } from '../src/topology/develop.ts';
 
 const DIM = RICH.vertexCount * 3;
 const inPath = resolve(process.argv[2] ?? 'data/explore-from-seeds/seeds.csv');

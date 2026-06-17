@@ -23,8 +23,8 @@
  * Pure: no DOM, no three.js. Output is plane coordinates only.
  */
 
-import type { Triangulation } from '../tori/triangulation';
-import { edgeKey, edgeEnds } from '../tori/triangulation';
+import type { Triangulation } from './triangulation';
+import { edgeKey, edgeEnds } from './triangulation';
 
 export type XY = [number, number];
 

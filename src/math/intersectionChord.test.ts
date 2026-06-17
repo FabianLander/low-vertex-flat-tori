@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { triTriChord } from './intersectionChord';
 import { RICH_REFERENCE } from './reference';
-import { RICH } from '../tori';
+import { RICH } from '../triangulations';
 
 const TRIANGLES = RICH.triangles;
 const DISJOINT_TRIANGLE_PAIRS = RICH.disjointTrianglePairs;

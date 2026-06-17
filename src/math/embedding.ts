@@ -4,7 +4,7 @@
  * a three.js BufferAttribute directly.
  */
 
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 import { coneAngleAt, maxConeDeficit as maxDef } from './angles';
 
 const TWO_PI = Math.PI * 2;

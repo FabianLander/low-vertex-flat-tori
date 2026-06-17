@@ -15,8 +15,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { PaperTorus } from '../math/embedding';
-import type { V2 } from '../math/develop';
-import { developNet } from '../math/develop';
+import type { V2 } from '../topology/develop';
+import { developNet } from '../topology/develop';
 import { latticeUV } from '../mesh/uv';
 
 export interface DevelopedSheetOptions {

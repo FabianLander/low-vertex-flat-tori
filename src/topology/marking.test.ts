@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_TORI } from '../tori/index';
-import { edgeKey } from '../tori/triangulation';
-import { MARKINGS } from '../tori/markings';
+import { ALL_TORI } from '../triangulations';
+import { edgeKey } from './triangulation';
+import { MARKINGS } from '../triangulations/markings.generated';
 import { harmonicLayout } from './harmonicLayout';
 import { exactMinCutDomain } from './fundamentalDomain';
 import { canonicalDecoration } from './marking';

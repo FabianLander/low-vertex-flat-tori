@@ -52,7 +52,7 @@
  */
 
 import { coneAngleDeficits, coneAngleJacobian } from './angles';
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 
 export type NewtonStatus = 'converged' | 'diverged' | 'max-iters';
 

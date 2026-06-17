@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_TORI } from '../tori';
+import { ALL_TORI } from '../triangulations';
 import { newtonFlatten } from './newton';
 import { maxConeDeficit } from './angles';
-import { modulus } from './develop';
+import { modulus } from '../topology/develop';
 import { mulberry32 } from './perturb';
 
 /**

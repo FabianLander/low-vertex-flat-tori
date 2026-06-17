@@ -19,8 +19,8 @@
  * seamless, since 1/repeat divides the period). Per-corner, length = F*3*2.
  */
 
-import type { Triangulation } from '../tori/triangulation';
-import { developNet, modulus, type DevelopedNet } from '../math/develop';
+import type { Triangulation } from '../topology/triangulation';
+import { developNet, modulus, type DevelopedNet } from '../topology/develop';
 
 export function latticeUV(
   torus: Triangulation,

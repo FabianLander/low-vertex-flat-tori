@@ -10,7 +10,7 @@
  * coloring. One implementation, two callers.
  */
 
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 
 const TWO_PI = Math.PI * 2;
 

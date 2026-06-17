@@ -27,7 +27,7 @@
  * This module is self-contained and does not modify cellMargin.ts.
  */
 
-import type { Triangulation } from '../../tori/triangulation';
+import type { Triangulation } from '../../topology/triangulation';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   triangleTriangleDist2, segmentTriangleDist2,

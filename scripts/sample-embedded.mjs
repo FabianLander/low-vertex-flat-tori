@@ -38,7 +38,7 @@ import { resolve, dirname } from 'path';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { makeRng } from '../src/math/perturb.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
-import { byId } from '../src/tori/index.ts';
+import { byId } from '../src/triangulations/index.ts';
 
 const args = process.argv.slice(2);
 function flag(name) {

@@ -33,7 +33,7 @@
  * Mathematical background: notes/semi-solutions.tex.
  * Related code: src/math/newton.ts (the Gauss-Newton solver, including the
  *               extraConstraints and frozenCoords this module rides on),
- *               src/math/develop.ts (modulus τ from a flat embedding).
+ *               src/topology/develop.ts (modulus τ from a flat embedding).
  *
  * References:
  *   [DS25] Doyle-Schwartz, "Collapsibility and near-universality of paper
@@ -42,10 +42,10 @@
  */
 
 import { maxConeDeficit } from './angles';
-import { modulus } from './develop';
+import { modulus } from '../topology/develop';
 import { isEmbedded } from './embedded';
 import { newtonFlatten, type NewtonConstraint } from './newton';
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 
 // ---------------------------------------------------------------------------
 // Constants

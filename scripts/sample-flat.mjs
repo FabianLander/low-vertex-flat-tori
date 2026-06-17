@@ -65,7 +65,7 @@ import { resolve, dirname } from 'path';
 
 import { RICH_REFERENCE } from '../src/math/reference.ts';
 import { makeRng } from '../src/math/perturb.ts';
-import { byId } from '../src/tori/index.ts';
+import { byId } from '../src/triangulations/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded, allViolations } from '../src/math/embedded.ts';

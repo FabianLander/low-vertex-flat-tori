@@ -31,8 +31,8 @@
  * switches in the distance routines are fine for central differences).
  */
 
-import type { Triangulation } from '../../tori/triangulation';
-import { totalArea } from '../develop';
+import type { Triangulation } from '../../topology/triangulation';
+import { totalArea } from '../../topology/develop';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2, triangleTriangleDist2,
 } from '../distance';

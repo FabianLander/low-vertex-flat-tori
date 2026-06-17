@@ -15,8 +15,8 @@
  * Pure: no DOM/three.js.
  */
 
-import type { Triangulation } from '../tori/triangulation';
-import { edgeKey, edgeEnds } from '../tori/triangulation';
+import type { Triangulation } from './triangulation';
+import { edgeKey, edgeEnds } from './triangulation';
 import { type HarmonicLayout, type HarmonicTile, type XY } from './harmonicLayout';
 
 export type ExactDomainResult = {

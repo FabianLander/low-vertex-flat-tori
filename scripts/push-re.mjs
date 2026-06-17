@@ -57,8 +57,8 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, readdirS
 import { resolve, dirname, join } from 'path';
 
 import { makeRng } from '../src/math/perturb.ts';
-import { byId } from '../src/tori/index.ts';
-import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../src/math/develop.ts';
+import { byId } from '../src/triangulations/index.ts';
+import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../src/topology/develop.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 import { isEmbedded } from '../src/math/embedded.ts';

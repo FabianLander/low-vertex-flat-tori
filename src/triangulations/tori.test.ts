@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_TORI, RICH, edgeKey } from './index';
-import { tutteLayout, tileSignedArea2 } from '../math/tutteLayout';
+import { ALL_TORI, RICH } from './index';
+import { edgeKey } from '../topology/triangulation';
+import { tutteLayout, tileSignedArea2 } from '../topology/tutteLayout';
 
 /** Two cyclic sequences equal up to rotation. */
 function sameCycle(a: readonly number[], b: readonly number[]): boolean {

@@ -20,7 +20,7 @@
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, statSync } from 'fs';
 import { resolve, join } from 'path';
-import { byId } from '../src/tori/index.ts';
+import { byId } from '../src/triangulations/index.ts';
 import { coneAngleDeficits, maxConeDeficit } from '../src/math/angles.ts';
 
 const args = process.argv.slice(2);

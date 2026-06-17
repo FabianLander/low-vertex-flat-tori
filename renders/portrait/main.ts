@@ -12,7 +12,7 @@
 
 import * as THREE from 'three';
 
-import { RICH } from '../../src/tori';
+import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus, creaseEdgeMaterial, type StyledTorusOptions } from '../../src/render/styledTorus';

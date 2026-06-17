@@ -14,7 +14,7 @@
 import * as THREE from 'three';
 import { PhysicalSpotLight } from 'three-gpu-pathtracer';
 
-import { RICH } from '../../src/tori';
+import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus } from '../../src/render/styledTorus';

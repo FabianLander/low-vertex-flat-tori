@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { RICH } from '../../src/tori';
+import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE, HIGHLIGHT_PALETTE, oneHot } from '../../src/viewer/palette';

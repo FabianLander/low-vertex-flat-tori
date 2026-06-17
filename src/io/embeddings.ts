@@ -9,7 +9,7 @@
  * The `-normalized` datasets are gauge-reduced (fewer columns) and are skipped.
  */
 
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 import { PaperTorus } from '../math/embedding';
 
 /** One embedding from a coordinate row (extra trailing columns are ignored). */

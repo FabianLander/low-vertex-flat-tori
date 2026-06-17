@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { isEmbedded, firstViolation, allViolations } from './embedded';
 import { RICH_REFERENCE } from './reference';
-import { RICH } from '../tori';
+import { RICH } from '../triangulations';
 
 describe('embeddedness', () => {
   it('pair classification matches the 24 / 72 split for Rich', () => {

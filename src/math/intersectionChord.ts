@@ -21,7 +21,7 @@
  * other endpoint comes from the non-shared edge of A crossing plane(B).
  */
 
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 
 export type ChordResult = {
   length: number;

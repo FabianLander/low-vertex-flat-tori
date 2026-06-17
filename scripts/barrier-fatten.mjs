@@ -28,7 +28,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 
-import { RICH } from '../src/tori/index.ts';
+import { RICH } from '../src/triangulations/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded } from '../src/math/embedded.ts';

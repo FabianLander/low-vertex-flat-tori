@@ -43,7 +43,7 @@ import { appendFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'fs
 import { resolve, dirname } from 'path';
 
 import { makeRng } from '../src/math/perturb.ts';
-import { byId } from '../src/tori/index.ts';
+import { byId } from '../src/triangulations/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 

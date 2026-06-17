@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { newtonFlatten } from './newton';
 import { maxConeDeficit, coneAngleDeficits, coneAngleJacobian } from './angles';
-import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from './develop';
+import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../topology/develop';
 import { RICH_REFERENCE } from './reference';
 import { mulberry32 } from './perturb';
-import { RICH } from '../tori';
+import { RICH } from '../triangulations';
 
 const VERTEX_COUNT = RICH.vertexCount;
 const N = VERTEX_COUNT * 3;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { RICH } from '../../src/tori';
+import { RICH } from '../../src/triangulations';
 import { PaperTorus } from '../../src/math/embedding';
 import { TorusView } from '../../src/viewer/TorusView';
 import { SAMPLE_COUNT, SAMPLE_SIZE, SAMPLES_FLAT } from './data';

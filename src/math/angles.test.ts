@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { coneAngles, coneAngleDeficits, maxConeDeficit } from './angles';
 import { RICH_REFERENCE } from './reference';
 import { mulberry32 } from './perturb';
-import { RICH } from '../tori';
+import { RICH } from '../triangulations';
 
 const TWO_PI = Math.PI * 2;
 

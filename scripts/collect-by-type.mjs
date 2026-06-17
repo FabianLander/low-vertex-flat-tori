@@ -10,7 +10,7 @@
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'fs';
 import { resolve, join } from 'path';
-import { ALL_TORI, byId } from '../src/tori/index.ts';
+import { ALL_TORI, byId } from '../src/triangulations/index.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { maxConeDeficit } from '../src/math/angles.ts';
 

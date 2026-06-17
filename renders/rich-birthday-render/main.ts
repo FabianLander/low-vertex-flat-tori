@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { PhysicalSpotLight } from 'three-gpu-pathtracer';
 
-import { RICH } from '../../src/tori';
+import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus } from '../../src/render/styledTorus';

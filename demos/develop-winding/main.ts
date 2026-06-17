@@ -11,9 +11,9 @@
  * Controls:  ↑/↓ switch torus · ←/→ step · Space play/pause · r reset · v labels
  */
 
-import { ALL_TORI } from '../../src/tori/index';
-import { harmonicLayout, type XY } from '../../src/math/harmonicLayout';
-import { windingNet, type WindingNet } from '../../src/math/fundamentalDomain';
+import { ALL_TORI } from '../../src/triangulations/index';
+import { harmonicLayout, type XY } from '../../src/topology/harmonicLayout';
+import { windingNet, type WindingNet } from '../../src/topology/fundamentalDomain';
 
 const STEP_MS = 380;
 const HOLD_MS = 1100;

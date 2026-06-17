@@ -18,7 +18,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-import { RICH } from '../src/tori/index.ts';
+import { RICH } from '../src/triangulations/index.ts';
 import { toReduced, REDUCED_DIM } from '../src/math/normalize.ts';
 
 const DIM = RICH.vertexCount * 3; // 24

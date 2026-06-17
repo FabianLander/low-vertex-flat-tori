@@ -18,7 +18,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { byId } from '../../src/tori';
+import { byId } from '../../src/triangulations';
 import { paperFromRow } from '../../src/io/embeddings';
 import { styledTorus } from '../../src/render/styledTorus';
 import { paperMaterials } from '../../src/render/paper';

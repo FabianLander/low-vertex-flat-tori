@@ -16,7 +16,7 @@
 
 import { newtonFlatten, type NewtonOptions, type NewtonStatus } from './newton';
 import type { RepulsionEnergy } from './energies/types';
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 
 export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked' | 'rejected';
 

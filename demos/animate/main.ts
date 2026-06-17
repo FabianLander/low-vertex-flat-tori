@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { RICH } from '../../src/tori';
+import { RICH } from '../../src/triangulations';
 import { PaperTorus } from '../../src/math/embedding';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { perturb, mulberry32 } from '../../src/math/perturb';

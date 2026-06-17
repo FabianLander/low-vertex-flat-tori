@@ -13,13 +13,13 @@
  * module-level `TRIANGLES`, every triangulation is a value you pass around. The
  * seven 8-vertex combinatorial types live in `tori.ts` (`TORUS_8V`); each
  * `src/tori/torusN.ts` wraps one of them, and its marking is attached from the
- * cache (`markings.ts`).
+ * cache (`markings.generated.ts`).
  *
  * Pure data/combinatorics — no three.js, no DOM, no metric (3D coords).
  *
  * Each triangulation carries two decorations — a `FundamentalDomain` (how to
  * unfold it) and a `Marking` (its H₁ basis) — taken from the saved cache
- * (`markings.ts`, computed by `canonicalDecoration`) or a layout-free fallback;
+ * (`markings.generated.ts`, computed by `canonicalDecoration`) or a layout-free fallback;
  * see `buildDecoration`.
  *
  * NB: degree is NEVER assumed — among the 8-vertex types only Rich's (#7) is
@@ -28,7 +28,6 @@
  * triangulation of any size drops in cleanly.
  */
 
-import { MARKINGS } from './markings';
 
 export type Tri = readonly [number, number, number];
 export type Edge = readonly [number, number];
@@ -83,10 +82,11 @@ export type TriangulationSpec = {
   /** Display name; defaults to `torus-<F>f`. */
   readonly name?: string;
   readonly triangles: readonly Tri[];
-  /** A reference 3D embedding, if one exists (only #7 today). */
-  readonly referenceCoords?: readonly Vec3[];
-  /** Symmetry vertex pairing of the reference embedding (#7 Z/2). */
-  readonly symmetryPairing?: readonly Edge[];
+  /** Saved canonical marking (from the cache), injected by the registry. Omit
+   *  and a layout-free fallback (BFS order + tree–cotree generators) is derived. */
+  readonly cut?: readonly number[];
+  readonly developOrder?: readonly number[];
+  readonly generatorLoops?: readonly (readonly number[])[];
 };
 
 /**
@@ -136,8 +136,6 @@ export type Triangulation = {
   readonly sharedVertexTrianglePairs: readonly SharedVertexPair[];
   /** Non-adjacent cell pairs of all six type combinations (repulsion energies). */
   readonly cellPairs: CellPairs;
-  readonly referenceCoords?: readonly Vec3[];
-  readonly symmetryPairing?: readonly Edge[];
 };
 
 /** Symmetric integer key for an undirected edge {u,v}. */
@@ -270,20 +268,19 @@ function deriveAttach(
 
 /**
  * Decorate a triangulation with its fundamental domain + marking: the saved
- * canonical decoration (`markings.ts`) if there is one for this id, else a
+ * canonical decoration (`markings.generated.ts`) if there is one for this id, else a
  * layout-free fallback — a BFS develop order and a tree–cotree H₁ basis with no
  * minimal cut. `attach` is always re-derived here.
  */
 function buildDecoration(
-  id: number,
+  spec: TriangulationSpec,
   triangles: readonly Tri[],
   edgeToTris: Map<number, readonly [number, number]>,
   name: string,
 ): { fundamentalDomain: FundamentalDomain; marking: Marking } {
-  const saved = MARKINGS[id];
-  const cut = saved?.cut ?? [];
-  const developOrder = saved?.developOrder ?? autoDevelopOrder(triangles);
-  const generatorLoops = saved?.generatorLoops ?? homologyGenerators(triangles);
+  const cut = spec.cut ?? [];
+  const developOrder = spec.developOrder ?? autoDevelopOrder(triangles);
+  const generatorLoops = spec.generatorLoops ?? homologyGenerators(triangles);
   checkDevelopOrder(developOrder, triangles.length, name);
   checkGeneratorLoops(generatorLoops, edgeToTris, name);
   const attach = deriveAttach(triangles, developOrder, edgeToTris, cut);
@@ -507,8 +504,8 @@ export function defineTriangulation(spec: TriangulationSpec): Triangulation {
   const degreeSequence = vertexLinks.map((l) => l.length).slice().sort((a, b) => a - b);
 
   // Decorate with the fundamental domain + marking: the saved canonical decoration
-  // (markings.ts) if we have one, else a layout-free fallback. attach is re-derived.
-  const { fundamentalDomain, marking } = buildDecoration(id, triangles, edgeToTris, name);
+  // (markings.generated.ts) if we have one, else a layout-free fallback. attach is re-derived.
+  const { fundamentalDomain, marking } = buildDecoration(spec, triangles, edgeToTris, name);
 
   const { disjoint, sharedVertex } = classifyTrianglePairs(triangles);
   const cellPairs = deriveCellPairs(triangles, vertexCount, edges, disjoint);
@@ -527,7 +524,5 @@ export function defineTriangulation(spec: TriangulationSpec): Triangulation {
     disjointTrianglePairs: disjoint,
     sharedVertexTrianglePairs: sharedVertex,
     cellPairs,
-    referenceCoords: spec.referenceCoords,
-    symmetryPairing: spec.symmetryPairing,
   };
 }

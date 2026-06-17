@@ -12,7 +12,7 @@
  */
 
 import * as THREE from 'three';
-import type { Triangulation } from '../tori/triangulation';
+import type { Triangulation } from '../topology/triangulation';
 import { PaperTorus } from '../math/embedding';
 import {
   DEFAULT_VERTEX_COLOR,

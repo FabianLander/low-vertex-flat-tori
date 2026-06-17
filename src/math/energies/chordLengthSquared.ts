@@ -17,7 +17,7 @@
  * Cost: ≈ 96 triTriChord calls per compute(). FD gradient is 48× that.
  */
 
-import type { Triangulation } from '../../tori/triangulation';
+import type { Triangulation } from '../../topology/triangulation';
 import { triTriChord } from '../intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';

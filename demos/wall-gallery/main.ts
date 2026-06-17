@@ -22,8 +22,8 @@
 
 import * as THREE from 'three';
 
-import { byId } from '../../src/tori';
-import { modulus, reduceModulus } from '../../src/math/develop';
+import { byId } from '../../src/triangulations';
+import { modulus, reduceModulus } from '../../src/topology/develop';
 import { maxConeDeficit } from '../../src/math/angles';
 import { minMargin } from '../../src/math/energies/cellMargin';
 import { parseEmbeddings } from '../../src/io/embeddings';

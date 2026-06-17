@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { doyleSchwartzPositions, semiSolutionFlatten, scanSemiSolutions } from './semiSolution';
 import { maxConeDeficit } from './angles';
-import { modulus } from './develop';
-import { torus7 as torus } from '../tori/torus7';
+import { modulus } from '../topology/develop';
+import { byId } from '../triangulations';
+const torus = byId(7);
 
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];
 

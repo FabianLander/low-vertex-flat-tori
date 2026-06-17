@@ -30,8 +30,8 @@
  * Pure module: no three.js, no DOM.
  */
 
-import type { Triangulation } from '../tori/triangulation';
-import { edgeKey, edgeEnds } from '../tori/triangulation';
+import type { Triangulation } from './triangulation';
+import { edgeKey, edgeEnds } from './triangulation';
 
 export type V2 = readonly [number, number];
 

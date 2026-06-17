@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_TORI, RICH } from '../tori/index';
+import { ALL_TORI, RICH } from '../triangulations';
 import { harmonicLayout, tileSignedArea2 } from './harmonicLayout';
 import { windingNet } from './fundamentalDomain';
 

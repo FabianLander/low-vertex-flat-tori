@@ -12,11 +12,17 @@
  * Pure: no DOM/three.js.
  */
 
-import type { Triangulation } from '../tori/triangulation';
-import { edgeKey, edgeEnds, homologyGenerators } from '../tori/triangulation';
-import type { SavedMarking } from '../tori/markings';
+import type { Triangulation } from './triangulation';
+import { edgeKey, edgeEnds, homologyGenerators } from './triangulation';
 import { harmonicLayout, type HarmonicLayout } from './harmonicLayout';
 import { exactMinCutDomain, windingDevelop } from './fundamentalDomain';
+
+/** The savable canonical decoration — the cache shape. `attach` is re-derived. */
+export type SavedMarking = {
+  developOrder: number[];
+  generatorLoops: number[][];
+  cut: number[];
+};
 
 const cache = new WeakMap<Triangulation, SavedMarking>();
 
