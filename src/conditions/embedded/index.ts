@@ -16,6 +16,6 @@ export {
   type MarginReport, type GapType,
 } from './margin.ts';
 export {
-  makeChordLengthSquared, makeCutOffArea, makeCellMargin,
-  type CellMarginOptions,
+  makeChordLengthSquared, makeCutOffArea, makeCellMargin, makeCellBarrier,
+  type CellMarginOptions, type CellBarrierOptions,
 } from './energies.ts';

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { makeChordLengthSquared } from '../../../src/conditions/embedded/index';
 import { makeCutOffArea } from '../../../src/conditions/embedded/index';
-import { makeCellMargin } from '../../../src/conditions/embedded/index';
+import { makeCellMargin, makeCellBarrier } from '../../../src/conditions/embedded/index';
 import { minMargin, linearSize } from '../../../src/conditions/embedded/index';
 import { totalArea } from '../../../src/topology/develop';
 import { RICH_REFERENCE } from '../../../src/sampling/reference';
@@ -27,6 +27,27 @@ describe('repulsion energies', () => {
     const scaled = Float64Array.from(p, (v) => v * 3.7);
     expect(CELL_MARGIN.compute(scaled)).toBeCloseTo(CELL_MARGIN.compute(p), 9);
     expect(linearSize(RICH, scaled)).toBeCloseTo(3.7 * linearSize(RICH, p), 9);
+  });
+
+  it('cell-barrier: 0 when nothing is within δ, positive once δ exceeds the min gap, scale-free', () => {
+    const p = RICH_REFERENCE.positions;
+    const m = minMargin(RICH, p).margin;
+    // δ tiny → no gap is within it → barrier inactive.
+    expect(makeCellBarrier(RICH, { delta: 1e-9 }).compute(p)).toBe(0);
+    // δ past the smallest cell gap → at least that pair is active → barrier > 0.
+    expect(makeCellBarrier(RICH, { delta: 10 * m }).compute(p)).toBeGreaterThan(0);
+    // scale-free: gaps are normalized by √area, so inflation leaves the barrier fixed.
+    const scaled = Float64Array.from(p, (v) => v * 3.7);
+    const B = makeCellBarrier(RICH, { delta: 0.2 });
+    expect(B.compute(scaled)).toBeCloseTo(B.compute(p), 9);
+  });
+
+  it('cell-barrier blows up as δ grows (more pairs caught, log → larger)', () => {
+    const p = RICH_REFERENCE.positions;
+    const m = minMargin(RICH, p).margin;
+    const small = makeCellBarrier(RICH, { delta: 1.5 * m }).compute(p);
+    const big = makeCellBarrier(RICH, { delta: 5 * m }).compute(p);
+    expect(big).toBeGreaterThan(small);
   });
 
   it('totalArea is positive and matches √-scaling of linearSize', () => {

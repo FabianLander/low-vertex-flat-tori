@@ -1,15 +1,12 @@
 /**
- * Falsifiable validation of the search-kit core: re-express two TRUSTED solvers
- * (`newtonFlatten`, `semiSolutionFlatten`) as `project(chart, …, constraints)`
- * and assert the outputs match. If the abstraction is right, the numbers agree;
- * if it's wrong, these tests say exactly where.
+ * project validated against GROUND TRUTH — the math itself, not a legacy solver:
  *
- *   identity chart + [flat]                         vs newtonFlatten
- *   pinCoords chart + [flat, collinear, collinear]  vs semiSolutionFlatten
+ *   full space + [flat]                          → lands on the flat manifold
+ *   pinned space + [flat, collinear, collinear]  → lands on the semi-solution locus
  *
- * The match is bit-for-bit (posDiff = 0, identical iteration counts) — `project`
- * IS the trusted solver re-expressed, not an approximation. Tolerances are kept
- * strict on purpose.
+ * Each landing is checked by the defining equations directly (cone deficit → 0,
+ * planar signed area → 0, frozen z's exactly 0, a well-defined modulus), so the test
+ * stands on the mathematics with no reference implementation.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -18,8 +15,6 @@ import { pinCoords } from '../../src/coordinates/pin.ts';
 import { pullHeld } from '../../src/search/pull.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { collinear } from '../../src/conditions/collinear.ts';
-import { newtonFlatten } from '../../src/math/newton.ts';
-import { semiSolutionFlatten } from '../../src/math/semiSolution.ts';
 import { doyleSchwartzPositions } from '../../src/coordinates/doyleSchwartz.ts';
 import { modulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
@@ -30,15 +25,6 @@ import { mulberry32 } from '../../src/sampling/rng.ts';
 const torus = byId(7);
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];
 
-function maxAbsDiff(a: ArrayLike<number>, b: ArrayLike<number>): number {
-  let m = 0;
-  for (let i = 0; i < a.length; i++) {
-    const d = Math.abs(a[i] - b[i]);
-    if (d > m) m = d;
-  }
-  return m;
-}
-
 function area2(p: ArrayLike<number>, i: number, j: number, k: number): number {
   const oi = 3 * i, oj = 3 * j, ok = 3 * k;
   return (p[oj] - p[oi]) * (p[ok + 1] - p[oi + 1]) - (p[oj + 1] - p[oi + 1]) * (p[ok] - p[oi]);
@@ -46,7 +32,7 @@ function area2(p: ArrayLike<number>, i: number, j: number, k: number): number {
 const collinearity = (p: ArrayLike<number>) =>
   Math.max(Math.abs(area2(p, 1, 2, 3)), Math.abs(area2(p, 4, 5, 6)));
 
-// Interior points of the DS fundamental domain (same as semiSolution.test.ts).
+// Interior points of the DS fundamental domain.
 const SEEDS = [
   { x: 0.30, y: 1.40 },
   { x: 0.20, y: 1.55 },
@@ -55,94 +41,56 @@ const SEEDS = [
   { x: 0.45, y: 1.10 },
 ];
 
-describe('project — base case: identity chart + [flat] ≡ newtonFlatten', () => {
-  it('reproduces newtonFlatten on a perturbed Rich seed', () => {
-    // σ≈0.05 noise so Newton actually iterates (not a no-op near the manifold).
+describe('project — full space + [flat] lands on the flat manifold', () => {
+  it('flattens a perturbed Rich seed to cone deficit 0, with a well-defined modulus', () => {
     const seed = perturb(RICH_REFERENCE.positions, 0.05, mulberry32(12345));
+    const p = seed.slice();
+    const r = project(p, [flat(torus)]);
 
-    const posA = seed.slice();
-    const rA = newtonFlatten(torus, posA);
-
-    const posB = seed.slice();
-    const rB = project(posB, [flat(torus)]);
-
-    expect(rA.status).toBe('converged');
-    expect(rB.status).toBe('converged');
-    // No FD constraints here → purely analytic both sides → tightest bound.
-    expect(maxAbsDiff(posA, posB)).toBeLessThan(1e-10);
-    expect(maxConeDeficit(torus, posB)).toBeLessThan(1e-11);
-    expect(Math.abs(rA.iters - rB.iters)).toBeLessThanOrEqual(1);
-
-    const tA = modulus(torus, posA).tau;
-    const tB = modulus(torus, posB).tau;
-    expect(Math.abs(tA[0] - tB[0])).toBeLessThan(1e-8);
-    expect(Math.abs(tA[1] - tB[1])).toBeLessThan(1e-8);
+    expect(r.status).toBe('converged');
+    expect(maxConeDeficit(torus, p)).toBeLessThan(1e-11);   // every cone angle = 2π
+    const m = modulus(torus, p);
+    expect(m.rotDefect).toBeLessThan(1e-6);                 // flat ⟹ pure-translation holonomy
+    expect(m.tau[1]).toBeGreaterThan(0);                    // τ ∈ ℍ
   });
 });
 
-describe('project — acceptance: pinCoords + [flat, collinear×2] ≡ semiSolutionFlatten', () => {
+describe('project — pinned space + [flat, collinear×2] lands on the semi-solution locus', () => {
   const space = pinCoords(torus, FROZEN_Z);
   const constraints = pullHeld(space, [flat(torus), collinear(1, 2, 3), collinear(4, 5, 6)]);
 
-  it('reproduces semiSolutionFlatten on ρ-broken DS seeds', () => {
+  it('drives flatness AND the two collinearities to zero on ρ-broken DS seeds', () => {
     for (const { x, y } of SEEDS) {
-      // Break ρ-symmetry on the tent poles so Newton takes real steps.
-      const mk = () => {
-        const p = doyleSchwartzPositions(x, y);
-        p[0] += 0.05; p[2] += 0.04;     // P0
-        p[21] -= 0.03; p[23] += 0.02;   // P7
-        return p;
-      };
+      const seed = doyleSchwartzPositions(x, y);
+      seed[0] += 0.05; seed[2] += 0.04;     // break ρ-symmetry on the tent poles
+      seed[21] -= 0.03; seed[23] += 0.02;
 
-      const posA = mk();
-      const rA = semiSolutionFlatten(torus, posA, { maxIters: 80 });
-
-      const posB = mk();
       const xX = new Float64Array(space.dim);
-      space.coords(posB, xX);
-      const rB = project(xX, constraints, { maxIters: 80 });
-      const posBfull = new Float64Array(24);
-      space.push(xX, posBfull);
+      space.coords(seed, xX);
+      const r = project(xX, constraints, { maxIters: 80 });
+      const full = new Float64Array(24);
+      space.push(xX, full);
 
-      expect(rA.status).toBe('converged');
-      expect(rB.status).toBe('converged');
-      // Both land on the same semi-solution, but not bit-identically: the legacy
-      // newton uses an FD Jacobian for the collinear extras while project uses the
-      // analytic `collinear`, so the min-norm GN landing point differs at ~1e-8.
-      // posBfull's own flatness/collinearity are checked to 1e-11 below.
-      expect(maxAbsDiff(posA, posBfull)).toBeLessThan(1e-6);
-      expect(maxConeDeficit(torus, posBfull)).toBeLessThan(1e-11);
-      expect(collinearity(posBfull)).toBeLessThan(1e-11);
-      expect(Math.abs(rA.iters - rB.iters)).toBeLessThanOrEqual(1);
-
-      const tA = modulus(torus, posA).tau;
-      const tB = modulus(torus, posBfull).tau;
-      expect(Math.abs(tA[0] - tB[0])).toBeLessThan(1e-8);
-      expect(Math.abs(tA[1] - tB[1])).toBeLessThan(1e-8);
+      expect(r.status).toBe('converged');
+      expect(maxConeDeficit(torus, full)).toBeLessThan(1e-11);   // flat
+      expect(collinearity(full)).toBeLessThan(1e-11);            // both triples collinear
+      for (const c of FROZEN_Z) expect(full[c]).toBe(0);         // base z's held at 0
+      expect(modulus(torus, full).tau[1]).toBeGreaterThan(0);    // τ ∈ ℍ
     }
   });
 
-  it('pins frozen coords to 0 even when the seed dirties them', () => {
-    // The natural ρ-breaking perturbations never touch FROZEN_Z, so this case
-    // deliberately dirties one (p[8]) to exercise the chart's pin.
-    const mk = () => {
-      const p = doyleSchwartzPositions(0.3, 1.4);
-      p[0] += 0.08; p[2] += 0.06; p[21] += 0.05;
-      p[8] = 0.01;   // dirty a planar z
-      return p;
-    };
+  it('holds frozen coords at exactly 0 even when the seed dirties them', () => {
+    const seed = doyleSchwartzPositions(0.3, 1.4);
+    seed[0] += 0.08; seed[2] += 0.06; seed[21] += 0.05;
+    seed[8] = 0.01;   // dirty a planar z — the chart must ignore it
 
-    const posA = mk();
-    semiSolutionFlatten(torus, posA, { maxIters: 80 }); // zeroes z on entry
-
-    const posB = mk();
     const xX = new Float64Array(space.dim);
-    space.coords(posB, xX);   // ignores the dirty frozen coord
+    space.coords(seed, xX);   // ignores the dirty frozen coord
     project(xX, constraints, { maxIters: 80 });
-    const posBfull = new Float64Array(24);
-    space.push(xX, posBfull);
+    const full = new Float64Array(24);
+    space.push(xX, full);
 
-    for (const c of FROZEN_Z) expect(posBfull[c]).toBe(0);
-    expect(maxAbsDiff(posA, posBfull)).toBeLessThan(1e-6);  // FD-newton vs analytic-project, ~1e-8 apart
+    for (const c of FROZEN_Z) expect(full[c]).toBe(0);
+    expect(maxConeDeficit(torus, full)).toBeLessThan(1e-11);
   });
 });
