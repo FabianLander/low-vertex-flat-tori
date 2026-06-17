@@ -211,7 +211,10 @@ zEl.addEventListener('input', () => { pivot.position.z = parseFloat(zEl.value); 
 // Mini 2-D view: only the section polygon, with pan (drag) + zoom (scroll)
 // ---------------------------------------------------------------------------
 const wrap = document.createElement('div');
-wrap.style.cssText = 'position:fixed;right:14px;bottom:14px;width:440px;height:440px;background:#fff;'
+// Initial size: capped at 440 on desktop, but shrink to fit small / mobile screens
+// (half the smaller viewport dimension, floored at 180 so it stays usable).
+const panelSide = Math.max(180, Math.min(440, Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.5)));
+wrap.style.cssText = `position:fixed;right:14px;bottom:14px;width:${panelSide}px;height:${panelSide}px;background:#fff;`
   + 'border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.14);overflow:hidden';
 const panel = document.createElement('canvas');
 panel.style.cssText = 'display:block;width:100%;height:100%;touch-action:none;cursor:move';

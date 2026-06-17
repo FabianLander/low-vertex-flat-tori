@@ -426,7 +426,7 @@ function selectAt(x: number, y: number): void {
     if (selected && selected.c === hit.klass && !hit.klass.visible) { selected = null; hideTorus3D(); }
     draw(); return;
   }
-  const pr = 16;                                // generous radius for touch
+  const pr = isMobile() ? 26 : 16;              // generous radius for touch (larger on mobile)
   let best: { c: Klass; i: number; d2: number } | null = null;
   for (const c of classes) {
     if (!c.visible) continue;
@@ -457,7 +457,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (!p) return;
   const ox = p.x, oy = p.y; p.x = e.clientX; p.y = e.clientY;
   if (pointers.size === 1) {
-    if (tap && Math.abs(e.clientX - tap.x) + Math.abs(e.clientY - tap.y) > 6) tap.moved = true;
+    if (tap && Math.abs(e.clientX - tap.x) + Math.abs(e.clientY - tap.y) > (isMobile() ? 14 : 6)) tap.moved = true;
     cx -= (e.clientX - ox) / scale; cy += (e.clientY - oy) / scale;
     draw();
   } else if (pointers.size >= 2) {
