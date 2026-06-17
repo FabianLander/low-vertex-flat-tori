@@ -25,6 +25,7 @@ open set.
 | configuration | [configuration.md](configuration.md) | the search space `C = ℝ³ⱽ`, the gauge, and charts ι: X → C (subspaces) | `configuration/` |
 | conditions | [conditions.md](conditions.md) | what we ask of a config — closed **submanifolds** `{g=0}` and open **regions** | `submanifolds/`, `regions/` |
 | operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian — and `certify` | `solvers/`, `search/certify.ts` |
+| searches | [searches.md](searches.md) | what each search *does* in C — the flat manifold, the modulus foliation, the embedded region; solving *for* a modulus vs *marching* to it | `search/` |
 
 Two structural lines run through all of it:
 

@@ -1,5 +1,9 @@
 # search/ — composing a search and running it
 
+**What the searches are doing, geometrically, is written up in
+[`docs/math/searches.md`](../../docs/math/searches.md)** — the flat manifold, the
+modulus foliation, the embedded region, and the direct-solve vs `march` fork.
+
 The top layer: wire seeds + a recipe into a driver, and certify the results.
 Depends on everything below; nothing depends on it. There is **no `Problem`
 god-object** — a search is just a seed source, an `attempt` recipe, and the
