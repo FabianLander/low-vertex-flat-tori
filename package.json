@@ -9,6 +9,7 @@
     "preview": "node scripts/run-demo.mjs preview",
     "discover": "tsx scripts/discover.mjs",
     "wall": "tsx scripts/wall.mjs",
+    "semi-solutions": "tsx scripts/semi-solutions.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

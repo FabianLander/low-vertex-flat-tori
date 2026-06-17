@@ -100,24 +100,43 @@ The arrows are one-way: `triangulations → topology`; the search stack `geometr
 {configuration, submanifolds, regions} → solvers → search` builds on top (and `solvers/` depends on
 no condition — it takes the abstract contracts); rendering sits on top of all of it.
 
-## Two pipelines
+## Searches
 
-**1. Discovery — find a flat embedded torus.** Seed → `project` onto the flat manifold (cone angles
-→ 2π) → `flow` (Riemannian descent into the embedded region, re-projecting each step) → `certify`
-(`maxConeDeficit < tol` **and** `isEmbedded`, with τ/τ̂). Composed from the search kit (`src/solvers`
-+ the conditions); the older `scripts/sample-flat.mjs` (`newtonFlatten` + `embeddedFlow`) is the
-legacy version being retired onto it.
+A search is **three small pieces** wired together — there is no framework, just composition:
 
-**2. Develop — compute the modulus τ.** `develop.ts` unfolds a flat torus along its fundamental
-domain and reads the holonomy of the two generator loops to get its point τ ∈ ℍ in Teichmüller
-space. Validate the whole pipeline:
+1. a **seed source** — `() => Float64Array`, the next starting configuration (`src/search/seeds.ts`:
+   `perturbedSeeds`, `poolSeeds`, `uniformSeeds`, … built on `configuration/perturb` + an RNG);
+2. an **`attempt` recipe** — `(seed) => Certificate | null`: run `project`/`flow` on the seed and
+   `certify`, returning the certificate to accept it or `null` to reject;
+3. the **`collect` driver** — `collect(drawSeed, attempt, {maxTries, maxAccepts, onAccept})`: the
+   rejection-sampling loop, with all IO in the `onAccept`/`onTry` callbacks.
+
+The three built-in searches (thin runners in `scripts/`, logic in `src/search/`):
 
 ```
-npx tsx scripts/develop-check.mjs [path/to.csv]   # defaults to data/explore-from-seeds/seeds.csv
+npm run discover       -- [opts]          # any flat embedded torus
+npm run wall           -- --c 0           # flat embedded tori on a modulus wall |Re τ̂|=c (0 rect, ½ rhombic)
+npm run semi-solutions -- [opts]          # Doyle–Schwartz semi-solution scan (flat immersions; embeddedness recorded)
 ```
 
-It asserts covolume = intrinsic area, rotational defect ≈ 0, and cone deficit ≈ 0, then prints τ
-and its SL(2,ℤ)-reduced τ̂.
+`discover` and `wall` share **one** recipe (`flattenFlowEmbed`), differing only in `held`:
+
+```
+seed → project(held) → flow(held, energy, region = embedded) → certify
+  held = [flat]                  → discover
+  held = [flat, modulusWall(c)]  → wall    (flow descends to embedded along the wall)
+```
+
+To write a **new** search, write its `attempt` (pick the chart, the held conditions, whether to
+`flow`, and the accept predicate) and hand it to `collect` with a seed source — e.g. `semiSolution`
+runs in a `pinCoords` chart with `held = [flat, collinear, collinear]` and no flow (a flat-immersion
+search). A ~15-line `src/search/<name>.ts` plus a thin `scripts/<name>.mjs` is a whole new search.
+
+**Validate the develop → τ pipeline** (covolume = area, rotational defect ≈ 0, cone deficit ≈ 0):
+
+```
+npx tsx scripts/legacy/develop-check.mjs [path/to.csv]
+```
 
 ## Running
 
@@ -126,7 +145,7 @@ Install once: `npm install`.
 ```
 npm run dev <demo>        # serve a demo (vite). Omit <demo> to list them.
 npm run build <demo>      # self-contained build → dist/<demo>/
-npm run compute-markings  # recompute & save the marking cache (after adding/changing a triangulation)
+npx tsx scripts/legacy/compute-markings.mjs   # recompute the marking cache (after adding/changing a triangulation)
 npm test                  # vitest
 npx tsc --noEmit          # the typecheck — there is no separate linter
 ```
@@ -138,7 +157,7 @@ npx tsc --noEmit          # the typecheck — there is no separate linter
 ### Adding a triangulation
 
 Add an entry `{ name, triangles }` to the census (`src/triangulations/eightVertex.ts`, or a new
-per-vertex-count file), then `npm run compute-markings` to fill its marking. Nothing else — the
+per-vertex-count file), then `npx tsx scripts/legacy/compute-markings.mjs` to fill its marking. Nothing else — the
 builder derives all combinatorics and validates `V − E + F = 0`; the marking is computed, not
 authored. No vertex/edge/face count is hard-wired.
 
