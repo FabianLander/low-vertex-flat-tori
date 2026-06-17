@@ -42,13 +42,15 @@ npm run preview <name>
 ### Searches (headless, tsx)
 
 ```bash
-npm run discover -- [opts]   # find flat embedded tori (any modulus); --seed-mode rich|uniform
-npm run wall     -- --c 0    # flat embedded tori on a modulus wall |Re τ̂|=c (0 rect, 0.5 rhombic)
+npm run discover       -- [opts]   # find flat embedded tori (any modulus); --seed-mode rich|uniform
+npm run wall           -- --c 0    # flat embedded tori on a modulus wall |Re τ̂|=c (0 rect, 0.5 rhombic)
+npm run semi-solutions -- [opts]   # Doyle–Schwartz semi-solution scan (flat immersions; embeddedness recorded)
+npm run march-modulus  -- --c 0    # transport a torus onto a wall by continuation; reports the pinch
 ```
 
-Both write 24-float CSV rows. They are thin runners over `src/search/`; flags are documented in each
-script header. **The old discovery/processing scripts are archived in `scripts/legacy/`** (kept for
-reference, not wired into `package.json`); they still ride the legacy `math/newton`+`embeddedFlow`.
+These write 24-float CSV rows. They are thin runners over `src/search/`; flags are in each script
+header. **`scripts/legacy/` is a read-only archive** — kept for inspiration when writing new scripts,
+NOT built or run; its files still import the deleted `src/math/` and are intentionally left stale.
 
 ## Architecture
 
@@ -59,11 +61,14 @@ Everything outside `render/`, `mesh/`, `viewer/`, `io/` (and the browser entries
 extrinsic search stack is **dependency-ordered**, each layer using only the ones below:
 
 ```
-geometry/ → functions/ → { configuration/, conditions/ } → solvers/ → search/
+geometry/ → functions/ → { configuration/, coordinates/, conditions/ } → solvers/ → sampling/ → search/
 ```
 
 with `topology/` (intrinsic machinery) + `triangulations/` (the 7 as data) underneath. Do not import
-three.js or touch `window`/`document` from any of these.
+three.js or touch `window`/`document` from any of these. **Machinery and its instances are flat
+siblings, never nested** — `topology/`↔`triangulations/`, `functions/`↔`conditions/`,
+`configuration/`↔`coordinates/` — because the arrow is *dependency*, not *containment* (so a
+machinery-purity violation like `topology/` importing `triangulations/` is a glaring cross-folder import).
 
 ### The one concept: `Fn` — toolkit (`functions/`) vs instances (`conditions/`)
 
@@ -76,17 +81,19 @@ separate interfaces:
 - an **energy** is a scalar `Fn` (`ScalarFn`: `compute`/`grad`) descended (`flow`).
 
 There is **no `ConstraintMap` and no `Energy` interface** — they were retired onto `Fn`/`ScalarFn`.
-`functions/` is the **generic toolkit** — the `Fn`/`ScalarFn` contract (`types.ts`) and the compose
-algebra (`fdFn`/`fdScalar`, `postcompose`/`affine`), no torus content. The **concrete maps** live with
-the condition they define, in `conditions/` (the same machinery↔instances split as `topology/` ↔
-`triangulations/`).
+`functions/` is the **generic toolkit** — the `Fn`/`ScalarFn`/`Embedding` contracts (`types.ts`,
+`compose.ts`) and the compose algebra (`fdFn`/`fdScalar`, `precompose`/`postcompose`/`affine`), no
+torus content. The **concrete maps** live with the condition they define, in `conditions/` — the same
+machinery↔instances split as `topology/`↔`triangulations/` and `configuration/`↔`coordinates/`.
 
 ### Configuration is a bare `Float64Array`
 
-A configuration is just `positions` (length 3·V); the `Triangulation` rides in the `Fn`/`Chart`
+A configuration is just `positions` (length 3·V); the `Triangulation` rides in the `Fn`/`ConfigSpace`
 closures, never bundled with the coordinates. There is **no global triangulation singleton, no hidden
 `RICH` default** — thread the `torus` parameter (or close over it in a factory). `PaperTorus`
-(`math/embedding.ts`) is a `{torus, positions}` *render/IO bundle*, not a core type.
+(`configuration/paperTorus.ts`) is the explicit `{triang, positions}` **boundary bundle** (a plain
+interface) — the form a configuration takes at the IO / render / certify edge, where it must carry its
+triangulation; not used on the interior hot path.
 
 ### Intrinsic: `topology/` (machinery) + `triangulations/` (data)
 
@@ -105,31 +112,31 @@ closures, never bundled with the coordinates. There is **no global triangulation
 
 - `geometry/` — torus-blind ℝ²/ℝ³ kernels: `distance` (point/segment/triangle), `intersectionChord`
   (`triTriChord`), `triangleIntersect` (the Möller–Trumbore predicates behind `isEmbedded`), all from
-  a `positions` buffer + vertex indices. `geometry/drawing/` is plane-curve utilities, not the pipeline.
-- `functions/` — the generic toolkit: `types` (`Fn`/`ScalarFn`) + `compose` (the algebra). No instances.
-- `configuration/` — charts (`identity`, `pinCoords`, `symmetry` = Rich's ρ), `gauge` (canonical
-  similarity pose, storage/dedup only), `rng` + `perturb`, `doyleSchwartz` (the DS seed family).
-- `conditions/` — one self-contained module per condition (measurement + usage): `flat`
-  (`coneDeficit` + the V−1 constraint), `collinear` (analytic), `modulus` (`tau` + `fixedModulus`/
-  `modulusWall`, frozen-chart), and `embedded/` (folder: `gate` `isEmbedded` · `margin` cell-gaps +
-  `minMargin` · `energies` Fabi's `chordLengthSquared`/`cutOffArea` + `cellMargin` · `region`).
-- `solvers/` — problem-agnostic steppers on charts + held constraints, all on one J-hub: `project`
-  (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian descent of a `ScalarFn` along the
-  manifold, gated by a region), `march` (continuation tracking a family ∩ region).
+  a `positions` buffer + vertex indices. `geometry/drawing/` is plane-curve utilities for demos.
+- `functions/` — the generic toolkit: `types` (`Fn`/`ScalarFn`) + `compose` (`Embedding` + the algebra
+  `fdFn`/`scalarFn`/`precompose`/`postcompose`/`affine`). No instances.
+- `configuration/` — the configuration-space **machinery**: `space` (`ConfigSpace = (T, φ)` with
+  `pull`/`push`/`coords`/`metric` + `makeConfigSpace`), `paperTorus` (the `{triang, positions}`
+  boundary bundle), `gauge` (canonical similarity pose, storage/dedup only).
+- `coordinates/` — the coordinate-system **instances** (each builds an `Embedding`→`ConfigSpace`):
+  `full`, `pin` (`pinCoords`/`pinVertices`), `symmetry` (+`RICH_SYMMETRY` = Rich's ρ), `doyleSchwartz`
+  (the DS flat-#7 parameterization; a nonlinear coordinate system, currently value-only for seeding).
+- `conditions/` — one self-contained module per condition (measurement + usage), plus `types`
+  (`Held`/`Constraint`/`Region`): `flat` (`coneDeficit` + the V−1 constraint), `collinear` (analytic),
+  `modulus` (`tau` + `fixedModulus`/`modulusWall`, frozen-chart), and `embedded/` (folder: `gate`
+  `isEmbedded` · `margin` cell-gaps + `minMargin` · `energies` Fabi's `chordLengthSquared`/`cutOffArea`
+  + `cellMargin` hinge + `cellBarrier` log-barrier · `region`).
+- `solvers/` — problem-agnostic steppers run **entirely on ℝⁿ**, all on one J-hub: `project`
+  (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian descent of a `ScalarFn` along the manifold,
+  gated by a `Gate` predicate), `march` (continuation tracking a family ∩ region). They take pulled
+  `Fn`s + a `Gate` (`types.ts`) — never a `Triangulation`, `Embedding`, or chart. Metric = I (the
+  pullback-metric `DφᵀDφ` is a documented, deferred seam).
+- `sampling/` — producing seeds: `rng`, `perturb`, `seeds` (random `perturbedSeeds`/… + deterministic
+  `gridSeeds`, a finite Cartesian sweep over a coordinate system's params), `reference` (`RICH_REFERENCE`).
 - `search/` — `certify` (the result record: cone deficit, embedded, margin, raw τ AND reduced τ̂),
-  `collect` (rejection-sampling driver), `seeds`, and the recipes `discover` (`held = [flat]`) and
-  `wall` (`held = [flat, modulusWall(c)]`), both via `flattenFlowEmbed`
-  (`seed → project(held) → flow(held, energy, region=embedded) → certify`).
-
-### `math/` — the draining residue
-
-Being emptied into the stack above. Still here: `embedding.ts` (`PaperTorus`, render bundle),
-`newton.ts`/`embeddedFlow.ts` (legacy solvers, only the archived scripts use them),
-`energies/{cellMargin,cellBarrier,weightedSum}` (parked duplicate near-miss energies — the live ones
-are in `conditions/embedded/energies`), `reference.ts` (`RICH_REFERENCE`, render/test fixture),
-`semiSolution.ts` (legacy semi-solution search, reproducible as `project([flat, collinear, collinear])`
-— rebuilt as `search/semiSolution`). The solver core now depends on nothing in `math/`
-(`solveDenseInPlace`/`infNorm` are in `solvers/linalg`).
+  `collect` (rejection-sampling driver), `pull` (pull a `Constraint`/`Region` into a coordinate system),
+  and the recipes `discover` (`held=[flat]`), `wall` (`held=[flat, modulusWall(c)]`) via `flattenFlowEmbed`
+  (`seed → project(held) → flow(held, energy, gate=embedded) → certify`), `semiSolution`, `marchModulus`.
 
 ### Rendering — two stacks
 
@@ -148,5 +155,6 @@ with a chosen `Triangulation` (check `maxConeDeficit`/`isEmbedded`/`modulus` aga
 ## Docs
 
 `docs/math/` is the architecture, mathematically: each layer described first as math, then as code
-(`README.md` overview; `conditions.md`, `configuration.md`, `solvers.md`, `developing.md`, …). Keep
-it current as the refactor proceeds. `docs/` also holds figures and older design plans.
+(`README.md` overview; `configuration-space.md` the `ConfigSpace`/coordinate-system spine,
+`conditions.md`, `solvers.md`, `searches.md`, `developing.md`, …). Keep it current. `docs/` also
+holds figures and older design plans.

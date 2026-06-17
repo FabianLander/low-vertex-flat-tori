@@ -5,7 +5,7 @@ knowledge — every routine takes raw coordinates (or a `positions` buffer + ver
 offsets), so the triangle→vertex lookup lives in the layer above.
 
 The **kernels the search pipeline needs** (consumed by `conditions/embedded/*` —
-`gate`, `margin`, `energies`; and the parked `math/energies/*`):
+`gate`, `margin`, `energies`):
 
 - `distance.ts` — allocation-free squared-distance kernels between points,
   segments, and filled triangles (Ericson closest-point routines).

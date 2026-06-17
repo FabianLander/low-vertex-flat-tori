@@ -1,15 +1,11 @@
 # The configuration space — the spine of the search
 
-> **Status: design spec.** This is the target the configuration-space refactor implements. Where it
-> and the code disagree, the code is mid-migration — the present, chart-based picture is in
-> [configuration.md](configuration.md), which this document supersedes once the refactor lands.
-
 > A **triangulation `T` is what gives coordinates meaning.** It fixes `V`, hence the *default*
 > configuration space `ℝ³ⱽ` of all realizations of `T` in space; a *problem's* configuration space is
 > a (possibly smaller) `ℝⁿ` mapped into `ℝ³ⱽ` by an embedding. The whole search lives on `ℝⁿ`: you
 > build functions there by sending a point up to `ℝ³ⱽ`, measuring with `T`, and reading the result
-> back down. This document is that one idea, made into objects. Code: `src/configuration/`,
-> `src/functions/`.
+> back down. This document is that one idea, made into objects. Code: `src/configuration/` (the
+> machinery), `src/coordinates/` (the coordinate systems), `src/functions/` (the `Embedding` contract).
 
 ## The mathematics
 
@@ -145,7 +141,7 @@ coordinates I happened to pick."
 **It is genuinely moot today.** Every current embedding is linear with `Dφ` either orthonormal
 (`identity`, `pinCoords`) or a *uniform* scaling (`symmetry`, columns of norm √2). In all of these
 `g = cI`, and a uniform scale changes only the *length* of the step (absorbed by the line search /
-damping), never its *direction*. So `g = I` and the pullback metric **coincide for every chart we
+damping), never its *direction*. So `g = I` and the pullback metric **coincide for every coordinate system we
 run**. They diverge only for **anisotropic or nonlinear** embeddings — the headroom the `Embedding`
 interface admits but no current restriction uses.
 
@@ -168,16 +164,17 @@ that quotient; the gauge is handled *implicitly* by the solver's minimum-norm st
 (`configuration/gauge.ts`) is used only for storage/dedup. Explicit gauge-fixing, if ever wanted, is
 just another restriction — an embedding pinning the gauge coordinates — needing no new mechanism.
 
-## In code (target)
+## In code
 
 | symbol | file | role |
 | --- | --- | --- |
 | `Fn`, `ScalarFn` | `functions/types.ts` | the map contract (constraint/energy are uses of it) |
 | `Embedding`, `precompose` | `functions/compose.ts` | the inner reparameterization (immersion) + `pull = precompose(g, φ)` |
-| `ConfigSpace` | `configuration/space.ts` | `(T, φ)`: `pull` / `push` / `coords` / `paperTorus` / `metric` |
-| `fullSpace`, `pinVertices`, `symmetry` | `configuration/space.ts` | the embedding constructors (the default + restrictions) |
-| `PaperTorus` | `configuration/paperTorus.ts` | the `(T, positions)` boundary bundle |
-| `gauge`, `perturb`, `rng`, `doyleSchwartz` | `configuration/*` | canonical pose; seeds; PRNGs; the DS seed family |
+| `ConfigSpace`, `makeConfigSpace` | `configuration/space.ts` | `(T, φ)`: `pull` / `push` / `coords` / `paperTorus` / `metric` — the machinery |
+| `fullSpace`, `pinCoords`/`pinVertices`, `symmetry`, `doyleSchwartz` | `coordinates/*` | the coordinate-system instances (each an `Embedding` → `ConfigSpace`) |
+| `PaperTorus` | `configuration/paperTorus.ts` | the `{triang, positions}` boundary bundle (a plain interface) |
+| `gauge` | `configuration/gauge.ts` | the canonical pose (storage/dedup) |
+| `rng`, `perturb`, `seeds`, `reference` | `sampling/*` | producing seeds (random + the deterministic `gridSeeds`) |
 
 The configuration space is the **compiler** between the triangulation's language ("pin these
 vertices", "impose this symmetry") and the linear algebra the solver runs on: `T`-aware at the

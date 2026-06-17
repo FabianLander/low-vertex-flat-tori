@@ -38,13 +38,13 @@ it by *projecting* (Newton) and move on it along its tangent space. The map is j
   Jacobians. Valid in the seed's `SL(2,ℤ)` chamber; `march` re-freezes each substep. (See
   [developing.md](developing.md) for τ and the reduction.)
 
-Constraints compose: `project(chart, x, [flat, modulusWall(c)])` lands a flat torus on the wall.
+Constraints compose: `project(x, [flat, modulusWall(c)])` lands a flat torus on the wall.
 
 ## Open conditions — regions
 
 An **open** condition is a region `Ω ⊆ C` you must stay *inside*; you cannot "land on" it. It is a
-**`Region`**: a predicate `contains` (the gate), a signed `margin` (diagnostic), and two energies
-that move a config with respect to it.
+**`Region`**: a predicate `contains` (the gate) and a signed `margin` (diagnostic) — nothing more. The
+energies that move a config with respect to it are separate standalone functions (below).
 
 - **`embedded`** — the realization is an embedded polyhedron (no two triangle interiors cross). `Ω` is
   the "tiny open set" the search lives inside. `contains` is **exactly `isEmbedded`** — the
@@ -52,20 +52,20 @@ that move a config with respect to it.
   topological test disagree at the boundary and on edge-shared pairs (a config can have `minMargin >
   0` yet fail `isEmbedded`). The gate must be the truth, not its surrogate.
 
-**Energies.** A region supplies two scalar potentials. An energy is **not its own type** — it's just a
-scalar `Fn` (`functions/`, a `ScalarFn`: `compute` + `grad`) you push downhill, the dual of a constraint
-(an `Fn` driven to zero). The region hands out two:
-- **`enterEnergy`** — a *repulsion* (zero once every pair is ≥ ε apart): pushes a config toward / into
-  the region. Used to reach it or spread cells apart.
-- **`stayEnergy`** — a *barrier* (→ ∞ at contact): holds a config strictly inside, away from the
-  boundary (fattening).
+**Energies.** An energy is **not its own type** — it's just a scalar `Fn` (`functions/`, a `ScalarFn`:
+`compute` + `grad`) you push downhill, the dual of a constraint (an `Fn` driven to zero). The `Region`
+itself supplies only the gate + margin; the energies are standalone functions `flow` takes explicitly.
+Each is written out in full (formula inline), and they come in two families — all in
+`conditions/embedded/energies.ts`:
+- **overlap** — **Fabi's** `chordLengthSquared` / `cutOffArea`: penalize *actual* overlaps, zero on the
+  whole embedded set, so they drive a *crossing* torus onto `Ω` (these found the tori).
+- **near-miss / barrier** — alive in `Ω`'s interior, so they FATTEN a barely-embedded torus (the
+  overlap energies can't: their gradient is zero once embedded). `cellMargin` is a finite hinge (zero
+  once every gap ≥ ε); `cellBarrier` is a log-barrier (→ ∞ at contact, so descent settles strictly
+  inside `Ω`), and it watches the full embedding test — the six cell-gap types AND the shared-vertex
+  opposite-edge↔triangle gaps.
 
-The proven discovery repulsions are **Fabi's** `chordLengthSquared` / `cutOffArea` (penalize *actual*
-overlaps, zero on the embedded set — they drive a crossing torus onto it) and the near-miss
-`cellMargin` (fatten an already-embedded one); all three live in `conditions/embedded/energies.ts`.
-The `cellBarrier` log-barrier (and duplicate `cellMargin` / `weightedSum`) remain **parked in
-`math/energies/`** awaiting a clean rebuild onto a shared `cellGaps` primitive. `minMargin` is the
-embedding diagnostic (`conditions/embedded/margin.ts`), not an energy.
+`minMargin` is the embedding diagnostic (`conditions/embedded/margin.ts`), not an energy.
 
 Energies are *descended* by `flow`; the region's `contains` is the *gate* `flow`/`march` enforce.
 Note descending these energies lowers a sum of pair penalties — it does **not** monotonically
@@ -78,15 +78,16 @@ Closed conditions are level sets of smooth maps — the map is factored out as a
 locus, for certificates, for diagnostics) and the locus is a thin `Held`. Open conditions have no
 single smooth defining function; they're a coupled, non-smooth apparatus (predicate gate + margin +
 energies) kept whole as a `Region`. The solvers consume them differently — `project`/`march` take
-`Fn`s, `flow` takes a scalar `Fn` (an energy) and a region — so organizing by this kind matches how
-the math is used.
+`Fn`s, `flow` takes a scalar `Fn` (an energy) and a `Gate` (the region's `contains`, pulled to ℝⁿ) —
+so organizing by this kind matches how the math is used.
 
 ## In code
 
 | symbol | file | role |
 | --- | --- | --- |
 | `Fn`, `ScalarFn` | `functions/types.ts` | the map contract (constraint/energy are uses of it) |
-| `Held`, `Constraint`, `Region` | `solvers/types.ts` | how the solvers consume a condition (no `Energy` type) |
+| `Held`, `Constraint`, `Region` | `conditions/types.ts` | the condition contracts (closed `Held`/`Fn`, open `Region`) — no `Energy` type |
+| `Gate` | `solvers/types.ts` | the runtime form of a region: a predicate on ℝⁿ the solvers gate on |
 | `flat` (+ `coneDeficit`) | `conditions/flat.ts` | flatness: the deficit measurement + the constraint |
 | `collinear` | `conditions/collinear.ts` | planar collinearity (analytic signed area) |
 | `modulus` (`tau`, `fixedModulus`, `modulusWall`) | `conditions/modulus.ts` | the modulus measurement + point/wall constraints (frozen chart) |

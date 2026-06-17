@@ -45,8 +45,8 @@ Each search is a motion (or two) composed with `certify`:
   `project` onto the leaf `Mₐ` directly (flat **and** the modulus, in one solve), then `flow` into `Ω`
   *along that leaf*. `held = [flat, modulusWall(c)]`.
 - **`semiSolution`** — flat *immersions* of the Doyle–Schwartz structure. `project` in a **pinned
-  chart** (the six base vertices frozen to z=0) onto `F ∧ {two triples collinear}`. No `Ω` gate —
-  "semi" means embeddedness is *recorded*, not required. `held = [flat, collinear, collinear]`.
+  coordinate system** (the six base vertices frozen to z=0) onto `F ∧ {two triples collinear}`. No `Ω`
+  gate — "semi" means embeddedness is *recorded*, not required. `held = [flat, collinear, collinear]`.
 - **`march` to a modulus** — *transport* a flat embedded torus from its leaf to a far one, mapping
   where the path pinches. The motion below.
 
@@ -87,16 +87,16 @@ to a new shape and discover where it stops being possible."*
 
 ## In code
 
-| search | motion | held | chart | gate |
+| search | motion | held | coordinate system | gate |
 | --- | --- | --- | --- | --- |
-| `discover` | project → flow | `[flat]` | identity | embedded |
-| `wall(c)` | project → flow | `[flat, modulusWall(c)]` | identity | embedded |
+| `discover` | project → flow | `[flat]` | `fullSpace` | embedded |
+| `wall(c)` | project → flow | `[flat, modulusWall(c)]` | `fullSpace` | embedded |
 | `semiSolution` | project | `[flat, collinear, collinear]` | `pinCoords(baseZ)` | — (records it) |
-| `march`-modulus | project-continuation | `[flat, modulusWall(s)]` per step | identity | embedded |
+| `march`-modulus | project-continuation | `[flat, modulusWall(s)]` per step | `fullSpace` | embedded |
 
-`march` consumes a `Family` (`solvers/march.ts`): `param(c)` reads the marched modulus coordinate off
-the config (`develop.ts`), and `held(c, s)` rebuilds `[flat, modulusWall(torus, c, s)]` **at the
-current point** — that rebuild is the per-step re-freeze. Everything else is reused: `conditions/modulus`'s
-`tau` (the modulus map) and `modulusWall` (the frozen constraint), `solvers/project`
-(the corrector that does the moving), `conditions/embedded`'s `embedded` (the gate), `solvers/march`
-(the loop).
+Every search builds a `ConfigSpace`, `pull`s its `held` conditions into it (`search/pull.ts`), and runs
+the ℝⁿ solvers. `march` consumes a `Family` (`solvers/march.ts`): `param(x)` reads the marched modulus
+coordinate off the point (pushing to ℝ³ⱽ, then `develop.ts`), and `held(x, s)` rebuilds and pulls
+`[flat, modulusWall(torus, push(x), s)]` **at the current point** — that rebuild is the per-step
+re-freeze. Everything else is reused: `conditions/modulus`'s `tau` + `modulusWall`, `solvers/project`
+(the corrector), `conditions/embedded`'s `embedded` (pulled to the gate), `solvers/march` (the loop).

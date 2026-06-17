@@ -21,24 +21,26 @@ open set.
 | layer | document | what it is | code |
 | --- | --- | --- | --- |
 | kernels | — | torus-blind ℝ²/ℝ³ primitives (distances, the intersection chord + predicates) | `geometry/` |
-| functions | [conditions.md](conditions.md) | the differentiable-map **toolkit** — the `Fn`/`ScalarFn` contract + the compose algebra (machinery, no instances) | `functions/` |
-| configuration | [configuration-space.md](configuration-space.md) | the `ConfigSpace = (T, φ)` spine — `pull`/`push`/`coords`, the metric, interior vs boundary (supersedes the chart-based [configuration.md](configuration.md)) | `configuration/`, `functions/` |
+| functions | [conditions.md](conditions.md) | the differentiable-map **toolkit** — the `Fn`/`ScalarFn`/`Embedding` contracts + the compose algebra (machinery, no instances) | `functions/` |
+| configuration | [configuration-space.md](configuration-space.md) | the `ConfigSpace = (T, φ)` spine — `pull`/`push`/`coords`, the metric, interior vs boundary | `configuration/` |
+| coordinates | [configuration-space.md](configuration-space.md) | the coordinate systems — `Embedding`s φ → a `ConfigSpace` (full, pin, symmetry, Doyle–Schwartz) | `coordinates/` |
 | conditions | [conditions.md](conditions.md) | what we ask of a config — each module its own measurement + usage; closed `{g=0}` and open (`Region`) kinds, by return type | `conditions/` |
-| operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian — and `certify` | `solvers/`, `search/certify.ts` |
+| operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian, run on ℝⁿ — and `certify` | `solvers/`, `search/certify.ts` |
+| sampling | [searches.md](searches.md) | producing seeds: rng, perturb, random + deterministic grid sources | `sampling/` |
 | searches | [searches.md](searches.md) | what each search *does* in C — the flat manifold, the modulus foliation, the embedded region; solving *for* a modulus vs *marching* to it | `search/` |
 
 Two structural lines run through all of it:
 
 - **intrinsic vs. extrinsic.** The topology half is *intrinsic* — independent of any ℝ³ embedding.
   The extrinsic half — the realization in space, the flatness/embeddedness maps, and the search — is
-  the dependency-ordered stack `geometry/ → functions/ → {configuration, conditions} → solvers/ →
-  search/`. (`PaperTorus`, the legacy solvers, and the parked energies still sit in `src/math/`, being
-  drained into that stack.) The developing map reads coordinates only to extract the intrinsic metric
-  (edge lengths).
-- **machinery vs. instances.** Two places apply this split: `topology/` (generic triangulation
-  machinery) ↔ `triangulations/` (the 7 as data); and `functions/` (the generic differentiable-map
-  toolkit) ↔ `conditions/` (the concrete maps + their uses). Machinery depends on nothing
-  problem-specific; instances depend on the machinery, never the reverse.
+  the dependency-ordered stack `geometry/ → functions/ → {configuration, coordinates, conditions} →
+  solvers/ → sampling/ → search/`. The developing map reads coordinates only to extract the intrinsic
+  metric (edge lengths).
+- **machinery vs. instances.** Three places apply this split, all as flat sibling folders (never
+  nested): `topology/` ↔ `triangulations/` (the 7 as data); `functions/` (the generic
+  differentiable-map toolkit) ↔ `conditions/` (the concrete maps + their uses); and `configuration/`
+  (the `ConfigSpace` machinery) ↔ `coordinates/` (the coordinate-system instances). Machinery depends
+  on nothing problem-specific; instances depend on the machinery, never the reverse.
 
 A marking and a fundamental domain are both *decorations* of a triangulation, computed together by
 one pass (`canonicalDecoration`) and stored as two fields (`tri.marking`, `tri.fundamentalDomain`).

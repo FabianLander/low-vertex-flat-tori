@@ -13,11 +13,13 @@ god-object** — a search is just a seed source, an `attempt` recipe, and the
 - `certify.ts` — turn a config into a `Certificate` (cone deficit, embedded,
   margin, raw τ AND reduced τ̂, area, rotDefect). Every search ends here.
 - `collect.ts` — the rejection-sampling driver: `collect(drawSeed, attempt, …)`.
-  Pure control flow; all IO via `onAccept`/`onTry` callbacks.
-- `seeds.ts` — seed sources (`perturbedSeeds`, `poolSeeds`, `uniformSeeds`) + σ
-  draws, composing `configuration/perturb` + an RNG.
-- `recipe.ts` — `flattenFlowEmbed(torus, buildHeld, accept, energy)`: the shared
-  recipe `seed → project(held) → flow(held, energy, region=embedded) → certify`.
+  Pure control flow; all IO via `onAccept`/`onTry` callbacks. (Seed sources themselves
+  live in `sampling/`.)
+- `pull.ts` — pull a `Constraint`/`Region` into a coordinate system: the bridge between
+  `configuration/`+`coordinates/` and `conditions/`, so the ℝⁿ solvers get pulled `Fn`s
+  and a `Gate`.
+- `recipe.ts` — `flattenFlowEmbed(torus, buildHeld, accept, energy)`: the shared recipe
+  `seed → project(held) → flow(held, energy, gate=embedded) → certify`, on `fullSpace`.
 - `discover.ts` — find any flat embedded torus. `held = [flat]`.
 - `wall.ts` — find flat embedded tori on a modulus wall `|Re τ̂| = c` (rectangular
   c=0, rhombic c=½). `held = [flat, modulusWall(seed, c)]` — the same recipe, flow
@@ -31,8 +33,9 @@ god-object** — a search is just a seed source, an `attempt` recipe, and the
   pinCoords(baseZ), [flat, collinear(1,2,3), collinear(4,5,6)])` → certify;
   `semiSolutionAttempt` + `doyleSchwartzTentSeeds`.
 
-The three runnable searches are thin `scripts/` wrappers over this folder:
-`npm run discover`, `npm run wall`, `npm run semi-solutions`. The core operations
-(`project`/`flow`/`march`) live in `solvers/`; the conditions (closed `{g=0}` and
-open `Region`) in `conditions/`; the map toolkit in `functions/`; charts/seeds in
-`configuration/`. The old discovery scripts are archived in `scripts/legacy/`.
+The runnable searches are thin `scripts/` wrappers over this folder: `npm run discover`,
+`npm run wall`, `npm run semi-solutions`, `npm run march-modulus`. The core operations
+(`project`/`flow`/`march`) live in `solvers/`; the conditions (closed `{g=0}` and open
+`Region`) in `conditions/`; the map toolkit in `functions/`; coordinate systems in
+`coordinates/`; seed sources in `sampling/`. The old scripts are archived (read-only) in
+`scripts/legacy/`.

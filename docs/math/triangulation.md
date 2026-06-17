@@ -60,7 +60,7 @@ The split that keeps this scalable:
 
 A `Triangulation` carries **no metric and no bespoke per-instance data** — `#7` is just another
 census entry. To *realize* it in ℝ³ (give it coordinates) is a **`PaperTorus`**
-(`src/math/embedding.ts`), the extrinsic object the search moves around.
+(`src/configuration/paperTorus.ts`), the extrinsic object the search moves around.
 
 ## Notes
 
