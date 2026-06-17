@@ -12,7 +12,7 @@
  * Pure: no three.js, no DOM.
  */
 
-import type { Fn } from './types.ts';
+import type { Fn, ScalarFn } from './types.ts';
 
 /**
  * A smooth map between coordinate spaces, ℝ^inDim → ℝ^outDim, with its
@@ -63,6 +63,52 @@ export function fdFn(
       }
     },
   };
+}
+
+/**
+ * A scalar `Fn` (dim 1) from a value and its analytic gradient. `value`/`jacobian`
+ * are derived (`jacobian` is the single gradient row), so the map reads as `Fn`
+ * everywhere while `flow`/`certify` use the ergonomic `compute`/`grad`.
+ */
+export function scalarFn(
+  label: string,
+  compute: (c: ArrayLike<number>) => number,
+  grad: (c: ArrayLike<number>, out: Float64Array) => void,
+): ScalarFn {
+  return {
+    label,
+    dim: 1,
+    compute,
+    grad,
+    value(c, out) { out[0] = compute(c); },
+    jacobian(c, out) { grad(c, out); },
+  };
+}
+
+/**
+ * A scalar `Fn` whose gradient is the central finite difference of `compute`
+ * (2n evaluations over a private scratch copy — the input is never mutated, unlike
+ * the old in-place `fdGradient`). For energies with no closed-form gradient.
+ */
+export function fdScalar(
+  label: string,
+  compute: (c: ArrayLike<number>) => number,
+  h = 1e-6,
+): ScalarFn {
+  let scratch: Float64Array | null = null;
+  return scalarFn(label, compute, (c, out) => {
+    const n = c.length;
+    if (!scratch || scratch.length !== n) scratch = new Float64Array(n);
+    scratch.set(c);
+    const inv2h = 1 / (2 * h);
+    for (let i = 0; i < n; i++) {
+      const saved = scratch[i];
+      scratch[i] = saved + h; const ep = compute(scratch);
+      scratch[i] = saved - h; const em = compute(scratch);
+      scratch[i] = saved;
+      out[i] = (ep - em) * inv2h;
+    }
+  });
 }
 
 /**

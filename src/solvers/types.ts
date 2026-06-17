@@ -12,7 +12,7 @@
  * Pure: no three.js, no DOM.
  */
 
-import type { Fn } from '../functions/types.ts';
+import type { Fn, ScalarFn } from '../functions/types.ts';
 
 /**
  * A closed condition to hold: a differentiable map `Fn` (from `functions/`) whose
@@ -65,28 +65,17 @@ export interface Chart {
 }
 
 /**
- * A scalar potential E : C → ℝ that `flow` descends, with its gradient ∇E in C
- * (length n). Structurally the existing `math/energies` RepulsionEnergy, so those
- * energy factories are usable as `Energy` directly. `gradient` may mutate its
- * `Float64Array` input transiently (FD implementations) but must restore it.
- */
-export interface Energy {
-  readonly label: string;
-  compute(c: ArrayLike<number>): number;
-  gradient(c: Float64Array, out: Float64Array): void;   // ∇E in C
-}
-
-/**
  * An OPEN condition Ω (the "tiny open set" the search lives inside): a predicate
  * gate, a signed margin (diagnostic), and the two energies that move a config
  * w.r.t. it — `enterEnergy` (repulsion: reach Ω / push apart) and `stayEnergy`
- * (barrier: stay strictly inside / fatten). `contains` is the topological truth
- * (e.g. exactly `isEmbedded`), NOT `margin > 0`.
+ * (barrier: stay strictly inside / fatten). An energy is just a scalar `Fn` you
+ * descend (no separate `Energy` type). `contains` is the topological truth (e.g.
+ * exactly `isEmbedded`), NOT `margin > 0`.
  */
 export interface Region {
   readonly label: string;
   contains(c: ArrayLike<number>): boolean;   // the gate
   margin(c: ArrayLike<number>): number;      // signed depth — diagnostic only
-  enterEnergy(): Energy;                      // repulsion
-  stayEnergy(): Energy;                       // barrier
+  enterEnergy(): ScalarFn;                    // repulsion
+  stayEnergy(): ScalarFn;                     // barrier
 }

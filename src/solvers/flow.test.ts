@@ -10,8 +10,8 @@ import { describe, it, expect } from 'vitest';
 import { flow } from './flow.ts';
 import { identity } from '../configuration/chart.ts';
 import { flat } from '../submanifolds/flat.ts';
-import type { Energy } from './types.ts';
-import type { Fn } from '../functions/types.ts';
+import type { Fn, ScalarFn } from '../functions/types.ts';
+import { scalarFn } from '../functions/compose.ts';
 import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { makeCellMargin } from '../math/energies/cellMargin.ts';
@@ -27,12 +27,12 @@ const sphere: Fn = {
 };
 
 // --- toy: a linear energy E(x) = a·x (gradient is the constant a) ---
-function linearEnergy(a: readonly [number, number, number]): Energy {
-  return {
-    label: 'linear',
-    compute(c) { return a[0] * c[0] + a[1] * c[1] + a[2] * c[2]; },
-    gradient(_c, out) { out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; },
-  };
+function linearEnergy(a: readonly [number, number, number]): ScalarFn {
+  return scalarFn(
+    'linear',
+    (c) => a[0] * c[0] + a[1] * c[1] + a[2] * c[2],
+    (_c, out) => { out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; },
+  );
 }
 
 describe('flow — toy: linear energy on the unit sphere', () => {
@@ -62,7 +62,7 @@ describe('flow — real: honest descent ALONG [flat]', () => {
   it('cell-margin descent stays exactly on the flat manifold and lowers the energy', () => {
     const torus = byId(7);
     const pos = RICH_REFERENCE.positions.slice();
-    const energy = makeCellMargin(torus, { epsilon: 0.3 }) as Energy; // ε large → energy active
+    const energy = makeCellMargin(torus, { epsilon: 0.3 }); // ε large → energy active
 
     const eBefore = energy.compute(pos);
     expect(isEmbedded(torus, pos)).toBe(true); // start is embedded

@@ -13,6 +13,7 @@ import { project } from './project.ts';
 import { identity } from '../configuration/chart.ts';
 import type { Region } from './types.ts';
 import type { Fn } from '../functions/types.ts';
+import { scalarFn } from '../functions/compose.ts';
 import { flat } from '../submanifolds/flat.ts';
 import { modulusWall } from '../submanifolds/modulus.ts';
 import { embedded } from '../regions/embedded.ts';
@@ -47,8 +48,8 @@ function upperHalf(floor: number): Region {
     label: `x1>=${floor}`,
     contains: (c) => c[1] >= floor,
     margin: (c) => c[1] - floor,
-    enterEnergy: () => ({ label: 'n/a', compute: () => 0, gradient: (_c, o) => o.fill(0) }),
-    stayEnergy: () => ({ label: 'n/a', compute: () => 0, gradient: (_c, o) => o.fill(0) }),
+    enterEnergy: () => scalarFn('n/a', () => 0, (_c, o) => o.fill(0)),
+    stayEnergy: () => scalarFn('n/a', () => 0, (_c, o) => o.fill(0)),
   };
 }
 

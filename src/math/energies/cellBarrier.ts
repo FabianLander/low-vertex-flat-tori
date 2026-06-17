@@ -32,9 +32,12 @@ import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   triangleTriangleDist2, segmentTriangleDist2,
 } from '../../geometry/distance';
-import { linearSize } from './cellMargin';
-import { fdGradient } from './finiteDiffGradient';
-import type { RepulsionEnergy } from './types';
+import { linearSize } from '../../functions/minMargin.ts';
+import { fdScalar } from '../../functions/compose.ts';
+import type { ScalarFn } from '../../functions/types.ts';
+
+// PARKED alongside cellMargin: recently-invented log-barrier for fattening, kept
+// for a future clean rebuild onto the shared `cellGaps` primitive.
 
 export const DEFAULT_DELTA = 0.1;    // cutoff radius (units of √area): barrier acts within this
 export const DEFAULT_STRENGTH = 1;   // μ
@@ -113,7 +116,7 @@ export interface CellBarrierOptions {
   strength?: number;
 }
 
-export function makeCellBarrier(torus: Triangulation, opts: CellBarrierOptions = {}): RepulsionEnergy {
+export function makeCellBarrier(torus: Triangulation, opts: CellBarrierOptions = {}): ScalarFn {
   const delta = opts.delta ?? DEFAULT_DELTA;
   const strength = opts.strength ?? DEFAULT_STRENGTH;
   const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = torus.cellPairs;
@@ -153,11 +156,5 @@ export function makeCellBarrier(torus: Triangulation, opts: CellBarrierOptions =
     return E;
   }
 
-  return {
-    label: `cell-barrier (δ=${delta}, μ=${strength}, L=√area)`,
-    compute,
-    gradient(positions, out) {
-      fdGradient(compute, positions, out);
-    },
-  };
+  return fdScalar(`cell-barrier (δ=${delta}, μ=${strength}, L=√area)`, compute);
 }

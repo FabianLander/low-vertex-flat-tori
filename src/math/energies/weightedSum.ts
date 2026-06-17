@@ -14,22 +14,15 @@
  * single λ is meaningful across samples.
  */
 
-import { fdGradient } from './finiteDiffGradient';
-import type { RepulsionEnergy } from './types';
+import { fdScalar } from '../../functions/compose.ts';
+import type { ScalarFn } from '../../functions/types.ts';
 
-export type WeightedTerm = { energy: RepulsionEnergy; weight: number };
+export type WeightedTerm = { energy: ScalarFn; weight: number };
 
-export function weightedSum(label: string, terms: WeightedTerm[]): RepulsionEnergy {
-  const compute = (p: ArrayLike<number>): number => {
+export function weightedSum(label: string, terms: WeightedTerm[]): ScalarFn {
+  return fdScalar(label, (p) => {
     let e = 0;
     for (const t of terms) e += t.weight * t.energy.compute(p);
     return e;
-  };
-  return {
-    label,
-    compute,
-    gradient(positions, out) {
-      fdGradient(compute, positions, out);
-    },
-  };
+  });
 }

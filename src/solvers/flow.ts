@@ -27,7 +27,8 @@
 import { project, type ProjectOptions } from './project.ts';
 import { tangentProject, makeTangentScratch } from './tangentProject.ts';
 import { normHeld, totalDrive } from './held.ts';
-import type { Chart, Constraint, Energy, Region } from './types.ts';
+import type { Chart, Constraint, Region } from './types.ts';
+import type { ScalarFn } from '../functions/types.ts';
 
 export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked';
 
@@ -60,7 +61,7 @@ export function flow(
   chart: Chart,
   x: Float64Array,
   held: readonly Constraint[],
-  energy: Energy,
+  energy: ScalarFn,
   opts: FlowOptions = {},
 ): FlowResult {
   const d = chart.dim;
@@ -108,7 +109,7 @@ export function flow(
     const e = energy.compute(c);
     if (e < energyTol) return { status: 'converged', iters: iter, energy: e };
 
-    energy.gradient(c, gradC);          // ∇E in C (restores c)
+    energy.grad(c, gradC);              // ∇E in C
     chart.pullbackRows(gradC, 1, gradX); // Aᵀ∇E
     heldJacX();                          // J at current c
     if (!tangentProject(Jx, K, d, gradX, gTan, damping, tscratch)) {

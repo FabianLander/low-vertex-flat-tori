@@ -10,12 +10,12 @@
  *   3. Re-Newton-flatten. For small α, off-manifold drift is O(α²) and
  *      Newton restores R(x) ≈ 0 in one or two iterations.
  *
- * The energy is plug-and-play via the RepulsionEnergy interface. The flow
+ * The energy is plug-and-play via the ScalarFn interface. The flow
  * knows nothing about embeddedness directly — it only sees E(x) and ∇E(x).
  */
 
 import { newtonFlatten, type NewtonOptions, type NewtonStatus } from './newton';
-import type { RepulsionEnergy } from './energies/types';
+import type { ScalarFn } from '../functions/types.ts';
 import type { Triangulation } from '../topology/triangulation';
 
 export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked' | 'rejected';
@@ -83,7 +83,7 @@ export type FlowResult = {
 export function embeddedFlow(
   torus: Triangulation,
   positions: Float64Array,
-  energy: RepulsionEnergy,
+  energy: ScalarFn,
   opts: FlowOptions = {},
 ): FlowResult {
   const stepSize = opts.stepSize ?? 0.005;
@@ -132,7 +132,7 @@ export function embeddedFlow(
       return { status: 'rejected', iters: iter, energy: e, totalNewtonIters: totalNewton };
     }
 
-    energy.gradient(positions, grad);
+    energy.grad(positions, grad);
     let gNormSq = 0;
     for (let i = 0; i < grad.length; i++) gNormSq += grad[i] * grad[i];
     const gNorm = Math.sqrt(gNormSq);

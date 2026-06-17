@@ -1,46 +1,34 @@
 /**
- * Energy (γ): cut-off area, chord-modulated for smoothness.
+ * Energy (Fabi's, γ): cut-off area, chord-modulated for smoothness.
  *
  *     E(x) = Σ_{(A,B) non-adj}  ℓ(A,B)² · ( σ_A(B) / S_A  +  σ_B(A) / S_B )
  *
- * where ℓ is the chord length, σ_A(B) is the area of the smaller piece of
- * triangle A produced by cutting A along plane(B), and S_A is the area of
- * triangle A.
+ * where ℓ is the chord length, σ_A(B) is the area of the smaller piece of triangle
+ * A produced by cutting A along plane(B), and S_A is the area of triangle A.
  *
- * Pure cut-off area (no ℓ² factor) is discontinuous at the boundary of
- * intersection: a small perturbation across the boundary changes whether
- * we count the area at all, even though the area itself is smooth. FD
- * gradients across that jump are huge spikes. Multiplying by ℓ² (which is
- * exactly zero at the boundary and grows quadratically with penetration
- * depth) restores C¹ smoothness while keeping the geometric flavor:
- * intersections that cut deeply through both triangles get a fatter
- * multiplier than corner-clips.
+ * Pure cut-off area is discontinuous at the boundary of intersection (a small
+ * perturbation across the boundary flips whether the area is counted). Multiplying
+ * by ℓ² — exactly zero at the boundary, growing quadratically with penetration —
+ * restores C¹ smoothness while keeping the geometric flavor: deep cuts cost more
+ * than corner clips. (For uniform per-pair weight, use `chordLengthSquared`.)
  *
- * If you want pure ℓ² without the area weighting, use CHORD_LENGTH_SQUARED
- * instead — same shape but uniform weight per pair.
+ * A scalar `Fn`; the gradient is finite-differenced (`fdScalar`).
+ *
+ * Pure: no three.js, no DOM.
  */
 
-import type { Triangulation } from '../../topology/triangulation';
-import { triTriChord } from '../../geometry/intersectionChord';
-import { fdGradient } from './finiteDiffGradient';
-import type { RepulsionEnergy } from './types';
+import type { Triangulation } from '../../topology/triangulation.ts';
+import { triTriChord } from '../../geometry/intersectionChord.ts';
+import { fdScalar } from '../compose.ts';
+import type { ScalarFn } from '../types.ts';
 
 const EPS = 1e-12;
 
 /**
- * Ratio (smaller piece area / triangle area) ∈ [0, 0.5] of triangle `triIdx`
- * when cut by a plane through `(refX, refY, refZ)` with normal `(npx, npy, npz)`.
- *
- * Returns 0 if the plane doesn't actually divide the triangle (all vertices
- * on one side, or only touches at a vertex without cutting through).
- *
- * The formula is unified across "two vertices on opposite sides" and
- * "one vertex on the plane plus one each side" — both reduce to
- *   min(t₁·t₂, 1 − t₁·t₂)
- * where t₁, t₂ are crossing parameters along the two edges from the
- * sign-minority vertex. Continuity through the d=0 degeneracy is what makes
- * this work; treating d=0 as +1 for the sign count is a convention that
- * doesn't affect the result.
+ * Ratio (smaller piece area / triangle area) ∈ [0, 0.5] of triangle `triIdx` cut
+ * by a plane through `(refX,refY,refZ)` with normal `(npx,npy,npz)`. Zero if the
+ * plane doesn't divide the triangle. Unified across "two vertices opposite" and
+ * "one vertex on the plane": both reduce to min(t₁·t₂, 1 − t₁·t₂).
  */
 function smallerPieceRatio(
   torus: Triangulation,
@@ -63,7 +51,6 @@ function smallerPieceRatio(
   if (d0 > EPS && d1 > EPS && d2 > EPS) return 0;
   if (d0 < -EPS && d1 < -EPS && d2 < -EPS) return 0;
 
-  // Sign with d=0 treated as positive.
   const s0 = d0 < -EPS ? -1 : 1;
   const s1 = d1 < -EPS ? -1 : 1;
   const s2 = d2 < -EPS ? -1 : 1;
@@ -121,18 +108,12 @@ function pairEnergy(torus: Triangulation, positions: ArrayLike<number>, tA: numb
   return c.length * c.length * (ratioA + ratioB);
 }
 
-export function makeCutOffArea(torus: Triangulation): RepulsionEnergy {
+export function makeCutOffArea(torus: Triangulation): ScalarFn {
   function compute(positions: ArrayLike<number>): number {
     let E = 0;
     for (const [tA, tB] of torus.disjointTrianglePairs) E += pairEnergy(torus, positions, tA, tB);
     for (const pair of torus.sharedVertexTrianglePairs) E += pairEnergy(torus, positions, pair.a, pair.b);
     return E;
   }
-  return {
-    label: 'cut-off area (chord²-modulated)',
-    compute,
-    gradient(positions, out) {
-      fdGradient(compute, positions, out);
-    },
-  };
+  return fdScalar('cut-off area (chord²-modulated)', compute);
 }

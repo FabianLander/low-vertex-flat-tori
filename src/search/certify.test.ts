@@ -11,7 +11,7 @@ import { flat } from '../submanifolds/flat.ts';
 import { embedded } from '../regions/embedded.ts';
 import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
-import { minMargin } from '../math/energies/cellMargin.ts';
+import { minMargin } from '../functions/minMargin.ts';
 import { modulus, reduceModulus } from '../topology/develop.ts';
 import { byId } from '../triangulations/index.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';

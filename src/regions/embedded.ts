@@ -17,9 +17,11 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import type { Energy, Region } from '../solvers/types.ts';
+import type { Region } from '../solvers/types.ts';
+import type { ScalarFn } from '../functions/types.ts';
 import { isEmbedded } from '../math/embedded.ts';
-import { makeCellMargin, minMargin } from '../math/energies/cellMargin.ts';
+import { minMargin } from '../functions/minMargin.ts';
+import { makeCellMargin } from '../math/energies/cellMargin.ts';
 import { makeCellBarrier } from '../math/energies/cellBarrier.ts';
 
 export interface EmbeddedOptions {
@@ -40,10 +42,10 @@ export function embedded(torus: Triangulation, opts: EmbeddedOptions = {}): Regi
     margin(c) {
       return minMargin(torus, c).margin;
     },
-    enterEnergy(): Energy {
+    enterEnergy(): ScalarFn {
       return makeCellMargin(torus, { epsilon: opts.epsilon });
     },
-    stayEnergy(): Energy {
+    stayEnergy(): ScalarFn {
       return makeCellBarrier(torus, { delta: opts.delta, strength: opts.strength });
     },
   };

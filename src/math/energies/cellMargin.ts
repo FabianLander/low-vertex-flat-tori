@@ -32,20 +32,20 @@
  */
 
 import type { Triangulation } from '../../topology/triangulation';
-import { totalArea } from '../../topology/develop';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2, triangleTriangleDist2,
 } from '../../geometry/distance';
-import { fdGradient } from './finiteDiffGradient';
-import type { RepulsionEnergy } from './types';
+import { linearSize } from '../../functions/minMargin.ts';
+import { fdScalar } from '../../functions/compose.ts';
+import type { ScalarFn } from '../../functions/types.ts';
+
+// PARKED: recently-invented near-miss repulsion, kept for a future clean rebuild
+// (the six pair accessors below duplicate functions/minMargin's — that's the part
+// to fold onto a shared `cellGaps` primitive when this is rebuilt). Not on the
+// proven discovery path (that's Fabi's functions/energies/*).
 
 export const DEFAULT_EPSILON = 0.1; // margin target, in units of √(total area)
 export const DEFAULT_WEIGHT = 1;    // per-pair penalty height c
-
-/** Linear size of the torus: √(total area). The normalizing length L. */
-export function linearSize(torus: Triangulation, p: ArrayLike<number>): number {
-  return Math.sqrt(totalArea(torus, p));
-}
 
 // --- per-pair-type distance accessors (return true Euclidean distance) ---
 
@@ -114,7 +114,7 @@ export interface CellMarginOptions {
   weight?: number;
 }
 
-export function makeCellMargin(torus: Triangulation, opts: CellMarginOptions = {}): RepulsionEnergy {
+export function makeCellMargin(torus: Triangulation, opts: CellMarginOptions = {}): ScalarFn {
   const eps = opts.epsilon ?? DEFAULT_EPSILON;
   const weight = opts.weight ?? DEFAULT_WEIGHT;
   const invEps = 1 / eps;
@@ -138,44 +138,5 @@ export function makeCellMargin(torus: Triangulation, opts: CellMarginOptions = {
     return E;
   }
 
-  return {
-    label: `cell-margin (ε=${eps}, c=${weight}, L=√area)`,
-    compute,
-    gradient(positions, out) {
-      fdGradient(compute, positions, out);
-    },
-  };
-}
-
-export type MarginReport = {
-  /** Smallest normalized gap d̃ = d/√area over all penalized pairs. */
-  margin: number;
-  /** Which pair type realizes it. */
-  type: 'vv' | 've' | 'vf' | 'ee' | 'ef' | 'ff';
-  /** The two cell indices (meaning depends on type; see cellPairs.ts). */
-  cells: [number, number];
-};
-
-/**
- * Diagnostic: the minimum normalized gap and which pair achieves it.
- * Independent of ε/weight — pure geometry. A margin ≥ ε means E = 0.
- */
-export function minMargin(torus: Triangulation, p: ArrayLike<number>): MarginReport {
-  const invL = 1 / linearSize(torus, p);
-  const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = torus.cellPairs;
-  let best: MarginReport = { margin: Infinity, type: 'vv', cells: [-1, -1] };
-  const consider = (d: number, type: MarginReport['type'], a: number, b: number) => {
-    const dt = d * invL;
-    if (dt < best.margin) best = { margin: dt, type, cells: [a, b] };
-  };
-  for (const [i, j] of vertexVertex) consider(vv(p, i, j), 'vv', i, j);
-  for (const [v, e] of vertexEdge) consider(ve(torus, p, v, e), 've', v, e);
-  for (const [v, f] of vertexFace) consider(vf(torus, p, v, f), 'vf', v, f);
-  for (const [e1, e2] of edgeEdge) {
-    const [d1, d2] = ee(torus, p, e1, e2);
-    consider(Math.min(d1, d2), 'ee', e1, e2);
-  }
-  for (const [e, f] of edgeFace) consider(ef(torus, p, e, f), 'ef', e, f);
-  for (const [fa, fb] of faceFace) consider(ff(torus, p, fa, fb), 'ff', fa, fb);
-  return best;
+  return fdScalar(`cell-margin (ε=${eps}, c=${weight}, L=√area)`, compute);
 }

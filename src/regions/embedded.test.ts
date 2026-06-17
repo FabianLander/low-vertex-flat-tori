@@ -12,7 +12,6 @@ import { flat } from '../submanifolds/flat.ts';
 import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { makeCellMargin } from '../math/energies/cellMargin.ts';
-import type { Energy } from '../solvers/types.ts';
 import { byId } from '../triangulations/index.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';
 
@@ -28,7 +27,7 @@ describe('embedded Region', () => {
 
     // A reproducibly non-embedded config: aggressive un-gated fattening crosses a pair.
     const bad = RICH_REFERENCE.positions.slice();
-    flow(identity(24), bad, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }) as Energy, { maxIters: 50 });
+    flow(identity(24), bad, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     expect(isEmbedded(torus, bad)).toBe(false);          // (matches flow.test observation)
     expect(region.contains(bad)).toBe(isEmbedded(torus, bad)); // gate tracks the truth
     expect(region.contains(bad)).toBe(false);

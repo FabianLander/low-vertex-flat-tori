@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { makeChordLengthSquared } from './chordLengthSquared';
-import { makeCutOffArea } from './cutOffArea';
-import { makeCellMargin, minMargin, linearSize } from './cellMargin';
+import { makeChordLengthSquared } from '../../functions/energies/chordLengthSquared';
+import { makeCutOffArea } from '../../functions/energies/cutOffArea';
+import { makeCellMargin } from './cellMargin';
+import { minMargin, linearSize } from '../../functions/minMargin';
 import { totalArea } from '../../topology/develop';
 import { RICH_REFERENCE } from '../reference';
 import { mulberry32 } from '../perturb';
@@ -41,7 +42,7 @@ describe('repulsion energies', () => {
     const e0 = CUTOFF_AREA.compute(p);
     if (e0 > 1e-6) {
       const g = new Float64Array(24);
-      CUTOFF_AREA.gradient(p, g);
+      CUTOFF_AREA.grad(p, g);
       const step = Float64Array.from(p, (v, i) => v - 1e-4 * g[i]);
       expect(CUTOFF_AREA.compute(step)).toBeLessThanOrEqual(e0 + 1e-12);
     }

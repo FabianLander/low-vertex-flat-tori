@@ -28,7 +28,7 @@ import { modulus, reduceModulus } from '../../src/topology/develop';
 import { newtonFlatten } from '../../src/math/newton';
 import { maxConeDeficit } from '../../src/functions/coneDeficit';
 import { isEmbedded } from '../../src/math/embedded';
-import { minMargin, linearSize } from '../../src/math/energies/cellMargin';
+import { minMargin, linearSize } from '../../src/functions/minMargin';
 import { makeRng } from '../../src/math/perturb';
 
 import pushT7Raw from './data/push-t7-best.csv?raw';
