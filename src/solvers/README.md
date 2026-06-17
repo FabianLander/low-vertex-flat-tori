@@ -16,5 +16,4 @@ module for its contract; `solvers/` depends on no implementation.
 - `project.ts` / `flow.ts` / `march.ts` / `tangentProject.ts` — the steppers, all on
   one J-hub (the held Jacobian's damped JJᵀ solve).
 
-(Reuses the pure `solveDenseInPlace`/`infNorm` from `math/newton.ts` for now; those
-move here during the refactor.)
+- `linalg.ts` — the dense normal-equation solve + ‖·‖∞, extracted from `math/newton`; the solver core now depends on nothing in `math/`.

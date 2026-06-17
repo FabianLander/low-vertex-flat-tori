@@ -7,7 +7,7 @@
  * delegates to `project`. Pure: no three.js, no DOM.
  */
 
-import { infNorm } from '../math/newton.ts';
+import { infNorm } from './linalg.ts';
 import type { Fn } from '../functions/types.ts';
 import type { Constraint, Held } from './types.ts';
 

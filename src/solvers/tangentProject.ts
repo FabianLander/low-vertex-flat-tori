@@ -20,7 +20,7 @@
  * Pure: no three.js, no DOM.
  */
 
-import { solveDenseInPlace } from '../math/newton.ts';
+import { solveDenseInPlace } from './linalg.ts';
 
 export interface TangentScratch {
   jv: Float64Array;   // length rows

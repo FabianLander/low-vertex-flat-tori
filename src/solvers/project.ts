@@ -30,7 +30,7 @@
  * Mutates `x` (chart coordinates) in place. Pure: no three.js, no DOM.
  */
 
-import { solveDenseInPlace } from '../math/newton.ts';
+import { solveDenseInPlace } from './linalg.ts';
 import { normHeld, residualOf, totalDrive } from './held.ts';
 import type { Chart, Constraint } from './types.ts';
 
