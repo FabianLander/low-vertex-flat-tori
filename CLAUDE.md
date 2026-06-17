@@ -59,25 +59,27 @@ Everything outside `render/`, `mesh/`, `viewer/`, `io/` (and the browser entries
 extrinsic search stack is **dependency-ordered**, each layer using only the ones below:
 
 ```
-geometry/ → functions/ → { configuration/, submanifolds/, regions/ } → solvers/ → search/
+geometry/ → functions/ → { configuration/, conditions/ } → solvers/ → search/
 ```
 
 with `topology/` (intrinsic machinery) + `triangulations/` (the 7 as data) underneath. Do not import
 three.js or touch `window`/`document` from any of these.
 
-### The one concept: `Fn` (functions/)
+### The one concept: `Fn` — toolkit (`functions/`) vs instances (`conditions/`)
 
 The system is built from **one** thing — a differentiable map of the configuration,
-`Fn : C = ℝ³ⱽ → ℝᵏ` (`value` + `jacobian`), in `src/functions/`. "Constraint" and "energy" are
-*uses* of an `Fn`, not separate interfaces:
+`Fn : C = ℝ³ⱽ → ℝᵏ` (`value` + `jacobian`). "Constraint" and "energy" are *uses* of an `Fn`, not
+separate interfaces:
 
 - a **constraint** is an `Fn` driven to zero (`project`/`march`); held with optional usage (`Held`:
   which rows to drive). `flat` = `coneDeficit` driving V−1 rows.
 - an **energy** is a scalar `Fn` (`ScalarFn`: `compute`/`grad`) descended (`flow`).
 
 There is **no `ConstraintMap` and no `Energy` interface** — they were retired onto `Fn`/`ScalarFn`.
-Composition lives in `functions/compose.ts` (`fdFn`/`fdScalar` for finite-difference Jacobians,
-`postcompose`/`affine` for chain-rule stacking, e.g. the frozen-Möbius modulus wall onto `tau`).
+`functions/` is the **generic toolkit** — the `Fn`/`ScalarFn` contract (`types.ts`) and the compose
+algebra (`fdFn`/`fdScalar`, `postcompose`/`affine`), no torus content. The **concrete maps** live with
+the condition they define, in `conditions/` (the same machinery↔instances split as `topology/` ↔
+`triangulations/`).
 
 ### Configuration is a bare `Float64Array`
 
@@ -102,16 +104,15 @@ closures, never bundled with the coordinates. There is **no global triangulation
 ### Extrinsic: the search stack
 
 - `geometry/` — torus-blind ℝ²/ℝ³ kernels: `distance` (point/segment/triangle), `intersectionChord`
-  (`triTriChord` from a `positions` buffer + vertex offsets). `geometry/drawing/` is plane-curve
-  utilities for figures/demos, not the pipeline.
-- `functions/` — the maps: `coneDeficit` (flatness, analytic Jacobian), `tau` (modulus, FD),
-  `minMargin` (embedding diagnostic), `energies/` (Fabi's proven repulsions `chordLengthSquared` +
-  `cutOffArea` as `ScalarFn`s — the ones that found the tori).
+  (`triTriChord`), `triangleIntersect` (the Möller–Trumbore predicates behind `isEmbedded`), all from
+  a `positions` buffer + vertex indices. `geometry/drawing/` is plane-curve utilities, not the pipeline.
+- `functions/` — the generic toolkit: `types` (`Fn`/`ScalarFn`) + `compose` (the algebra). No instances.
 - `configuration/` — charts (`identity`, `pinCoords`, `symmetry` = Rich's ρ), `gauge` (canonical
   similarity pose, storage/dedup only), `rng` + `perturb`, `doyleSchwartz` (the DS seed family).
-- `submanifolds/` — closed conditions as `Fn`s/`Held`s: `flat`, `collinear`, `modulus`
-  (`fixedModulus`/`modulusWall`, frozen-chart).
-- `regions/` — open conditions: `embedded` (gate = `isEmbedded`, hands out the enter/stay energies).
+- `conditions/` — one self-contained module per condition (measurement + usage): `flat`
+  (`coneDeficit` + the V−1 constraint), `collinear` (analytic), `modulus` (`tau` + `fixedModulus`/
+  `modulusWall`, frozen-chart), and `embedded/` (folder: `gate` `isEmbedded` · `margin` cell-gaps +
+  `minMargin` · `energies` Fabi's `chordLengthSquared`/`cutOffArea` + `cellMargin` · `region`).
 - `solvers/` — problem-agnostic steppers on charts + held constraints, all on one J-hub: `project`
   (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian descent of a `ScalarFn` along the
   manifold, gated by a region), `march` (continuation tracking a family ∩ region).
@@ -123,11 +124,12 @@ closures, never bundled with the coordinates. There is **no global triangulation
 ### `math/` — the draining residue
 
 Being emptied into the stack above. Still here: `embedding.ts` (`PaperTorus`, render bundle),
-`embedded.ts` (`isEmbedded` — clean, → `geometry/`+`regions/` later), `newton.ts`/`embeddedFlow.ts`
-(legacy solvers, only the archived scripts use them; `solvers/project` borrows `solveDenseInPlace`),
-`energies/{cellMargin,cellBarrier,weightedSum}` (parked near-miss energies, awaiting a clean rebuild),
-`reference.ts` (`RICH_REFERENCE`, render data), `semiSolution.ts` (legacy semi-solution search,
-reproducible as `project([flat, collinear, collinear])` — to be rebuilt in `search/`).
+`newton.ts`/`embeddedFlow.ts` (legacy solvers, only the archived scripts use them),
+`energies/{cellMargin,cellBarrier,weightedSum}` (parked duplicate near-miss energies — the live ones
+are in `conditions/embedded/energies`), `reference.ts` (`RICH_REFERENCE`, render/test fixture),
+`semiSolution.ts` (legacy semi-solution search, reproducible as `project([flat, collinear, collinear])`
+— rebuilt as `search/semiSolution`). The solver core now depends on nothing in `math/`
+(`solveDenseInPlace`/`infNorm` are in `solvers/linalg`).
 
 ### Rendering — two stacks
 

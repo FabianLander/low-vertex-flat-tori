@@ -20,10 +20,10 @@ open set.
 
 | layer | document | what it is | code |
 | --- | --- | --- | --- |
-| kernels | — | torus-blind ℝ²/ℝ³ primitives (distances, the intersection chord) the conditions are built from | `geometry/` |
-| functions | [conditions.md](conditions.md) | the differentiable maps C → ℝᵏ (`Fn`) — one concept; a constraint/energy is a *use* of one | `functions/` |
+| kernels | — | torus-blind ℝ²/ℝ³ primitives (distances, the intersection chord + predicates) | `geometry/` |
+| functions | [conditions.md](conditions.md) | the differentiable-map **toolkit** — the `Fn`/`ScalarFn` contract + the compose algebra (machinery, no instances) | `functions/` |
 | configuration | [configuration.md](configuration.md) | the search space `C = ℝ³ⱽ`, the gauge, and charts ι: X → C (subspaces) | `configuration/` |
-| conditions | [conditions.md](conditions.md) | what we ask of a config — closed **submanifolds** `{g=0}` and open **regions** | `submanifolds/`, `regions/` |
+| conditions | [conditions.md](conditions.md) | what we ask of a config — each module its own measurement + usage; closed `{g=0}` and open (`Region`) kinds, by return type | `conditions/` |
 | operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian — and `certify` | `solvers/`, `search/certify.ts` |
 | searches | [searches.md](searches.md) | what each search *does* in C — the flat manifold, the modulus foliation, the embedded region; solving *for* a modulus vs *marching* to it | `search/` |
 
@@ -31,13 +31,14 @@ Two structural lines run through all of it:
 
 - **intrinsic vs. extrinsic.** The topology half is *intrinsic* — independent of any ℝ³ embedding.
   The extrinsic half — the realization in space, the flatness/embeddedness maps, and the search — is
-  the dependency-ordered stack `geometry/ → functions/ → {configuration, submanifolds, regions} →
-  solvers/ → search/`. (`PaperTorus` and a few primitives still sit in `src/math/`, being drained
-  into that stack.) The developing map reads coordinates only to extract the intrinsic metric (edge
-  lengths).
-- **machinery vs. instances.** `src/topology/` is generic machinery — it works on *any*
-  triangulation and depends on nothing. The specific triangulations we study are *data* in
-  `src/triangulations/` (a census → a registry), which depends on `topology`, never the reverse.
+  the dependency-ordered stack `geometry/ → functions/ → {configuration, conditions} → solvers/ →
+  search/`. (`PaperTorus`, the legacy solvers, and the parked energies still sit in `src/math/`, being
+  drained into that stack.) The developing map reads coordinates only to extract the intrinsic metric
+  (edge lengths).
+- **machinery vs. instances.** Two places apply this split: `topology/` (generic triangulation
+  machinery) ↔ `triangulations/` (the 7 as data); and `functions/` (the generic differentiable-map
+  toolkit) ↔ `conditions/` (the concrete maps + their uses). Machinery depends on nothing
+  problem-specific; instances depend on the machinery, never the reverse.
 
 A marking and a fundamental domain are both *decorations* of a triangulation, computed together by
 one pass (`canonicalDecoration`) and stored as two fields (`tri.marking`, `tri.fundamentalDomain`).

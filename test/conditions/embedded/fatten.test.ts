@@ -1,12 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { makeCellMargin } from '../../../src/conditions/embedded/index.ts';
-import { minMargin } from '../../../src/conditions/embedded/index.ts';
+import { makeCellMargin, minMargin, embedded, isEmbedded } from '../../../src/conditions/embedded/index.ts';
 import { flow } from '../../../src/solvers/flow.ts';
 import { identity } from '../../../src/configuration/chart.ts';
-import { flat } from '../../../src/conditions/flat.ts';
-import { embedded } from '../../../src/conditions/embedded/index.ts';
-import { maxConeDeficit } from '../../../src/conditions/flat.ts';
-import { isEmbedded } from '../../../src/conditions/embedded/index.ts';
+import { flat, maxConeDeficit } from '../../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../../src/math/reference.ts';
 import { RICH } from '../../../src/triangulations/index.ts';
 

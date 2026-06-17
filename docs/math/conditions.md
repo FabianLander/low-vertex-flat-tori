@@ -3,8 +3,9 @@
 > A **condition** is a property a configuration may or may not have. They come in two mathematically
 > distinct kinds, and the distinction is the whole shape of the search: **closed** conditions are
 > *submanifolds* `{g=0}` you land *on*; **open** conditions are *regions* you stay *inside*.
-> Code: `src/submanifolds/`, `src/regions/` — both built on the differentiable maps in
-> [`src/functions/`](configuration.md).
+> Code: `src/conditions/` — one module per condition, each owning its measurement (an `Fn` built
+> from the `functions/` toolkit) and its usage. Closed vs open is carried by the *return type*
+> (a `Held`/`Fn` vs a `Region`), not the directory.
 
 > **One concept underneath.** Every closed condition, and the potential of every open one, is the
 > *same* thing — a differentiable map of the configuration, an **`Fn`** (`value` + `jacobian`, in
@@ -83,13 +84,10 @@ the math is used.
 
 | symbol | file | role |
 | --- | --- | --- |
-| `Fn`, `ScalarFn` | `functions/types.ts` | the one map contract (constraint/energy are uses of it) |
-| `coneDeficit`, `tau` | `functions/coneDeficit.ts`, `functions/tau.ts` | the deficit / modulus maps |
-| `chordLengthSquared`, `cutOffArea` | `functions/energies/` | Fabi's proven repulsions (scalar `Fn`s) |
-| `minMargin` | `functions/minMargin.ts` | the embedding diagnostic (smallest cell gap) |
-| `Held`, `Constraint`, `Region` | `solvers/types.ts` | how the solvers consume a map (no `Energy` type) |
-| `flat`, `collinear` | `submanifolds/flat.ts`, `submanifolds/collinear.ts` | flatness; collinearity |
-| `fixedModulus`, `modulusWall` | `submanifolds/modulus.ts` | moduli point / wall (frozen chart) |
-| `embedded` | `regions/embedded.ts` | the embedded region (gate + enter/stay energies) |
-| `isEmbedded` | `math/embedded.ts` | the topological gate (→ `geometry/`/`regions/` later) |
-| `makeCellMargin`, `makeCellBarrier` | `math/energies/` | parked near-miss energies, awaiting clean rebuild |
+| `Fn`, `ScalarFn` | `functions/types.ts` | the map contract (constraint/energy are uses of it) |
+| `Held`, `Constraint`, `Region` | `solvers/types.ts` | how the solvers consume a condition (no `Energy` type) |
+| `flat` (+ `coneDeficit`) | `conditions/flat.ts` | flatness: the deficit measurement + the constraint |
+| `collinear` | `conditions/collinear.ts` | planar collinearity (analytic signed area) |
+| `modulus` (`tau`, `fixedModulus`, `modulusWall`) | `conditions/modulus.ts` | the modulus measurement + point/wall constraints (frozen chart) |
+| `embedded` (`isEmbedded`, `minMargin`, the energies) | `conditions/embedded/` | the embeddedness gate + margin + repulsion energies, in one folder |
+| intersection predicates | `geometry/triangleIntersect.ts` | the torus-blind kernels behind `isEmbedded` |

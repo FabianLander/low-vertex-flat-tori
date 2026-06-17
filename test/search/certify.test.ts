@@ -4,14 +4,11 @@
 
 import { describe, it, expect } from 'vitest';
 import { certify } from '../../src/search/certify.ts';
-import { makeCellMargin } from '../../src/conditions/embedded/index.ts';
+import { makeCellMargin, isEmbedded, minMargin } from '../../src/conditions/embedded/index.ts';
 import { project } from '../../src/solvers/project.ts';
 import { flow } from '../../src/solvers/flow.ts';
 import { identity } from '../../src/configuration/chart.ts';
-import { flat } from '../../src/conditions/flat.ts';
-import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { isEmbedded } from '../../src/conditions/embedded/index.ts';
-import { minMargin } from '../../src/conditions/embedded/index.ts';
+import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';

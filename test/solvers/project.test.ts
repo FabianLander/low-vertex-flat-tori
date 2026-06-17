@@ -15,12 +15,11 @@
 import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
 import { identity, pinCoords } from '../../src/configuration/chart.ts';
-import { flat } from '../../src/conditions/flat.ts';
+import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { collinear } from '../../src/conditions/collinear.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { semiSolutionFlatten } from '../../src/math/semiSolution.ts';
 import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
-import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';

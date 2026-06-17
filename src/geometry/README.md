@@ -11,6 +11,8 @@ The **kernels the search pipeline needs** (consumed by `math/energies/*`, later
   segments, and filled triangles (Ericson closest-point routines).
 - `intersectionChord.ts` — `triTriChord(pos, oa0..ob2)`: the segment two triangles
   share, from six vertex offsets into a shared `positions` buffer.
+- `triangleIntersect.ts` — boolean interior-intersection predicates (Möller–Trumbore
+  segment–triangle, and triangle–triangle as 6 of those) behind `isEmbedded`.
 
 `drawing/` — plane-curve utilities for **figures and demos**, not the search
 pipeline: 2D vectors, parametric `PlaneCurve`s with arclength queries, and tracing

@@ -7,8 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { symmetry, RICH_SYMMETRY } from '../../src/configuration/symmetry.ts';
 import { project } from '../../src/solvers/project.ts';
-import { flat } from '../../src/conditions/flat.ts';
-import { maxConeDeficit } from '../../src/conditions/flat.ts';
+import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';
 import { mulberry32 } from '../../src/configuration/rng.ts';

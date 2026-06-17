@@ -8,9 +8,8 @@
 import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
 import { identity } from '../../src/configuration/chart.ts';
-import { flat } from '../../src/conditions/flat.ts';
+import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { fixedModulus, modulusWall } from '../../src/conditions/modulus.ts';
-import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus, reduceModulus, type V2 } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';
