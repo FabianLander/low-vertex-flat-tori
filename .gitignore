@@ -31,3 +31,6 @@ dist-ssr
 *.sln
 *.sw?
 package-lock.json
+
+# per-demo live exploration folders (symlinks into gitignored samples/)
+demos/*/live/

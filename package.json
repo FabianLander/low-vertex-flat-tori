@@ -11,6 +11,9 @@
     "wall": "tsx scripts/wall.mjs",
     "semi-solutions": "tsx scripts/semi-solutions.mjs",
     "march-modulus": "tsx scripts/march-modulus.mjs",
+    "collect-imaginary": "tsx scripts/collect-imaginary.mjs",
+    "march-to-i": "tsx scripts/march-to-i.mjs",
+    "random-imaginary": "tsx scripts/random-imaginary.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

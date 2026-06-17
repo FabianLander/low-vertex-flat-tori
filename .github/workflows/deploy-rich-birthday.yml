@@ -1,7 +1,10 @@
-name: Deploy rich-birthday to Pages
+name: Deploy to Pages
 
-# Builds the `rich-birthday` render and publishes it to GitHub Pages.
-# Served at https://fabianlander.github.io/low-vertex-flat-tori/
+# Builds and publishes to GitHub Pages (https://fabianlander.github.io/low-vertex-flat-tori/):
+#   - the `rich-birthday` render, at the site ROOT (unchanged URL), and
+#   - the `imaginary-moduli` demo, at /imaginary-moduli/.
+# Each build is self-contained (Vite base './'), so it serves correctly at any path.
+# GitHub Pages serves one site per repo, so both ship from this single workflow.
 
 on:
   push:
@@ -32,15 +35,26 @@ jobs:
 
       - run: npm ci
 
-      # Produces a self-contained dist/rich-birthday/ (base: './' makes it
-      # path-agnostic, so it serves correctly at the Pages root).
       - run: npm run build rich-birthday
+      - run: npm run build imaginary-moduli
+      - run: npm run build square-torus-slice
+
+      # Assemble the Pages site: rich-birthday at the root, the others in
+      # subfolders (so imaginary-moduli's "Investigate" button can link to
+      # ../square-torus-slice/). imaginary-moduli reads only its committed data/
+      # — the gitignored live/ symlinks aren't in CI, so the public site shows
+      # just the curated examples.
+      - run: |
+          mkdir -p site
+          cp -r dist/rich-birthday/. site/
+          cp -r dist/imaginary-moduli site/imaginary-moduli
+          cp -r dist/square-torus-slice site/square-torus-slice
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/rich-birthday
+          path: site
 
   deploy:
     needs: build
