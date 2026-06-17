@@ -10,6 +10,7 @@
     "discover": "tsx scripts/discover.mjs",
     "wall": "tsx scripts/wall.mjs",
     "semi-solutions": "tsx scripts/semi-solutions.mjs",
+    "march-modulus": "tsx scripts/march-modulus.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

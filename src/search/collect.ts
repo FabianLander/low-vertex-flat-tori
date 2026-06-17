@@ -10,14 +10,15 @@
  *     cert = attempt(seed)              // runs project/flow/…; mutates seed in place
  *     if cert: accept (onAccept), else: reject
  *
- * `attempt` returns a `Certificate` to accept or `null` to reject; on accept the
+ * `attempt` returns a result `R` to accept or `null` to reject; on accept the
  * `seed` buffer holds the accepted configuration (copy it in `onAccept` if you
- * persist it — the buffer may be reused on the next draw).
+ * persist it — the buffer may be reused on the next draw). `R` is usually a
+ * `Certificate`, but a search may return a richer record (e.g. a `march` outcome
+ * carrying reached/blocked + the pinch modulus) — `collect` only cares that it is
+ * non-null.
  *
  * Pure: no three.js, no DOM.
  */
-
-import type { Certificate } from './certify.ts';
 
 export interface CollectStats {
   tries: number;
@@ -25,21 +26,21 @@ export interface CollectStats {
   rejects: number;
 }
 
-export interface CollectOptions {
+export interface CollectOptions<R> {
   /** Stop after this many attempts. Default ∞. */
   maxTries?: number;
   /** Stop after this many accepts. Default ∞. */
   maxAccepts?: number;
-  /** Each accepted attempt: the certificate and the live config buffer (copy to persist). */
-  onAccept?: (cert: Certificate, positions: Float64Array) => void;
+  /** Each accepted attempt: the result and the live config buffer (copy to persist). */
+  onAccept?: (result: R, positions: Float64Array) => void;
   /** Every attempt (accept or reject): for progress, closeness scoring, etc. */
   onTry?: (accepted: boolean, positions: Float64Array, stats: Readonly<CollectStats>) => void;
 }
 
-export function collect(
+export function collect<R>(
   drawSeed: () => Float64Array | null,
-  attempt: (seed: Float64Array) => Certificate | null,
-  opts: CollectOptions = {},
+  attempt: (seed: Float64Array) => R | null,
+  opts: CollectOptions<R> = {},
 ): CollectStats {
   const maxTries = opts.maxTries ?? Infinity;
   const maxAccepts = opts.maxAccepts ?? Infinity;
@@ -49,14 +50,14 @@ export function collect(
     const seed = drawSeed();
     if (seed === null) break;
     stats.tries++;
-    const cert = attempt(seed);
-    if (cert) {
+    const result = attempt(seed);
+    if (result !== null && result !== undefined) {
       stats.accepts++;
-      opts.onAccept?.(cert, seed);
+      opts.onAccept?.(result, seed);
     } else {
       stats.rejects++;
     }
-    opts.onTry?.(cert !== null, seed, stats);
+    opts.onTry?.(result !== null && result !== undefined, seed, stats);
   }
   return stats;
 }
