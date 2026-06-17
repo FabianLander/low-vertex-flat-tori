@@ -60,7 +60,7 @@ import { modulus, reduceModulus } from '../src/topology/develop.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
-import { linearSize, minMargin } from '../src/math/energies/cellMargin.ts';
+import { linearSize, minMargin } from '../src/functions/minMargin.ts';
 
 const args = process.argv.slice(2);
 function flag(name) {

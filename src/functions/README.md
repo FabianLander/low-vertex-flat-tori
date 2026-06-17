@@ -19,5 +19,11 @@ measured in many roles.
 - `tau.ts` — the Teichmüller modulus τ(c) ∈ ℍ (dim 2), finite-differenced. Feeds
   the modulus submanifolds, which post-compose the exact frozen Möbius on top.
 
-To come during the refactor: the embedding margin and the repulsion/barrier
-energies (rewritten from `math/energies/*` as `ScalarFn`s), and an analytic τ.
+- `minMargin.ts` — the embedding diagnostic: the smallest normalized gap between
+  non-adjacent cells (the six pair types, written once).
+- `energies/` — Fabi's proven repulsions `chordLengthSquared` + `cutOffArea` as
+  `ScalarFn`s (the ones that found the tori). Built via `scalarFn`/`fdScalar`.
+
+The near-miss `cellMargin`/`cellBarrier` energies stay parked in `math/energies/`
+(grubby, awaiting a clean rebuild onto a shared `cellGaps` primitive). To come: an
+analytic τ.

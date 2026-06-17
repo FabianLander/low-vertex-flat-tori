@@ -30,7 +30,7 @@ import { byId } from '../src/triangulations/index.ts';
 import { modulus, reduceModulus } from '../src/topology/develop.ts';
 import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
-import { minMargin, linearSize } from '../src/math/energies/cellMargin.ts';
+import { minMargin, linearSize } from '../src/functions/minMargin.ts';
 
 const args = process.argv.slice(2);
 function flags(name) {

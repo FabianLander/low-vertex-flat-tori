@@ -64,8 +64,8 @@ import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { makeCellBarrier } from '../src/math/energies/cellBarrier.ts';
-import { minMargin, linearSize } from '../src/math/energies/cellMargin.ts';
-import { energyFromCompute } from '../src/math/energies/finiteDiffGradient.ts';
+import { minMargin, linearSize } from '../src/functions/minMargin.ts';
+import { fdScalar as energyFromCompute } from '../src/functions/compose.ts';
 
 const args = process.argv.slice(2);
 function flags(name) {

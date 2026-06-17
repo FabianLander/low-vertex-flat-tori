@@ -18,7 +18,7 @@ So `project` and `flow` are not unrelated solvers — they are the corrector and
 the *same* object. `tangentProject` and `project` share the same damped `JJᵀ` solve. Everything runs
 in a [chart](configuration.md)'s coordinates `X`: residuals are evaluated on `ι(x)`, derivatives
 pulled back through `Dι`. The solvers are **problem-agnostic** — they take the abstract `Constraint`
-(a `Fn` from `functions/`, optionally a `Held` saying how to use it) / `Chart` / `Energy` / `Region`
+(a `Fn` from `functions/`, optionally a `Held` saying how to use it) / `Chart` / `ScalarFn` / `Region`
 contracts, never a `Triangulation` (the torus rides inside the maps' closures).
 
 ## project — land on the submanifold
@@ -30,7 +30,7 @@ generalization of the old `newtonFlatten` (it reproduces it on `[flat]`, and `se
 
 ## flow — gradient descent *along* the submanifold, into a region
 
-`flow(chart, x, held, energy, {region?})`: **Riemannian** gradient descent of an `Energy` `E` on `M`.
+`flow(chart, x, held, energy, {region?})`: **Riemannian** gradient descent of a scalar `Fn` energy `E` on `M`.
 Per step: `g = ∇E`, tangent-project `g_T = P_T g`, step `x -= α g_T` (purely along `M`), then
 `project` to retract the O(α²) curvature drift. With a `region`, the step is a backtracking line
 search that only accepts a retracted point inside `Ω` that lowers `E` — else it halts `blocked`.

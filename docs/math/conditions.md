@@ -51,11 +51,19 @@ that move a config with respect to it.
   topological test disagree at the boundary and on edge-shared pairs (a config can have `minMargin >
   0` yet fail `isEmbedded`). The gate must be the truth, not its surrogate.
 
-**Energies.** A region supplies two scalar potentials (each an `Energy`: `compute` + gradient ∇E in C):
+**Energies.** A region supplies two scalar potentials. An energy is **not its own type** — it's just a
+scalar `Fn` (`functions/`, a `ScalarFn`: `compute` + `grad`) you push downhill, the dual of a constraint
+(an `Fn` driven to zero). The region hands out two:
 - **`enterEnergy`** — a *repulsion* (zero once every pair is ≥ ε apart): pushes a config toward / into
   the region. Used to reach it or spread cells apart.
 - **`stayEnergy`** — a *barrier* (→ ∞ at contact): holds a config strictly inside, away from the
-  boundary (fattening). These are `math/energies/` (`makeCellMargin`, `makeCellBarrier`), wrapped.
+  boundary (fattening).
+
+The proven discovery repulsions are **Fabi's** `chordLengthSquared` / `cutOffArea` (penalize *actual*
+overlaps, zero on the embedded set — they drive a crossing torus onto it; `functions/energies/`). The
+near-miss `cellMargin` / `cellBarrier` (fatten an already-embedded one) are **parked in `math/energies/`**
+awaiting a clean rebuild onto a shared `cellGaps` primitive. `minMargin` is the embedding diagnostic
+(`functions/minMargin`), not an energy.
 
 Energies are *descended* by `flow`; the region's `contains` is the *gate* `flow`/`march` enforce.
 Note descending these energies lowers a sum of pair penalties — it does **not** monotonically
@@ -77,8 +85,11 @@ the math is used.
 | --- | --- | --- |
 | `Fn`, `ScalarFn` | `functions/types.ts` | the one map contract (constraint/energy are uses of it) |
 | `coneDeficit`, `tau` | `functions/coneDeficit.ts`, `functions/tau.ts` | the deficit / modulus maps |
-| `Held`, `Constraint`, `Region`, `Energy` | `solvers/types.ts` | how the solvers consume a map |
+| `chordLengthSquared`, `cutOffArea` | `functions/energies/` | Fabi's proven repulsions (scalar `Fn`s) |
+| `minMargin` | `functions/minMargin.ts` | the embedding diagnostic (smallest cell gap) |
+| `Held`, `Constraint`, `Region` | `solvers/types.ts` | how the solvers consume a map (no `Energy` type) |
 | `flat`, `collinear` | `submanifolds/flat.ts`, `submanifolds/collinear.ts` | flatness; collinearity |
 | `fixedModulus`, `modulusWall` | `submanifolds/modulus.ts` | moduli point / wall (frozen chart) |
 | `embedded` | `regions/embedded.ts` | the embedded region (gate + enter/stay energies) |
-| `isEmbedded`, `minMargin`, `makeCellMargin/Barrier` | `math/embedded.ts`, `math/energies/` | the analytic primitives the conditions wrap |
+| `isEmbedded` | `math/embedded.ts` | the topological gate (→ `geometry/`/`regions/` later) |
+| `makeCellMargin`, `makeCellBarrier` | `math/energies/` | parked near-miss energies, awaiting clean rebuild |

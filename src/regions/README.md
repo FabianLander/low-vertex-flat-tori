@@ -1,8 +1,14 @@
 # regions/ — the open conditions
 
 Conditions you **gate / flow into / barrier to stay inside** — open, possibly
-non-smooth. Each bundles a predicate, a signed margin, and the energies that pull a
-configuration in or keep it off the boundary. The dominant one is embeddedness.
+non-smooth. A `Region` (contract in `solvers/types.ts`) bundles the things that
+genuinely *aren't* differentiable maps: a predicate gate, a signed margin
+(diagnostic), and the two energies it hands out. The energies themselves are scalar
+`Fn`s from `functions/` — the region only *dispenses* them; it doesn't define them.
 
-*(Empty for now. Populated during the refactor by rewriting `math/embedded.ts` +
-`math/energies/*` into this layer; `nondegenerate` lives here too.)*
+- `embedded.ts` — the embedded region: gate = `isEmbedded` (the topological truth,
+  not `margin > 0`), margin = `functions/minMargin`, enter/stay = the cell-margin /
+  barrier `ScalarFn`s.
+
+To come during the refactor: relocate `isEmbedded` (clean already, in `math/embedded.ts`)
+into this layer, and `nondegenerate`.

@@ -36,7 +36,7 @@ import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '..
 import { newtonFlatten } from '../src/math/newton.ts';
 import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
-import { linearSize } from '../src/math/energies/cellMargin.ts';
+import { linearSize } from '../src/functions/minMargin.ts';
 
 const args = process.argv.slice(2);
 function flags(name) {

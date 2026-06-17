@@ -33,7 +33,7 @@ import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
-import { minMargin, linearSize } from '../src/math/energies/cellMargin.ts';
+import { minMargin, linearSize } from '../src/functions/minMargin.ts';
 import { makeCellBarrier } from '../src/math/energies/cellBarrier.ts';
 
 const DIM = RICH.vertexCount * 3;
