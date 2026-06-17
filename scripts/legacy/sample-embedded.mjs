@@ -35,7 +35,7 @@
 import { appendFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
-import { isEmbedded } from '../../src/math/embedded.ts';
+import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { makeRng } from '../../src/configuration/rng.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { byId } from '../../src/triangulations/index.ts';

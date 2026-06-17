@@ -25,7 +25,7 @@ import * as THREE from 'three';
 import { byId } from '../../src/triangulations';
 import { modulus, reduceModulus } from '../../src/topology/develop';
 import { maxConeDeficit } from '../../src/conditions/flat';
-import { minMargin } from '../../src/functions/minMargin';
+import { minMargin } from '../../src/conditions/embedded/index';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import type { PaperTorus } from '../../src/math/embedding';
 import { styledTorus } from '../../src/render/styledTorus';

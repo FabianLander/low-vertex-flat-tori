@@ -33,8 +33,8 @@ import { makeRng } from '../src/configuration/rng.ts';
 import { collect } from '../src/search/collect.ts';
 import { discoverAttempt } from '../src/search/discover.ts';
 import { perturbedSeeds, uniformSeeds, uniformSigma, logSigma } from '../src/search/seeds.ts';
-import { makeCutOffArea } from '../src/functions/energies/cutOffArea.ts';
-import { makeChordLengthSquared } from '../src/functions/energies/chordLengthSquared.ts';
+import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
+import { makeChordLengthSquared } from '../src/conditions/embedded/index.ts';
 
 const a = makeArgs(process.argv);
 const torus = byId(a.num('--type', 7));

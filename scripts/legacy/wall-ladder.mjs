@@ -62,10 +62,10 @@ import { byId } from '../../src/triangulations/index.ts';
 import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../../src/topology/develop.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { isEmbedded } from '../../src/math/embedded.ts';
+import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { embeddedFlow } from '../../src/math/embeddedFlow.ts';
 import { makeCellBarrier } from '../../src/math/energies/cellBarrier.ts';
-import { minMargin, linearSize } from '../../src/functions/minMargin.ts';
+import { minMargin, linearSize } from '../../src/conditions/embedded/index.ts';
 import { fdScalar as energyFromCompute } from '../../src/functions/compose.ts';
 
 const args = process.argv.slice(2);

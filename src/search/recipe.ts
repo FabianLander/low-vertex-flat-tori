@@ -21,7 +21,7 @@ import type { Triangulation } from '../topology/triangulation.ts';
 import type { ScalarFn } from '../functions/types.ts';
 import type { Constraint } from '../solvers/types.ts';
 import { identity } from '../configuration/chart.ts';
-import { embedded } from '../regions/embedded.ts';
+import { embedded } from '../conditions/embedded/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
 import { certify, type Certificate } from './certify.ts';
@@ -30,7 +30,7 @@ export interface FlowSearchOptions {
   /** The repulsion energy to descend toward embeddedness (Fabi's chord²/cutOffArea). */
   energy: ScalarFn;
   /** Optional FATTENING energy descended after reaching embedded — a near-miss
-   *  repulsion (`functions/energies/cellMargin`) that pushes the torus to a robust
+   *  repulsion (`conditions/embedded/index`) that pushes the torus to a robust
    *  margin (Fabi's energy can't: it's zero on the embedded set). Holds `flat`,
    *  gated embedded. Gives later motion (e.g. `march`) room to move. */
   fattenEnergy?: ScalarFn;

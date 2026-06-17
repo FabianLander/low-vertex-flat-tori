@@ -12,7 +12,7 @@
  * Pure: no three.js, no DOM.
  */
 
-import type { Fn, ScalarFn } from '../functions/types.ts';
+import type { Fn } from '../functions/types.ts';
 
 /**
  * A closed condition to hold: a differentiable map `Fn` (from `functions/`) whose
@@ -66,16 +66,13 @@ export interface Chart {
 
 /**
  * An OPEN condition Ω (the "tiny open set" the search lives inside): a predicate
- * gate, a signed margin (diagnostic), and the two energies that move a config
- * w.r.t. it — `enterEnergy` (repulsion: reach Ω / push apart) and `stayEnergy`
- * (barrier: stay strictly inside / fatten). An energy is just a scalar `Fn` you
- * descend (no separate `Energy` type). `contains` is the topological truth (e.g.
- * exactly `isEmbedded`), NOT `margin > 0`.
+ * `contains` gate and a signed `margin` diagnostic — the genuinely non-smooth parts
+ * (the gate is the topological truth, e.g. exactly `isEmbedded`, NOT `margin > 0`).
+ * The energies that drive a config toward Ω are plain scalar `Fn`s the condition
+ * owns and `flow` takes explicitly — the Region doesn't dispense them.
  */
 export interface Region {
   readonly label: string;
   contains(c: ArrayLike<number>): boolean;   // the gate
   margin(c: ArrayLike<number>): number;      // signed depth — diagnostic only
-  enterEnergy(): ScalarFn;                    // repulsion
-  stayEnergy(): ScalarFn;                     // barrier
 }

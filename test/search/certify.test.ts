@@ -4,14 +4,14 @@
 
 import { describe, it, expect } from 'vitest';
 import { certify } from '../../src/search/certify.ts';
+import { makeCellMargin } from '../../src/conditions/embedded/index.ts';
 import { project } from '../../src/solvers/project.ts';
 import { flow } from '../../src/solvers/flow.ts';
 import { identity } from '../../src/configuration/chart.ts';
 import { flat } from '../../src/conditions/flat.ts';
-import { embedded } from '../../src/regions/embedded.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { isEmbedded } from '../../src/math/embedded.ts';
-import { minMargin } from '../../src/functions/minMargin.ts';
+import { isEmbedded } from '../../src/conditions/embedded/index.ts';
+import { minMargin } from '../../src/conditions/embedded/index.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';
@@ -55,7 +55,7 @@ describe('certify', () => {
   it('reports embedded:false honestly when descent escapes Ω', () => {
     const p = RICH_REFERENCE.positions.slice();
     // Un-gated repulsion descent leaves the embedded set (see flow/region tests).
-    flow(identity(24), p, [flat(torus)], embedded(torus, { epsilon: 0.3 }).enterEnergy(), { maxIters: 50 });
+    flow(identity(24), p, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     const cert = certify(torus, p);
     expect(cert.embedded).toBe(false);
     expect(cert.coneDeficit).toBeLessThan(1e-9); // still flat (held), just not embedded

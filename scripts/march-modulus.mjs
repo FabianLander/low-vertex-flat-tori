@@ -30,9 +30,9 @@ import { makeRng } from '../src/configuration/rng.ts';
 import { collect } from '../src/search/collect.ts';
 import { marchToWallAttempt } from '../src/search/marchModulus.ts';
 import { perturbedSeeds, logSigma } from '../src/search/seeds.ts';
-import { makeCutOffArea } from '../src/functions/energies/cutOffArea.ts';
-import { makeChordLengthSquared } from '../src/functions/energies/chordLengthSquared.ts';
-import { makeCellMargin } from '../src/functions/energies/cellMargin.ts';
+import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
+import { makeChordLengthSquared } from '../src/conditions/embedded/index.ts';
+import { makeCellMargin } from '../src/conditions/embedded/index.ts';
 
 const a = makeArgs(process.argv);
 const torus = byId(7);

@@ -11,7 +11,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'fs';
 import { resolve, join } from 'path';
 import { ALL_TORI, byId } from '../../src/triangulations/index.ts';
-import { isEmbedded } from '../../src/math/embedded.ts';
+import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
 
 const args = process.argv.slice(2);

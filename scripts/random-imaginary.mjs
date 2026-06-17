@@ -36,8 +36,8 @@ import { certify } from '../src/search/certify.ts';
 import { identity } from '../src/configuration/chart.ts';
 import { flat } from '../src/conditions/flat.ts';
 import { fixedModulus } from '../src/conditions/modulus.ts';
-import { embedded } from '../src/regions/embedded.ts';
-import { makeCutOffArea } from '../src/functions/energies/cutOffArea.ts';
+import { embedded } from '../src/conditions/embedded/index.ts';
+import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
 import { makeRng } from '../src/configuration/rng.ts';
 
 const args = process.argv.slice(2);

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { makeChordLengthSquared } from '../../../src/functions/energies/chordLengthSquared';
-import { makeCutOffArea } from '../../../src/functions/energies/cutOffArea';
+import { makeChordLengthSquared } from '../../../src/conditions/embedded/index';
+import { makeCutOffArea } from '../../../src/conditions/embedded/index';
 import { makeCellMargin } from '../../../src/math/energies/cellMargin';
-import { minMargin, linearSize } from '../../../src/functions/minMargin';
+import { minMargin, linearSize } from '../../../src/conditions/embedded/index';
 import { totalArea } from '../../../src/topology/develop';
 import { RICH_REFERENCE } from '../../../src/math/reference';
 import { mulberry32 } from '../../../src/configuration/rng';

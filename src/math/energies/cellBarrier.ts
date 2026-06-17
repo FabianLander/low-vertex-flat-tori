@@ -32,7 +32,7 @@ import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   triangleTriangleDist2, segmentTriangleDist2,
 } from '../../geometry/distance';
-import { linearSize } from '../../functions/minMargin.ts';
+import { linearSize } from '../../conditions/embedded/index.ts';
 import { fdScalar } from '../../functions/compose.ts';
 import type { ScalarFn } from '../../functions/types.ts';
 

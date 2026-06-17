@@ -1,24 +1,23 @@
 /**
- * cellGaps — the shared primitive for "how close do non-adjacent cells come?"
+ * The embedding margin — "how close does the surface come to touching itself?" The
+ * shared cell-gap primitive `forEachCellGap` (every non-adjacent cell pair's 3D gap,
+ * normalized by √area so it is scale-free), reduced two ways:
  *
- * `forEachCellGap` iterates every non-adjacent cell pair (vertices/edges/faces that
- * share no vertex), computes its 3D gap normalized by the torus's linear size
- * L = √(total area) (scale-free), and hands it to a `visit` callback. The six pair
- * types are written ONCE here; the two consumers reduce the same stream differently:
+ *   minMargin = MIN over the gaps   — the diagnostic (certificate + Region margin)
+ *   an energy = Σ penalty(gap)      — the fattening energy (see energies.ts)
  *
- *   - `minMargin`     = MIN over the gaps         (the embedding diagnostic)
- *   - a repulsion E   = Σ penalty(gap)            (the fattening energies)
- *
- * Allocation-free (no array materialized), so it is cheap inside the energies' FD.
+ * The six pair types are written ONCE here. `minMargin` is NOT the embeddedness
+ * gate — the geometric gap and the topological `isEmbedded` disagree at the
+ * boundary (a config can have margin > 0 yet self-cross). The gate is `gate.ts`.
  *
  * Pure: no three.js, no DOM.
  */
 
-import type { Triangulation } from '../topology/triangulation.ts';
-import { totalArea } from '../topology/develop.ts';
+import type { Triangulation } from '../../topology/triangulation.ts';
+import { totalArea } from '../../topology/develop.ts';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2, triangleTriangleDist2,
-} from '../geometry/distance.ts';
+} from '../../geometry/distance.ts';
 
 /** Linear size of the torus, L = √(total area) — the normalizing length. */
 export function linearSize(torus: Triangulation, p: ArrayLike<number>): number {
@@ -90,9 +89,8 @@ function ff(torus: Triangulation, p: ArrayLike<number>, fa: number, fb: number):
 }
 
 /**
- * Visit the normalized gap d̃ = d/√area of every non-adjacent cell pair. The six
- * pair types, in order; edge–edge yields two gaps (one per midpoint). `visit`
- * receives the normalized gap, the pair type, and the two cell indices.
+ * Visit the normalized gap d̃ = d/√area of every non-adjacent cell pair. Six pair
+ * types in order; edge–edge yields two gaps (one per midpoint). Allocation-free.
  */
 export function forEachCellGap(
   torus: Triangulation,
@@ -111,4 +109,22 @@ export function forEachCellGap(
   }
   for (const [e, f] of edgeFace) visit(ef(torus, p, e, f) * invL, 'ef', e, f);
   for (const [fa, fb] of faceFace) visit(ff(torus, p, fa, fb) * invL, 'ff', fa, fb);
+}
+
+export type MarginReport = {
+  /** Smallest normalized gap d̃ = d/√area over all penalized pairs. */
+  margin: number;
+  /** Which pair type realizes it. */
+  type: GapType;
+  /** The two cell indices (meaning depends on type). */
+  cells: [number, number];
+};
+
+/** The minimum normalized gap and which pair achieves it. Pure geometry. */
+export function minMargin(torus: Triangulation, p: ArrayLike<number>): MarginReport {
+  let best: MarginReport = { margin: Infinity, type: 'vv', cells: [-1, -1] };
+  forEachCellGap(torus, p, (gap, type, a, b) => {
+    if (gap < best.margin) best = { margin: gap, type, cells: [a, b] };
+  });
+  return best;
 }

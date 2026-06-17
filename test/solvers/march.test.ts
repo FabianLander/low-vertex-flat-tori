@@ -13,12 +13,11 @@ import { project } from '../../src/solvers/project.ts';
 import { identity } from '../../src/configuration/chart.ts';
 import type { Region } from '../../src/solvers/types.ts';
 import type { Fn } from '../../src/functions/types.ts';
-import { scalarFn } from '../../src/functions/compose.ts';
 import { flat } from '../../src/conditions/flat.ts';
 import { modulusWall } from '../../src/conditions/modulus.ts';
-import { embedded } from '../../src/regions/embedded.ts';
+import { embedded } from '../../src/conditions/embedded/index.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { isEmbedded } from '../../src/math/embedded.ts';
+import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';
@@ -48,8 +47,6 @@ function upperHalf(floor: number): Region {
     label: `x1>=${floor}`,
     contains: (c) => c[1] >= floor,
     margin: (c) => c[1] - floor,
-    enterEnergy: () => scalarFn('n/a', () => 0, (_c, o) => o.fill(0)),
-    stayEnergy: () => scalarFn('n/a', () => 0, (_c, o) => o.fill(0)),
   };
 }
 

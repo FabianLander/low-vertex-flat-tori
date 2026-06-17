@@ -15,8 +15,8 @@
 import type { Triangulation } from '../topology/triangulation.ts';
 import { modulus, reduceModulus, type V2 } from '../topology/develop.ts';
 import { maxConeDeficit } from '../conditions/flat.ts';
-import { isEmbedded } from '../math/embedded.ts';
-import { minMargin } from '../functions/minMargin.ts';
+import { isEmbedded } from '../conditions/embedded/index.ts';
+import { minMargin } from '../conditions/embedded/index.ts';
 
 export interface Certificate {
   /** Flatness residual: max |2π − θ_v| over vertices. ~0 ⟺ flat. */

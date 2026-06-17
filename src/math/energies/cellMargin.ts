@@ -35,12 +35,12 @@ import type { Triangulation } from '../../topology/triangulation';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2, triangleTriangleDist2,
 } from '../../geometry/distance';
-import { linearSize } from '../../functions/minMargin.ts';
+import { linearSize } from '../../conditions/embedded/index.ts';
 import { fdScalar } from '../../functions/compose.ts';
 import type { ScalarFn } from '../../functions/types.ts';
 
 // PARKED: recently-invented near-miss repulsion, kept for a future clean rebuild
-// (the six pair accessors below duplicate functions/minMargin's — that's the part
+// (the six pair accessors below duplicate conditions/embedded/index's — that's the part
 // to fold onto a shared `cellGaps` primitive when this is rebuilt). Not on the
 // proven discovery path (that's Fabi's functions/energies/*).
 

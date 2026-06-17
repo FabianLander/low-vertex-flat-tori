@@ -31,9 +31,9 @@ import { resolve, dirname, join } from 'path';
 import { RICH } from '../../src/triangulations/index.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { embeddedFlow } from '../../src/math/embeddedFlow.ts';
-import { isEmbedded } from '../../src/math/embedded.ts';
+import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { minMargin, linearSize } from '../../src/functions/minMargin.ts';
+import { minMargin, linearSize } from '../../src/conditions/embedded/index.ts';
 import { makeCellBarrier } from '../../src/math/energies/cellBarrier.ts';
 
 const DIM = RICH.vertexCount * 3;

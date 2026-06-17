@@ -15,9 +15,10 @@ import { march, type Family } from '../../src/solvers/march.ts';
 import { identity } from '../../src/configuration/chart.ts';
 import { flat } from '../../src/conditions/flat.ts';
 import { modulusWall } from '../../src/conditions/modulus.ts';
-import { embedded } from '../../src/regions/embedded.ts';
+import { embedded } from '../../src/conditions/embedded/index.ts';
+import { makeCellMargin } from '../../src/conditions/embedded/index.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { isEmbedded } from '../../src/math/embedded.ts';
+import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';
@@ -53,7 +54,7 @@ describe('capstone — flat ∧ on-wall ∧ embedded, from project · march · f
     // 3. flow to fatten ALONG the wall: descend the barrier while HOLDING
     //    [flat, modulusWall(wall)] and gated to stay embedded.
     const held = [flat(torus), modulusWall(torus, x, wall)];
-    const f = flow(identity(24), x, held, region.stayEnergy(), { region, maxIters: 100, stepSize: 0.002 });
+    const f = flow(identity(24), x, held, makeCellMargin(torus), { region, maxIters: 100, stepSize: 0.002 });
     expect(['converged', 'stalled', 'max-iters', 'blocked']).toContain(f.status);
 
     // The composed result is still a flat, embedded torus on the same wall.

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { collect } from '../../src/search/collect.ts';
 import { discoverAttempt } from '../../src/search/discover.ts';
 import { perturbedSeeds, uniformSigma } from '../../src/search/seeds.ts';
-import { makeCutOffArea } from '../../src/functions/energies/cutOffArea.ts';
+import { makeCutOffArea } from '../../src/conditions/embedded/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';
 import { mulberry32 } from '../../src/configuration/rng.ts';
 import { RICH } from '../../src/triangulations/index.ts';

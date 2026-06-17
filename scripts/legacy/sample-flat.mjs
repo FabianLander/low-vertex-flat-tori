@@ -68,11 +68,11 @@ import { makeRng } from '../../src/configuration/rng.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { embeddedFlow } from '../../src/math/embeddedFlow.ts';
-import { isEmbedded, allViolations } from '../../src/math/embedded.ts';
+import { isEmbedded, allViolations } from '../../src/conditions/embedded/index.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { makeChordLengthSquared } from '../../src/functions/energies/chordLengthSquared.ts';
-import { makeCutOffArea } from '../../src/functions/energies/cutOffArea.ts';
-import { linearSize } from '../../src/functions/minMargin.ts';
+import { makeChordLengthSquared } from '../../src/conditions/embedded/index.ts';
+import { makeCutOffArea } from '../../src/conditions/embedded/index.ts';
+import { linearSize } from '../../src/conditions/embedded/index.ts';
 import { totalArea } from '../../src/topology/develop.ts';
 
 

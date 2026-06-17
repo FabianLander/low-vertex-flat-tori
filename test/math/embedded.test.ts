@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isEmbedded, firstViolation, allViolations } from '../../src/math/embedded';
+import { isEmbedded, firstViolation, allViolations } from '../../src/conditions/embedded/index';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { RICH } from '../../src/triangulations';
 

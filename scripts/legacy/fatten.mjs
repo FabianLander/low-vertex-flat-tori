@@ -30,12 +30,12 @@ import { resolve, dirname, join } from 'path';
 import { RICH } from '../../src/triangulations/index.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { embeddedFlow } from '../../src/math/embeddedFlow.ts';
-import { isEmbedded, allViolations } from '../../src/math/embedded.ts';
+import { isEmbedded, allViolations } from '../../src/conditions/embedded/index.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
-import { makeCellMargin } from '../../src/functions/minMargin.ts';
-import { minMargin, linearSize } from '../../src/functions/minMargin.ts';
-import { makeCutOffArea } from '../../src/functions/energies/cutOffArea.ts';
-import { makeChordLengthSquared } from '../../src/functions/energies/chordLengthSquared.ts';
+import { makeCellMargin } from '../../src/conditions/embedded/index.ts';
+import { minMargin, linearSize } from '../../src/conditions/embedded/index.ts';
+import { makeCutOffArea } from '../../src/conditions/embedded/index.ts';
+import { makeChordLengthSquared } from '../../src/conditions/embedded/index.ts';
 import { weightedSum } from '../../src/math/energies/weightedSum.ts';
 
 const DIM = RICH.vertexCount * 3; // 24

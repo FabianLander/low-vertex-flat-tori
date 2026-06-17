@@ -43,7 +43,7 @@
 
 import { maxConeDeficit } from '../conditions/flat.ts';
 import { modulus } from '../topology/develop';
-import { isEmbedded } from './embedded';
+import { isEmbedded } from '../conditions/embedded/index.ts';
 import { newtonFlatten, type NewtonConstraint } from './newton';
 import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
 import type { Triangulation } from '../topology/triangulation';
