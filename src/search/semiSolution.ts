@@ -21,7 +21,7 @@
 
 import type { Triangulation } from '../topology/triangulation.ts';
 import { pinCoords } from '../configuration/chart.ts';
-import { flat } from '../submanifolds/flat.ts';
+import { flat } from '../conditions/flat.ts';
 import { collinear } from '../submanifolds/collinear.ts';
 import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
 import { gaussian } from '../configuration/rng.ts';

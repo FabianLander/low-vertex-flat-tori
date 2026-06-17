@@ -5,7 +5,7 @@
  */
 
 import type { Triangulation } from '../topology/triangulation';
-import { coneAngleAt, maxConeDeficit as maxDef } from '../functions/coneDeficit.ts';
+import { coneAngleAt, maxConeDeficit as maxDef } from '../conditions/flat.ts';
 
 const TWO_PI = Math.PI * 2;
 

@@ -37,7 +37,7 @@ import { byId } from '../src/triangulations/index.ts';
 import { march } from '../src/solvers/march.ts';
 import { certify } from '../src/search/certify.ts';
 import { identity } from '../src/configuration/chart.ts';
-import { flat } from '../src/submanifolds/flat.ts';
+import { flat } from '../src/conditions/flat.ts';
 import { fixedModulus } from '../src/submanifolds/modulus.ts';
 import { embedded } from '../src/regions/embedded.ts';
 import { modulus, reduceModulus } from '../src/topology/develop.ts';

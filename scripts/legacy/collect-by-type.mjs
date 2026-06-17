@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 
 import { resolve, join } from 'path';
 import { ALL_TORI, byId } from '../../src/triangulations/index.ts';
 import { isEmbedded } from '../../src/math/embedded.ts';
-import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { maxConeDeficit } from '../../src/conditions/flat.ts';
 
 const args = process.argv.slice(2);
 const flag = (n) => { const i = args.indexOf(n); return i === -1 ? undefined : args[i + 1]; };

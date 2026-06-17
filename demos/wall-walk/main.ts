@@ -26,7 +26,7 @@ import { byId } from '../../src/triangulations';
 import type { Triangulation } from '../../src/topology/triangulation';
 import { modulus, reduceModulus } from '../../src/topology/develop';
 import { newtonFlatten } from '../../src/math/newton';
-import { maxConeDeficit } from '../../src/functions/coneDeficit';
+import { maxConeDeficit } from '../../src/conditions/flat';
 import { isEmbedded } from '../../src/math/embedded';
 import { minMargin, linearSize } from '../../src/functions/minMargin';
 import { makeRng } from '../../src/configuration/rng';

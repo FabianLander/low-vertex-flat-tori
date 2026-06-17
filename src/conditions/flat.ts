@@ -1,22 +1,24 @@
 /**
- * coneDeficit — the cone-angle deficit map δ(c) ∈ ℝⱽ, δ_v = 2π − θ_v, where θ_v
- * is the sum of corner angles incident to vertex v in the realization c. Its zero
- * set is the flatness submanifold: every cone angle is 2π exactly when the
- * polyhedron is intrinsically flat.
+ * flat — the flatness condition, end to end: the cone-angle deficit *measurement*
+ * of a realization, and the *constraint* that drives it to zero.
  *
- * One map, measured in many roles — the flatness constraint (`submanifolds/flat`),
- * the flatness certificate / convergence test (`maxConeDeficit`), and per-vertex
- * coloring in the viewer all read it. The analytic Jacobian here is the exact
- * corner-angle gradient, validated row-by-row against central differences.
+ * A realization is flat iff every vertex's cone angle is exactly 2π. The
+ * measurement δ(c) ∈ ℝⱽ, δ_v = 2π − θ_v, is the load-bearing quantity — it is read
+ * in several roles: as the flatness *constraint* (`flat`, below), as the flatness
+ * *certificate* (`maxConeDeficit`), and as per-vertex *coloring* in the viewer.
+ * The module owns the measurement and exports it for all of them.
  *
  * Pure functions on a positions array (length V·3, layout [x0,y0,z0, …]; accepts
  * Float64Array or Float32Array). No three.js, no DOM.
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import type { Fn } from './types.ts';
+import type { Fn } from '../functions/types.ts';
+import type { Held } from '../solvers/types.ts';
 
 const TWO_PI = Math.PI * 2;
+
+// ─── the measurement ────────────────────────────────────────────────────────
 
 /** Cone angle θ_i: the sum of corner angles at vertex i over its incident triangles. */
 export function coneAngleAt(torus: Triangulation, positions: ArrayLike<number>, i: number): number {
@@ -54,7 +56,7 @@ export function coneAngleDeficits(torus: Triangulation, positions: ArrayLike<num
   return r;
 }
 
-/** max_i |δ_i| — the flatness residual (a certificate, and `project`'s convergence test for `flat`). */
+/** max_i |δ_i| — the flatness residual (the certificate, and `project`'s convergence test for `flat`). */
 export function maxConeDeficit(torus: Triangulation, positions: ArrayLike<number>): number {
   let m = 0;
   for (let i = 0; i < torus.vertexCount; i++) {
@@ -106,15 +108,12 @@ export function coneAngleJacobian(torus: Triangulation, positions: ArrayLike<num
       const u2 = ux * ux + uy * uy + uz * uz;
       const v2 = vx * vx + vy * vy + vz * vz;
 
-      // ∂α/∂P_j = −(N̂ × u)/|u|²
       const gjx = -(ny * uz - nz * uy) / u2;
       const gjy = -(nz * ux - nx * uz) / u2;
       const gjz = -(nx * uy - ny * ux) / u2;
-      // ∂α/∂P_l = (N̂ × v)/|v|²
       const glx = (ny * vz - nz * vy) / v2;
       const gly = (nz * vx - nx * vz) / v2;
       const glz = (nx * vy - ny * vx) / v2;
-      // ∂α/∂P_i = −(∂α/∂P_j + ∂α/∂P_l)
       const gix = -(gjx + glx), giy = -(gjy + gly), giz = -(gjz + glz);
 
       // δ_i = −θ_i ⟹ subtract each corner-angle gradient.
@@ -125,12 +124,7 @@ export function coneAngleJacobian(torus: Triangulation, positions: ArrayLike<num
   }
 }
 
-/**
- * The cone-deficit map as an `Fn` (dim V): value = the V deficits, jacobian = the
- * analytic derivative above. The flatness submanifold drives V−1 of these rows
- * (Gauss–Bonnet makes the V-th redundant) but measures all V — see
- * `submanifolds/flat`.
- */
+/** The cone-deficit map as an `Fn` (dim V): value = the V deficits, jacobian = the analytic derivative. */
 export function coneDeficit(torus: Triangulation): Fn {
   return {
     label: 'coneDeficit',
@@ -138,4 +132,20 @@ export function coneDeficit(torus: Triangulation): Fn {
     value: (c, out) => { coneAngleDeficits(torus, c, out); },
     jacobian: (c, out) => { coneAngleJacobian(torus, c, out); },
   };
+}
+
+// ─── the constraint ─────────────────────────────────────────────────────────
+
+/**
+ * Flatness as a closed condition: every cone-angle deficit = 0. **codim = V−1.**
+ *
+ * Gauss–Bonnet forces Σ deficits ≡ 0, so the flat locus is codim V−1, not V — the
+ * V-th deficit is `−(sum of the others)`. `flat` is `coneDeficit` as a `Held` that
+ * drives the first V−1 rows (full-rank, well-conditioned; reproduces `newtonFlatten`,
+ * which drops the same row). No custom convergence measure is needed: the solver's
+ * default ‖value‖∞ over all V rows of `coneDeficit` IS `maxConeDeficit`, so the
+ * dropped deficit cannot lag above tolerance unseen.
+ */
+export function flat(torus: Triangulation): Held {
+  return { fn: coneDeficit(torus), drive: torus.vertexCount - 1 };
 }

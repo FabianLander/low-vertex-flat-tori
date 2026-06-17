@@ -51,7 +51,7 @@
  * Mutates `positions` in place.
  */
 
-import { coneAngleDeficits, coneAngleJacobian } from '../functions/coneDeficit.ts';
+import { coneAngleDeficits, coneAngleJacobian } from '../conditions/flat.ts';
 import { infNorm, solveDenseInPlace } from '../solvers/linalg.ts';
 import type { Triangulation } from '../topology/triangulation';
 

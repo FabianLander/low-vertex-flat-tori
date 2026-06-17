@@ -69,7 +69,7 @@ import { byId } from '../../src/triangulations/index.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { embeddedFlow } from '../../src/math/embeddedFlow.ts';
 import { isEmbedded, allViolations } from '../../src/math/embedded.ts';
-import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { makeChordLengthSquared } from '../../src/functions/energies/chordLengthSquared.ts';
 import { makeCutOffArea } from '../../src/functions/energies/cutOffArea.ts';
 import { linearSize } from '../../src/functions/minMargin.ts';

@@ -41,7 +41,7 @@
  *   [S26]  Schwartz, "Vertex-minimal paper tori" (2026).
  */
 
-import { maxConeDeficit } from '../functions/coneDeficit.ts';
+import { maxConeDeficit } from '../conditions/flat.ts';
 import { modulus } from '../topology/develop';
 import { isEmbedded } from './embedded';
 import { newtonFlatten, type NewtonConstraint } from './newton';

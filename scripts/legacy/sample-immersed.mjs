@@ -45,7 +45,7 @@ import { resolve, dirname } from 'path';
 import { makeRng } from '../../src/configuration/rng.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
-import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { maxConeDeficit } from '../../src/conditions/flat.ts';
 
 
 const args = process.argv.slice(2);

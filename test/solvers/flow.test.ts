@@ -9,10 +9,10 @@
 import { describe, it, expect } from 'vitest';
 import { flow } from '../../src/solvers/flow.ts';
 import { identity } from '../../src/configuration/chart.ts';
-import { flat } from '../../src/submanifolds/flat.ts';
+import { flat } from '../../src/conditions/flat.ts';
 import type { Fn, ScalarFn } from '../../src/functions/types.ts';
 import { scalarFn } from '../../src/functions/compose.ts';
-import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { isEmbedded } from '../../src/math/embedded.ts';
 import { makeCellMargin } from '../../src/math/energies/cellMargin.ts';
 import { byId } from '../../src/triangulations/index.ts';

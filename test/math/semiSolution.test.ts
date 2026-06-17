@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { semiSolutionFlatten, scanSemiSolutions } from '../../src/math/semiSolution';
 import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz';
-import { maxConeDeficit } from '../../src/functions/coneDeficit.ts';
+import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus } from '../../src/topology/develop';
 import { byId } from '../../src/triangulations';
 const torus = byId(7);
