@@ -13,7 +13,7 @@
 import * as THREE from 'three';
 
 import { RICH } from '../../src/triangulations';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus, creaseEdgeMaterial, type StyledTorusOptions } from '../../src/render/styledTorus';
 import { graphPaperTexture } from '../../src/render/grid';

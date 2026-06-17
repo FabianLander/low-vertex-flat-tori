@@ -17,7 +17,7 @@ import { modulusWall } from '../../src/conditions/modulus.ts';
 import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 
 // --- toy: unit circle in ℝ², parameter = x₀ ---
 const circle: Fn = {

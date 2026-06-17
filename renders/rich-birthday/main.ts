@@ -13,7 +13,7 @@
 import * as THREE from 'three';
 
 import { RICH } from '../../src/triangulations';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { modulus } from '../../src/topology/develop';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus, creaseEdgeMaterial } from '../../src/render/styledTorus';

@@ -20,11 +20,11 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import { pinCoords } from '../configuration/space.ts';
+import { pinCoords } from '../coordinates/pin.ts';
 import { flat } from '../conditions/flat.ts';
 import { collinear } from '../conditions/collinear.ts';
-import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
-import { gaussian } from '../configuration/rng.ts';
+import { doyleSchwartzPositions } from '../coordinates/doyleSchwartz.ts';
+import { gaussian } from '../sampling/rng.ts';
 import { project } from '../solvers/project.ts';
 import { pullHeld } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';

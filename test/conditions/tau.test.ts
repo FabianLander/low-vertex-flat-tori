@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { tau } from '../../src/conditions/modulus.ts';
 import { modulus } from '../../src/topology/develop.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 import { RICH } from '../../src/triangulations/index.ts';
 
 describe('tau Fn', () => {

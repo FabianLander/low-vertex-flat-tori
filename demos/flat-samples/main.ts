@@ -21,7 +21,7 @@ import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 import { makePaperTorus } from '../../src/configuration/paperTorus.ts';
 import { RICH } from '../../src/triangulations';
 import { normalize } from '../../src/configuration/gauge';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { TorusView } from '../../src/viewer/TorusView';
 
 const DIM = RICH.vertexCount * 3;

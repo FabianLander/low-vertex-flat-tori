@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isEmbedded, firstViolation, allViolations } from '../../../src/conditions/embedded/index';
-import { RICH_REFERENCE } from '../../../src/math/reference';
+import { RICH_REFERENCE } from '../../../src/sampling/reference';
 import { RICH } from '../../../src/triangulations';
 
 describe('embeddedness', () => {

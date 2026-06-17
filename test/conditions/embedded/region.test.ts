@@ -10,7 +10,7 @@ import { embedded, isEmbedded, makeCellMargin, makeCutOffArea } from '../../../s
 import { flow } from '../../../src/solvers/flow.ts';
 import { flat, maxConeDeficit } from '../../../src/conditions/flat.ts';
 import { byId } from '../../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../../src/sampling/reference.ts';
 
 const torus = byId(7);
 

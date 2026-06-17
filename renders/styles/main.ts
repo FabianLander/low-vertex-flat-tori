@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { styledTorus, type StyledTorusOptions } from '../../src/render/styledTorus';
 import { skyEnvironment } from '../../src/render/stage';
 import { attachRenderControls } from '../../src/render/controls';

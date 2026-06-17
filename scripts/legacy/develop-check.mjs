@@ -15,7 +15,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 import { RICH } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus, developNet, reduceModulus } from '../../src/topology/develop.ts';
 

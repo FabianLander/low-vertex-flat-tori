@@ -4,8 +4,8 @@ import { makeCutOffArea } from '../../../src/conditions/embedded/index';
 import { makeCellMargin } from '../../../src/conditions/embedded/index';
 import { minMargin, linearSize } from '../../../src/conditions/embedded/index';
 import { totalArea } from '../../../src/topology/develop';
-import { RICH_REFERENCE } from '../../../src/math/reference';
-import { mulberry32 } from '../../../src/configuration/rng';
+import { RICH_REFERENCE } from '../../../src/sampling/reference';
+import { mulberry32 } from '../../../src/sampling/rng';
 import { RICH } from '../../../src/triangulations';
 
 const CHORD_LENGTH_SQUARED = makeChordLengthSquared(RICH);

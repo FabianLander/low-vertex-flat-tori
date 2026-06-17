@@ -63,8 +63,8 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
-import { makeRng } from '../../src/configuration/rng.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { makeRng } from '../../src/sampling/rng.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { embeddedFlow } from '../../src/math/embeddedFlow.ts';

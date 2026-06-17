@@ -1,13 +1,13 @@
 /**
  * Seed sources for the `collect` driver — each a `() => Float64Array` that draws
- * the next starting configuration. They compose `configuration/perturb` + an RNG
+ * the next starting configuration. They compose `sampling/perturb` + an RNG
  * with a perturbation-magnitude (σ) draw, so a search just picks a source and a σ
  * schedule. Returning bare positions (a configuration is a `Float64Array`).
  *
  * Pure: no three.js, no DOM.
  */
 
-import { perturb } from '../configuration/perturb.ts';
+import { perturb } from './perturb.ts';
 
 /** Draws a perturbation magnitude σ per attempt. */
 export type SigmaDraw = () => number;

@@ -38,7 +38,7 @@ import { flat } from '../src/conditions/flat.ts';
 import { fixedModulus } from '../src/conditions/modulus.ts';
 import { embedded } from '../src/conditions/embedded/index.ts';
 import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
-import { makeRng } from '../src/configuration/rng.ts';
+import { makeRng } from '../src/sampling/rng.ts';
 
 const args = process.argv.slice(2);
 function flag(n) { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; }

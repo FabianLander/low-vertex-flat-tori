@@ -23,7 +23,7 @@ import { appendFileSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { makeArgs, csvRow } from './lib/cli.mjs';
 import { byId } from '../src/triangulations/index.ts';
-import { makeRng } from '../src/configuration/rng.ts';
+import { makeRng } from '../src/sampling/rng.ts';
 import { collect } from '../src/search/collect.ts';
 import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '../src/search/semiSolution.ts';
 

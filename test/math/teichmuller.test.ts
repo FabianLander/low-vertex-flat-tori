@@ -3,7 +3,7 @@ import { ALL_TORI } from '../../src/triangulations';
 import { newtonFlatten } from '../../src/math/newton';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus } from '../../src/topology/develop';
-import { mulberry32 } from '../../src/configuration/rng';
+import { mulberry32 } from '../../src/sampling/rng';
 
 /**
  * End-to-end Teichmüller pipeline, per torus (the headline deliverable):

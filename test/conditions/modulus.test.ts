@@ -11,7 +11,7 @@ import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { fixedModulus, modulusWall } from '../../src/conditions/modulus.ts';
 import { modulus, reduceModulus, type V2 } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 
 const torus = byId(7);
 

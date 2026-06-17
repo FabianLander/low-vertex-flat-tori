@@ -17,7 +17,7 @@ import { modulusWall } from '../../src/conditions/modulus.ts';
 import { makeCellMargin, isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 
 const torus = byId(7);
 const reTauHat = (p: ArrayLike<number>) => Math.abs(reduceModulus(modulus(torus, p).tau)[0]);

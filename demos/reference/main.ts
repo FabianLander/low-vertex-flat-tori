@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { RICH } from '../../src/triangulations';
 import { coneAngleAt, coneAngleDeficits } from '../../src/conditions/flat.ts';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE, HIGHLIGHT_PALETTE, oneHot } from '../../src/viewer/palette';
 

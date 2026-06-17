@@ -45,7 +45,7 @@ import { maxConeDeficit } from '../conditions/flat.ts';
 import { modulus } from '../topology/develop';
 import { isEmbedded } from '../conditions/embedded/index.ts';
 import { newtonFlatten, type NewtonConstraint } from './newton';
-import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '../coordinates/doyleSchwartz.ts';
 import type { Triangulation } from '../topology/triangulation';
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ import type { Triangulation } from '../topology/triangulation';
 const FROZEN_Z = [5, 8, 11, 14, 17, 20] as const;
 
 // `doyleSchwartzPositions` (the DS seed family) now lives in
-// `configuration/doyleSchwartz.ts` — a configuration is bare positions.
+// `coordinates/doyleSchwartz.ts` — a configuration is bare positions.
 
 // ---------------------------------------------------------------------------
 // Collinearity constraints

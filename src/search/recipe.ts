@@ -20,7 +20,7 @@
 import type { Triangulation } from '../topology/triangulation.ts';
 import type { ScalarFn } from '../functions/types.ts';
 import type { Constraint } from '../conditions/types.ts';
-import { fullSpace } from '../configuration/space.ts';
+import { fullSpace } from '../coordinates/full.ts';
 import { embedded } from '../conditions/embedded/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';

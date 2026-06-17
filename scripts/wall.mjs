@@ -30,11 +30,11 @@ import { appendFileSync, mkdirSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { makeArgs, csvRow, readCsv } from './lib/cli.mjs';
 import { byId } from '../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../src/math/reference.ts';
-import { makeRng } from '../src/configuration/rng.ts';
+import { RICH_REFERENCE } from '../src/sampling/reference.ts';
+import { makeRng } from '../src/sampling/rng.ts';
 import { collect } from '../src/search/collect.ts';
 import { wallAttempt } from '../src/search/wall.ts';
-import { poolSeeds, logSigma } from '../src/search/seeds.ts';
+import { poolSeeds, logSigma } from '../src/sampling/seeds.ts';
 import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
 import { makeChordLengthSquared } from '../src/conditions/embedded/index.ts';
 

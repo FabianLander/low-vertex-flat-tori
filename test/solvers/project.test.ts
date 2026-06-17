@@ -14,18 +14,18 @@
 
 import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
-import { pinCoords } from '../../src/configuration/space.ts';
+import { pinCoords } from '../../src/coordinates/pin.ts';
 import { pullHeld } from '../../src/search/pull.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { collinear } from '../../src/conditions/collinear.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
 import { semiSolutionFlatten } from '../../src/math/semiSolution.ts';
-import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '../../src/coordinates/doyleSchwartz.ts';
 import { modulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
-import { perturb } from '../../src/configuration/perturb.ts';
-import { mulberry32 } from '../../src/configuration/rng.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { perturb } from '../../src/sampling/perturb.ts';
+import { mulberry32 } from '../../src/sampling/rng.ts';
 
 const torus = byId(7);
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];

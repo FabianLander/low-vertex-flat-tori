@@ -4,9 +4,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RICH } from '../../src/triangulations';
 import { makePaperTorus, clonePaperTorus, type PaperTorus } from '../../src/configuration/paperTorus.ts';
 import { coneAngleDeficits } from '../../src/conditions/flat.ts';
-import { RICH_REFERENCE } from '../../src/math/reference';
-import { perturb } from '../../src/configuration/perturb';
-import { mulberry32 } from '../../src/configuration/rng';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
+import { perturb } from '../../src/sampling/perturb';
+import { mulberry32 } from '../../src/sampling/rng';
 import { TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE } from '../../src/viewer/palette';
 

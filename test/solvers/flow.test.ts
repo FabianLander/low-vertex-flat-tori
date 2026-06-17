@@ -14,7 +14,7 @@ import { scalarFn } from '../../src/functions/compose.ts';
 import { isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { makeCellMargin } from '../../src/math/energies/cellMargin.ts';
 import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 
 // --- toy: the unit sphere {‖x‖² = 1} in ℝ³ as an Fn ---
 const sphere: Fn = {

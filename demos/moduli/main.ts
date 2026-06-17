@@ -19,7 +19,7 @@
 
 import { RICH } from '../../src/triangulations';
 import { modulus, type V2 } from '../../src/topology/develop';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 
 const DIM = RICH.vertexCount * 3;

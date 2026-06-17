@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { triTriChord } from '../../src/geometry/intersectionChord';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { RICH } from '../../src/triangulations';
 
 const TRIANGLES = RICH.triangles;

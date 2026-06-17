@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { tangentProject } from '../../src/solvers/tangentProject.ts';
-import { mulberry32 } from '../../src/configuration/rng.ts';
+import { mulberry32 } from '../../src/sampling/rng.ts';
 
 function dotJrow(jac: number[], cols: number, row: number, v: ArrayLike<number>): number {
   let s = 0;

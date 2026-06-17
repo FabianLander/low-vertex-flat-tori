@@ -23,7 +23,7 @@
 
 import { torus7 as triang } from '../../src/topology/torus7.ts';
 import { scanSemiSolutions } from '../../src/math/semiSolution.ts';
-import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '../../src/coordinates/doyleSchwartz.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 
 // ---------------------------------------------------------------------------

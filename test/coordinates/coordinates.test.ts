@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { fullSpace, pinVertices, symmetry, RICH_SYMMETRY } from '../../src/configuration/space.ts';
+import { fullSpace } from '../../src/coordinates/full.ts';
+import { pinVertices } from '../../src/coordinates/pin.ts';
+import { symmetry, RICH_SYMMETRY } from '../../src/coordinates/symmetry.ts';
 import { coneDeficit, coneAngleDeficits } from '../../src/conditions/flat.ts';
 import { RICH } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/math/reference.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 
 const N = RICH.vertexCount * 3; // 24
 

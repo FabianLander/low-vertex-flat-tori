@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { newtonFlatten } from '../../src/math/newton';
 import { maxConeDeficit, coneAngleDeficits, coneAngleJacobian } from '../../src/conditions/flat.ts';
 import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../../src/topology/develop';
-import { RICH_REFERENCE } from '../../src/math/reference';
-import { mulberry32 } from '../../src/configuration/rng';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
+import { mulberry32 } from '../../src/sampling/rng';
 import { RICH } from '../../src/triangulations';
 
 const VERTEX_COUNT = RICH.vertexCount;

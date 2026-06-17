@@ -13,7 +13,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { PhysicalSpotLight } from 'three-gpu-pathtracer';
 
 import { RICH } from '../../src/triangulations';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import { styledTorus } from '../../src/render/styledTorus';
 import { paperMaterials } from '../../src/render/paper';

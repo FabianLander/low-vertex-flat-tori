@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '../../src/search/semiSolution.ts';
-import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '../../src/coordinates/doyleSchwartz.ts';
 import { maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus } from '../../src/topology/develop.ts';
-import { mulberry32 } from '../../src/configuration/rng.ts';
+import { mulberry32 } from '../../src/sampling/rng.ts';
 import { RICH } from '../../src/triangulations/index.ts';
 
 describe('semiSolution — DS semi-solution scan on the new stack', () => {

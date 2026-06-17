@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius, developNet } from '../../src/topology/develop';
 import { totalArea } from '../../src/topology/develop';
-import { RICH_REFERENCE } from '../../src/math/reference';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { RICH } from '../../src/triangulations';
 
 describe('develop → modulus τ', () => {

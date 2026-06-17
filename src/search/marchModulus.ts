@@ -21,7 +21,8 @@
 import type { Triangulation } from '../topology/triangulation.ts';
 import type { ScalarFn } from '../functions/types.ts';
 import type { Family } from '../solvers/march.ts';
-import { fullSpace, type ConfigSpace } from '../configuration/space.ts';
+import type { ConfigSpace } from '../configuration/space.ts';
+import { fullSpace } from '../coordinates/full.ts';
 import { flat } from '../conditions/flat.ts';
 import { modulusWall } from '../conditions/modulus.ts';
 import { embedded } from '../conditions/embedded/index.ts';
