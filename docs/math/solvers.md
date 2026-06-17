@@ -17,9 +17,9 @@ One damped least-squares solve with `G = JJᵀ` gives the entire local geometry:
 So `project` and `flow` are not unrelated solvers — they are the corrector and the tangent-descent of
 the *same* object. `tangentProject` and `project` share the same damped `JJᵀ` solve. Everything runs
 in a [chart](configuration.md)'s coordinates `X`: residuals are evaluated on `ι(x)`, derivatives
-pulled back through `Dι`. The solvers are **problem-agnostic** — they take the abstract `ConstraintMap`
-/ `Chart` / `Energy` / `Region` contracts, never a `Triangulation` (the torus rides inside the
-constraints' closures).
+pulled back through `Dι`. The solvers are **problem-agnostic** — they take the abstract `Constraint`
+(a `Fn` from `functions/`, optionally a `Held` saying how to use it) / `Chart` / `Energy` / `Region`
+contracts, never a `Triangulation` (the torus rides inside the maps' closures).
 
 ## project — land on the submanifold
 

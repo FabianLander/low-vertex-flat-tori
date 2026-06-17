@@ -32,7 +32,7 @@ import { RICH } from '../src/triangulations/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
-import { maxConeDeficit } from '../src/math/angles.ts';
+import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { minMargin, linearSize } from '../src/math/energies/cellMargin.ts';
 import { makeCellBarrier } from '../src/math/energies/cellBarrier.ts';
 

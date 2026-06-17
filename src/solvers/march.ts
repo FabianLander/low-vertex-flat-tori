@@ -17,7 +17,7 @@
  */
 
 import { project, type ProjectOptions } from './project.ts';
-import type { Chart, ConstraintMap, Region } from './types.ts';
+import type { Chart, Constraint, Region } from './types.ts';
 
 /**
  * A 1-parameter family of submanifolds. `param` reads the current parameter value
@@ -27,7 +27,7 @@ import type { Chart, ConstraintMap, Region } from './types.ts';
  */
 export interface Family {
   param(c: ArrayLike<number>): number;
-  held(c: ArrayLike<number>, s: number): readonly ConstraintMap[];
+  held(c: ArrayLike<number>, s: number): readonly Constraint[];
 }
 
 export type MarchStatus = 'reached' | 'blocked' | 'max-iters';

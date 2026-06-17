@@ -1,41 +1,41 @@
 /**
  * The contracts the solvers consume — the problem-agnostic core.
  *
- * A solver (`project`, and later `flow`/`march`) is written against these
- * interfaces and knows nothing about a `Triangulation`. Problem data lives in the
- * IMPLEMENTATIONS, each in its own kind-folder: charts in `configuration/`,
- * constraints (closed conditions) in `submanifolds/`, energies/regions (open
- * conditions) in `regions/`. Every implementation depends on this module for its
- * contract; `solvers/` depends on none of them. That inversion is what makes the
- * solvers reusable across any problem.
+ * A solver (`project`/`flow`/`march`) is written against these interfaces and
+ * knows nothing about a `Triangulation`. Problem data lives in the
+ * IMPLEMENTATIONS, each in its own kind-folder: the differentiable maps in
+ * `functions/`, charts in `configuration/`, the closed conditions in
+ * `submanifolds/`, the open conditions in `regions/`. Every implementation depends
+ * on this module (and `functions/`) for its contract; `solvers/` depends on no
+ * implementation. That inversion is what makes the solvers reusable.
  *
  * Pure: no three.js, no DOM.
  */
 
+import type { Fn } from '../functions/types.ts';
+
 /**
- * A smooth map g : ℝⁿ → ℝᵏ on configuration space C (n = 3·V). Its zero set
- * {g = 0} is a closed submanifold; `project` drives g → 0. Differentiated IN C
- * (the ambient config); the solver pulls the derivative back through whatever
- * chart it runs in. A constraint captures whatever problem data it needs (e.g.
- * `flat` closes over the torus) — the solver never sees it.
+ * A closed condition to hold: a differentiable map `Fn` (from `functions/`) whose
+ * zero set {fn = 0} is the submanifold, plus how to USE it — which rows to drive,
+ * and how to measure convergence. The solvers accept either a bare `Fn` (drive ALL
+ * its rows, converge on ‖value‖∞) or a `Held` for finer control.
+ *
+ * `drive` lets a constraint advertise its true rank: `flat` exposes all V deficits
+ * but drives only V−1 (Gauss–Bonnet makes the V-th redundant), keeping `project`'s
+ * normal matrix full-rank. Convergence still measures ALL `fn.dim` rows by default
+ * (‖value‖∞), so the dropped row can't hide above tolerance — for `flat` that
+ * default IS `maxConeDeficit`, so no custom `measure` is needed.
  */
-export interface ConstraintMap {
-  readonly label: string;
-  /** k = number of DRIVING rows (the Jacobian rows `project` steps with). May be
-   *  the true codimension after dropping known-redundant rows (e.g. `flat`). */
-  readonly codim: number;
-  /** g(c) → `out` of length codim (the driving residual). */
-  value(c: ArrayLike<number>, out: Float64Array): void;
-  /** Dg → `out`, codim×n row-major (stride n). Analytic or finite-difference. */
-  jacobian(c: ArrayLike<number>, out: Float64Array): void;
-  /**
-   * Honest convergence measure (‖·‖∞ of the FULL constraint, even the rows that
-   * `codim` drops). Optional — defaults to ‖value‖∞. `flat` overrides it to the
-   * full V-deficit max, because driving V−1 rows must NOT mean converging on only
-   * V−1: the dropped deficit can lag above tol while the others are below it.
-   */
-  residual?(c: ArrayLike<number>): number;
+export interface Held {
+  readonly fn: Fn;
+  /** Number of leading rows of `fn` to drive. Default `fn.dim`. */
+  readonly drive?: number;
+  /** Convergence measure. Default ‖fn.value‖∞ over all `fn.dim` rows. */
+  readonly measure?: (c: ArrayLike<number>) => number;
 }
+
+/** What the solvers accept per held constraint: a bare `Fn`, or an `Fn` + usage. */
+export type Constraint = Fn | Held;
 
 /**
  * A parameterization ι : X = ℝᵈ → C = ℝⁿ of a subspace of configuration space,

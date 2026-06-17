@@ -10,7 +10,7 @@ import { project } from '../solvers/project.ts';
 import { identity } from '../configuration/chart.ts';
 import { flat } from './flat.ts';
 import { fixedModulus, modulusWall } from './modulus.ts';
-import { maxConeDeficit } from '../math/angles.ts';
+import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { modulus, reduceModulus, type V2 } from '../topology/develop.ts';
 import { byId } from '../triangulations/index.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';

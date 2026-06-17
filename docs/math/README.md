@@ -20,16 +20,20 @@ open set.
 
 | layer | document | what it is | code |
 | --- | --- | --- | --- |
+| kernels | — | torus-blind ℝ²/ℝ³ primitives (distances, the intersection chord) the conditions are built from | `geometry/` |
+| functions | [conditions.md](conditions.md) | the differentiable maps C → ℝᵏ (`Fn`) — one concept; a constraint/energy is a *use* of one | `functions/` |
 | configuration | [configuration.md](configuration.md) | the search space `C = ℝ³ⱽ`, the gauge, and charts ι: X → C (subspaces) | `configuration/` |
-| conditions | [conditions.md](conditions.md) | what we ask of a config — closed **submanifolds** `{g=0}` and open **regions** | `submanifolds/`, `regions/`, `math/energies/` |
-| operations | [solvers.md](solvers.md) | project / flow / march — all from the constraint Jacobian — and `certify` | `solvers/`, `search/certify.ts` |
+| conditions | [conditions.md](conditions.md) | what we ask of a config — closed **submanifolds** `{g=0}` and open **regions** | `submanifolds/`, `regions/` |
+| operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian — and `certify` | `solvers/`, `search/certify.ts` |
 
 Two structural lines run through all of it:
 
-- **intrinsic vs. extrinsic.** Everything above is *intrinsic* — independent of any ℝ³ embedding.
-  The realization in space (`PaperTorus`), the flatness/embeddedness checks, and the search live in
-  `src/math/` (the extrinsic half). The developing map reads coordinates only to extract the
-  intrinsic metric (edge lengths).
+- **intrinsic vs. extrinsic.** The topology half is *intrinsic* — independent of any ℝ³ embedding.
+  The extrinsic half — the realization in space, the flatness/embeddedness maps, and the search — is
+  the dependency-ordered stack `geometry/ → functions/ → {configuration, submanifolds, regions} →
+  solvers/ → search/`. (`PaperTorus` and a few primitives still sit in `src/math/`, being drained
+  into that stack.) The developing map reads coordinates only to extract the intrinsic metric (edge
+  lengths).
 - **machinery vs. instances.** `src/topology/` is generic machinery — it works on *any*
   triangulation and depends on nothing. The specific triangulations we study are *data* in
   `src/triangulations/` (a census → a registry), which depends on `topology`, never the reverse.

@@ -31,7 +31,7 @@ import { RICH } from '../src/triangulations/index.ts';
 import { newtonFlatten } from '../src/math/newton.ts';
 import { embeddedFlow } from '../src/math/embeddedFlow.ts';
 import { isEmbedded, allViolations } from '../src/math/embedded.ts';
-import { maxConeDeficit } from '../src/math/angles.ts';
+import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { makeCellMargin, minMargin, linearSize } from '../src/math/energies/cellMargin.ts';
 import { makeCutOffArea } from '../src/math/energies/cutOffArea.ts';
 import { makeChordLengthSquared } from '../src/math/energies/chordLengthSquared.ts';

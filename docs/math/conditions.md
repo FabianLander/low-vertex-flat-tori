@@ -3,28 +3,41 @@
 > A **condition** is a property a configuration may or may not have. They come in two mathematically
 > distinct kinds, and the distinction is the whole shape of the search: **closed** conditions are
 > *submanifolds* `{g=0}` you land *on*; **open** conditions are *regions* you stay *inside*.
-> Code: `src/submanifolds/`, `src/regions/` (built on the analytic primitives in `src/math/`).
+> Code: `src/submanifolds/`, `src/regions/` — both built on the differentiable maps in
+> [`src/functions/`](configuration.md).
+
+> **One concept underneath.** Every closed condition, and the potential of every open one, is the
+> *same* thing — a differentiable map of the configuration, an **`Fn`** (`value` + `jacobian`, in
+> `functions/`). A *constraint* is an `Fn` driven to zero; an *energy* is a scalar `Fn` pushed
+> downhill. "Constraint" and "energy" are **uses** of an `Fn`, not separate interfaces — which is why
+> the maps live on their own in `functions/`, measured in many roles (constraint, certificate,
+> diagnostic, plot).
 
 ## Closed conditions — submanifolds `{g = 0}`
 
 A smooth map `g : C → ℝᵏ` cuts out a closed submanifold `M = {g = 0}` of codimension `k`. You reach
-it by *projecting* (Newton) and move on it along its tangent space. Each is a **`ConstraintMap`**:
-a value `g(c)`, a Jacobian `Dg`, and a convergence measure.
+it by *projecting* (Newton) and move on it along its tangent space. The map is just an `Fn`; how to
+*use* it as a constraint — which rows to drive, how to measure convergence — is a thin **`Held`**
+(default: drive all rows, converge on `‖value‖∞`).
 
-- **`flat`** — every cone-angle deficit `2π − θ_v = 0`. The flat locus has codimension **V−1**, not V:
-  Gauss–Bonnet forces `Σ deficits ≡ 0`, so the V-th deficit is redundant. `flat` *drives* V−1 rows
-  (full-rank, well-conditioned) but *measures* all V for convergence (the dropped one can lag above
-  tol while the others are below it). The Jacobian is the exact analytic cone-angle derivative.
-- **`collinear(i,j,k)`** — a vertex triple is collinear in the plane (planar signed area = 0). codim 1.
-  Used by the Doyle–Schwartz semi-solution search.
+- **`flat`** — every cone-angle deficit `2π − θ_v = 0`, i.e. the `coneDeficit` map (dim V) driven to
+  zero. The flat locus has codimension **V−1**, not V: Gauss–Bonnet forces `Σ deficits ≡ 0`, so the
+  V-th deficit is redundant. `flat` is `coneDeficit` as a `Held` with `drive: V−1` (full-rank,
+  well-conditioned) — yet convergence still measures all V, because the default `‖value‖∞` over the
+  map's full V-vector *is* `maxConeDeficit`, so no custom measure is needed and the dropped row can't
+  lag above tol unseen. The Jacobian is the exact analytic cone-angle derivative.
+- **`collinear(i,j,k)`** — a vertex triple is collinear in the plane (planar signed area = 0). codim 1,
+  an `fdFn`. Used by the Doyle–Schwartz semi-solution search.
 - **`fixedModulus(τ̂₀)` / `modulusWall(c)`** — fix the moduli point (`τ̂ = τ̂₀`) or pin a wall
   (`|Re τ̂| = c`: the rectangular `c=0`, the rhombic `c=½`). The reduced modulus τ̂ is only
   piecewise-smooth (the reducing `SL(2,ℤ)` element jumps at fundamental-domain walls), so we use the
-  **frozen-chart trick**: capture the reducing matrix `m` at a seed; then `applyMobius(m, τ(·))` is a
-  smooth function of positions — an ordinary `value(c)`. Valid in the seed's `SL(2,ℤ)` chamber;
-  `march` re-freezes each substep. (See [developing.md](developing.md) for τ and the reduction.)
+  **frozen-chart trick**: capture the reducing matrix `m` at a seed. In code this is exactly a
+  *post-composition* — `postcompose(mobius(m), tau)` (with an affine shift / take-Re on top) — so the
+  exact frozen Möbius rides on the (finite-differenced) `tau` map and the chain rule fuses the
+  Jacobians. Valid in the seed's `SL(2,ℤ)` chamber; `march` re-freezes each substep. (See
+  [developing.md](developing.md) for τ and the reduction.)
 
-Submanifolds compose: `project(chart, x, [flat, modulusWall(c)])` lands a flat torus on the wall.
+Constraints compose: `project(chart, x, [flat, modulusWall(c)])` lands a flat torus on the wall.
 
 ## Open conditions — regions
 
@@ -51,17 +64,20 @@ gate is what guarantees you stay in. See [solvers.md](solvers.md).
 
 ## Why the split is structural
 
-Closed conditions are level sets of smooth maps — you factor the map out (it's reused for the
-locus, for certificates, for diagnostics) and the locus is a thin constructor. Open conditions have
-no smooth defining function; they're a coupled, non-smooth apparatus (predicate + margin + energies)
-kept whole. The solvers consume them differently — `project`/`march` take submanifolds, `flow` takes
-an energy and a region — so organizing by this kind matches how the math is used.
+Closed conditions are level sets of smooth maps — the map is factored out as an `Fn` (reused for the
+locus, for certificates, for diagnostics) and the locus is a thin `Held`. Open conditions have no
+single smooth defining function; they're a coupled, non-smooth apparatus (predicate gate + margin +
+energies) kept whole as a `Region`. The solvers consume them differently — `project`/`march` take
+`Fn`s, `flow` takes a scalar `Fn` (an energy) and a region — so organizing by this kind matches how
+the math is used.
 
 ## In code
 
 | symbol | file | role |
 | --- | --- | --- |
-| `ConstraintMap`, `Region`, `Energy` | `solvers/types.ts` | the contracts |
+| `Fn`, `ScalarFn` | `functions/types.ts` | the one map contract (constraint/energy are uses of it) |
+| `coneDeficit`, `tau` | `functions/coneDeficit.ts`, `functions/tau.ts` | the deficit / modulus maps |
+| `Held`, `Constraint`, `Region`, `Energy` | `solvers/types.ts` | how the solvers consume a map |
 | `flat`, `collinear` | `submanifolds/flat.ts`, `submanifolds/collinear.ts` | flatness; collinearity |
 | `fixedModulus`, `modulusWall` | `submanifolds/modulus.ts` | moduli point / wall (frozen chart) |
 | `embedded` | `regions/embedded.ts` | the embedded region (gate + enter/stay energies) |

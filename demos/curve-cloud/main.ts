@@ -12,9 +12,9 @@
  * Controls:  ←/→ switch shape · ↑/↓ point count · [ / ] tube radius · r reseed
  */
 
-import { makeCurve, type PlaneCurve } from '../../src/math/plane/curve';
-import { sampleAlongCurve, type CloudPoint, type Match } from '../../src/math/plane/curveCloudSample';
-import type { Vec2 } from '../../src/math/plane/vec2';
+import { makeCurve, type PlaneCurve } from '../../src/geometry/drawing/curve';
+import { sampleAlongCurve, type CloudPoint, type Match } from '../../src/geometry/drawing/curveCloudSample';
+import type { Vec2 } from '../../src/geometry/drawing/vec2';
 
 // ---- tiny deterministic RNG ----
 function mulberry32(seed: number): () => number {

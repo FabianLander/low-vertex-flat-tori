@@ -43,7 +43,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve, basename, join } from 'path';
 import { byId } from '../src/triangulations/index.ts';
 import { modulus, reduceModulus } from '../src/topology/develop.ts';
-import { maxConeDeficit } from '../src/math/angles.ts';
+import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { isEmbedded } from '../src/math/embedded.ts';
 import { minMargin } from '../src/math/energies/cellMargin.ts';
 

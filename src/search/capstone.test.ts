@@ -16,7 +16,7 @@ import { identity } from '../configuration/chart.ts';
 import { flat } from '../submanifolds/flat.ts';
 import { modulusWall } from '../submanifolds/modulus.ts';
 import { embedded } from '../regions/embedded.ts';
-import { maxConeDeficit } from '../math/angles.ts';
+import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { modulus, reduceModulus } from '../topology/develop.ts';
 import { byId } from '../triangulations/index.ts';

@@ -11,27 +11,28 @@ import { describe, it, expect } from 'vitest';
 import { march, type Family } from './march.ts';
 import { project } from './project.ts';
 import { identity } from '../configuration/chart.ts';
-import type { ConstraintMap, Region } from './types.ts';
+import type { Region } from './types.ts';
+import type { Fn } from '../functions/types.ts';
 import { flat } from '../submanifolds/flat.ts';
 import { modulusWall } from '../submanifolds/modulus.ts';
 import { embedded } from '../regions/embedded.ts';
-import { maxConeDeficit } from '../math/angles.ts';
+import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { modulus, reduceModulus } from '../topology/develop.ts';
 import { byId } from '../triangulations/index.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';
 
 // --- toy: unit circle in ℝ², parameter = x₀ ---
-const circle: ConstraintMap = {
+const circle: Fn = {
   label: 'circle',
-  codim: 1,
+  dim: 1,
   value(c, out) { out[0] = c[0] * c[0] + c[1] * c[1] - 1; },
   jacobian(c, out) { out[0] = 2 * c[0]; out[1] = 2 * c[1]; },
 };
-function xCoord(s: number): ConstraintMap {
+function xCoord(s: number): Fn {
   return {
     label: `x0=${s}`,
-    codim: 1,
+    dim: 1,
     value(c, out) { out[0] = c[0] - s; },
     jacobian(_c, out) { out[0] = 1; out[1] = 0; },
   };

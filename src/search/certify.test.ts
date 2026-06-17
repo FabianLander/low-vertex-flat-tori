@@ -9,7 +9,7 @@ import { flow } from '../solvers/flow.ts';
 import { identity } from '../configuration/chart.ts';
 import { flat } from '../submanifolds/flat.ts';
 import { embedded } from '../regions/embedded.ts';
-import { maxConeDeficit } from '../math/angles.ts';
+import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { minMargin } from '../math/energies/cellMargin.ts';
 import { modulus, reduceModulus } from '../topology/develop.ts';

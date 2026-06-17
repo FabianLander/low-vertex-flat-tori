@@ -28,7 +28,7 @@ import * as THREE from 'three';
 
 import { RICH } from '../../src/triangulations';
 import { modulus, reduceModulus } from '../../src/topology/develop';
-import { maxConeDeficit } from '../../src/math/angles';
+import { maxConeDeficit } from '../../src/functions/coneDeficit';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import type { PaperTorus } from '../../src/math/embedding';
 import { styledTorus, creaseEdgeMaterial } from '../../src/render/styledTorus';

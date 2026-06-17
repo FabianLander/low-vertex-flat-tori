@@ -31,7 +31,7 @@ import type { Triangulation } from '../../topology/triangulation';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   triangleTriangleDist2, segmentTriangleDist2,
-} from '../distance';
+} from '../../geometry/distance';
 import { linearSize } from './cellMargin';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';

@@ -14,7 +14,7 @@
 
 import type { Triangulation } from '../topology/triangulation.ts';
 import { modulus, reduceModulus, type V2 } from '../topology/develop.ts';
-import { maxConeDeficit } from '../math/angles.ts';
+import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { minMargin } from '../math/energies/cellMargin.ts';
 

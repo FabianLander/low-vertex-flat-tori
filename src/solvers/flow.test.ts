@@ -10,17 +10,18 @@ import { describe, it, expect } from 'vitest';
 import { flow } from './flow.ts';
 import { identity } from '../configuration/chart.ts';
 import { flat } from '../submanifolds/flat.ts';
-import type { ConstraintMap, Energy } from './types.ts';
-import { maxConeDeficit } from '../math/angles.ts';
+import type { Energy } from './types.ts';
+import type { Fn } from '../functions/types.ts';
+import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { makeCellMargin } from '../math/energies/cellMargin.ts';
 import { byId } from '../triangulations/index.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';
 
-// --- toy: the unit sphere {‖x‖² = 1} in ℝ³ as a ConstraintMap ---
-const sphere: ConstraintMap = {
+// --- toy: the unit sphere {‖x‖² = 1} in ℝ³ as an Fn ---
+const sphere: Fn = {
   label: 'sphere',
-  codim: 1,
+  dim: 1,
   value(c, out) { out[0] = c[0] * c[0] + c[1] * c[1] + c[2] * c[2] - 1; },
   jacobian(c, out) { out[0] = 2 * c[0]; out[1] = 2 * c[1]; out[2] = 2 * c[2]; },
 };

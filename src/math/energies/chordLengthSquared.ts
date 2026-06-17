@@ -18,19 +18,22 @@
  */
 
 import type { Triangulation } from '../../topology/triangulation';
-import { triTriChord } from '../intersectionChord';
+import { triTriChord } from '../../geometry/intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';
 
 export function makeChordLengthSquared(torus: Triangulation): RepulsionEnergy {
   function compute(positions: ArrayLike<number>): number {
     let E = 0;
+    const tris = torus.triangles;
     for (const [tA, tB] of torus.disjointTrianglePairs) {
-      const c = triTriChord(torus, positions, tA, tB);
+      const A = tris[tA], B = tris[tB];
+      const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
       if (c) E += c.length * c.length;
     }
     for (const pair of torus.sharedVertexTrianglePairs) {
-      const c = triTriChord(torus, positions, pair.a, pair.b);
+      const A = tris[pair.a], B = tris[pair.b];
+      const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
       if (c) E += c.length * c.length;
     }
     return E;

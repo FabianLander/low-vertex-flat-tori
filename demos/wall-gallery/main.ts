@@ -24,7 +24,7 @@ import * as THREE from 'three';
 
 import { byId } from '../../src/triangulations';
 import { modulus, reduceModulus } from '../../src/topology/develop';
-import { maxConeDeficit } from '../../src/math/angles';
+import { maxConeDeficit } from '../../src/functions/coneDeficit';
 import { minMargin } from '../../src/math/energies/cellMargin';
 import { parseEmbeddings } from '../../src/io/embeddings';
 import type { PaperTorus } from '../../src/math/embedding';

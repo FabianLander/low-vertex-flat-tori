@@ -14,9 +14,9 @@
 
 import { RICH } from '../../src/triangulations';
 import { modulus } from '../../src/topology/develop';
-import { makeCurve, type PlaneCurve } from '../../src/math/plane/curve';
-import { sampleAlongCurve, type CloudPoint, type Match } from '../../src/math/plane/curveCloudSample';
-import type { Vec2 } from '../../src/math/plane/vec2';
+import { makeCurve, type PlaneCurve } from '../../src/geometry/drawing/curve';
+import { sampleAlongCurve, type CloudPoint, type Match } from '../../src/geometry/drawing/curveCloudSample';
+import type { Vec2 } from '../../src/geometry/drawing/vec2';
 
 const DIM = RICH.vertexCount * 3;
 const ROT_TOL = 1e-5;

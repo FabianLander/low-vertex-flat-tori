@@ -1,8 +1,8 @@
 /**
- * Minimal 2D vector helpers for the plane-geometry utilities (curve fitting and
+ * Minimal 2D vector helpers for the plane-geometry kernels (curve fitting and
  * point-cloud sampling). Self-contained — structurally compatible with the
- * `V2 = readonly [number, number]` used in develop.ts, but kept independent so
- * the plane code carries no torus dependency.
+ * `V2 = readonly [number, number]` used in `topology/develop.ts`, but kept
+ * independent so the geometry layer carries no torus dependency.
  */
 
 export type Vec2 = [number, number];
@@ -23,7 +23,7 @@ export const lerp = (a: Vec2, b: Vec2, t: number): Vec2 => [a[0] + (b[0] - a[0])
  * Foot of the perpendicular from `p` to the segment [a,b], clamped to the
  * segment. Returns the clamped parameter `t ∈ [0,1]`, the foot point, and the
  * squared distance. A degenerate (zero-length) segment measures to `a`.
- * (2D analogue of distance.ts `pointSegmentDist2`, but it also returns t/foot.)
+ * (2D analogue of `../distance.ts` `pointSegmentDist2`, but it also returns t/foot.)
  */
 export function projectToSegment(p: Vec2, a: Vec2, b: Vec2): { t: number; foot: Vec2; dist2: number } {
   const abx = b[0] - a[0], aby = b[1] - a[1];

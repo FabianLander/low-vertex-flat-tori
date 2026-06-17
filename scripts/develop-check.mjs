@@ -16,7 +16,7 @@ import { resolve } from 'path';
 
 import { RICH } from '../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../src/math/reference.ts';
-import { maxConeDeficit } from '../src/math/angles.ts';
+import { maxConeDeficit } from '../src/functions/coneDeficit.ts';
 import { modulus, developNet, reduceModulus } from '../src/topology/develop.ts';
 
 const DIM = RICH.vertexCount * 3;

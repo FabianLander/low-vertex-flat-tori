@@ -21,7 +21,7 @@
  */
 
 import type { Triangulation } from '../../topology/triangulation';
-import { triTriChord } from '../intersectionChord';
+import { triTriChord } from '../../geometry/intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';
 
@@ -88,13 +88,13 @@ function smallerPieceRatio(
 }
 
 function pairEnergy(torus: Triangulation, positions: ArrayLike<number>, tA: number, tB: number): number {
-  const c = triTriChord(torus, positions, tA, tB);
-  if (!c) return 0;
-
   const A = torus.triangles[tA];
   const B = torus.triangles[tB];
   const oa0 = 3 * A[0], oa1 = 3 * A[1], oa2 = 3 * A[2];
   const ob0 = 3 * B[0], ob1 = 3 * B[1], ob2 = 3 * B[2];
+
+  const c = triTriChord(positions, oa0, oa1, oa2, ob0, ob1, ob2);
+  if (!c) return 0;
 
   const a0x = positions[oa0], a0y = positions[oa0 + 1], a0z = positions[oa0 + 2];
   const a1x = positions[oa1], a1y = positions[oa1 + 1], a1z = positions[oa1 + 2];

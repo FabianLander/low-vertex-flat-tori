@@ -51,7 +51,7 @@
  * Mutates `positions` in place.
  */
 
-import { coneAngleDeficits, coneAngleJacobian } from './angles';
+import { coneAngleDeficits, coneAngleJacobian } from '../functions/coneDeficit.ts';
 import type { Triangulation } from '../topology/triangulation';
 
 export type NewtonStatus = 'converged' | 'diverged' | 'max-iters';

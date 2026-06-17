@@ -1,10 +1,14 @@
 /**
- * Compute the intersection chord of two triangles in 3D.
+ * Intersection chord of two triangles in 3D — a torus-blind kernel.
  *
- * For non-adjacent triangle pairs (disjoint or vertex-shared) returns the
- * line segment A ∩ B that lies on the line L = plane(A) ∩ plane(B), with its
- * endpoints and length. Returns null if the triangles don't meet (or only
- * meet at a measure-zero set like a single point or a single shared vertex).
+ * For two triangles A, B (given as vertex offsets into a shared `positions`
+ * buffer) returns the line segment A ∩ B that lies on the line L = plane(A) ∩
+ * plane(B), with its endpoints and length. Returns null if the triangles don't
+ * meet (or only meet at a measure-zero set: a single point or a shared vertex).
+ *
+ * The caller supplies the six vertex offsets `o = 3·vertexIndex` — so this knows
+ * nothing of a `Triangulation`; the triangle→vertex lookup lives in the layer
+ * above (the embeddedness/energy code that owns the cell-pair tables).
  *
  * Strategy:
  *   1. Signed distances of A's vertices to plane(B) and vice versa.
@@ -15,13 +19,11 @@
  *   4. Parametrize the four boundary points along L. Chord = overlap of the
  *      two intervals.
  *
- * Vertex-shared pairs work naturally: when a shared vertex sits on both
- * planes its incident edges register a crossing at the vertex itself, which
- * after dedup gives one of the two endpoints on triangle A's chord. The
- * other endpoint comes from the non-shared edge of A crossing plane(B).
+ * Vertex-shared pairs work naturally: when a shared vertex sits on both planes
+ * its incident edges register a crossing at the vertex itself, which after dedup
+ * gives one of the two endpoints on triangle A's chord. The other endpoint comes
+ * from the non-shared edge of A crossing plane(B).
  */
-
-import type { Triangulation } from '../topology/triangulation';
 
 export type ChordResult = {
   length: number;
@@ -33,23 +35,16 @@ const SMALL = 1e-12;
 const TINY = 1e-20;
 
 export function triTriChord(
-  torus: Triangulation,
-  positions: ArrayLike<number>,
-  tA: number,
-  tB: number,
+  pos: ArrayLike<number>,
+  oa0: number, oa1: number, oa2: number,
+  ob0: number, ob1: number, ob2: number,
 ): ChordResult | null {
-  const A = torus.triangles[tA];
-  const B = torus.triangles[tB];
-
-  const oa0 = 3 * A[0], oa1 = 3 * A[1], oa2 = 3 * A[2];
-  const ob0 = 3 * B[0], ob1 = 3 * B[1], ob2 = 3 * B[2];
-
-  const a0x = positions[oa0], a0y = positions[oa0 + 1], a0z = positions[oa0 + 2];
-  const a1x = positions[oa1], a1y = positions[oa1 + 1], a1z = positions[oa1 + 2];
-  const a2x = positions[oa2], a2y = positions[oa2 + 1], a2z = positions[oa2 + 2];
-  const b0x = positions[ob0], b0y = positions[ob0 + 1], b0z = positions[ob0 + 2];
-  const b1x = positions[ob1], b1y = positions[ob1 + 1], b1z = positions[ob1 + 2];
-  const b2x = positions[ob2], b2y = positions[ob2 + 1], b2z = positions[ob2 + 2];
+  const a0x = pos[oa0], a0y = pos[oa0 + 1], a0z = pos[oa0 + 2];
+  const a1x = pos[oa1], a1y = pos[oa1 + 1], a1z = pos[oa1 + 2];
+  const a2x = pos[oa2], a2y = pos[oa2 + 1], a2z = pos[oa2 + 2];
+  const b0x = pos[ob0], b0y = pos[ob0 + 1], b0z = pos[ob0 + 2];
+  const b1x = pos[ob1], b1y = pos[ob1 + 1], b1z = pos[ob1 + 2];
+  const b2x = pos[ob2], b2y = pos[ob2 + 1], b2z = pos[ob2 + 2];
 
   // Plane normals (un-normalized; only the directions matter for sign tests).
   const eA1x = a1x - a0x, eA1y = a1y - a0y, eA1z = a1z - a0z;

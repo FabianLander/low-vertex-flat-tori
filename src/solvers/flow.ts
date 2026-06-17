@@ -26,7 +26,8 @@
 
 import { project, type ProjectOptions } from './project.ts';
 import { tangentProject, makeTangentScratch } from './tangentProject.ts';
-import type { Chart, ConstraintMap, Energy, Region } from './types.ts';
+import { normHeld, totalDrive } from './held.ts';
+import type { Chart, Constraint, Energy, Region } from './types.ts';
 
 export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked';
 
@@ -58,7 +59,7 @@ export interface FlowResult {
 export function flow(
   chart: Chart,
   x: Float64Array,
-  held: readonly ConstraintMap[],
+  held: readonly Constraint[],
   energy: Energy,
   opts: FlowOptions = {},
 ): FlowResult {
@@ -73,8 +74,8 @@ export function flow(
   const damping = opts.damping ?? 1e-12;
   const projectOpts = opts.projectOpts ?? { damping };
 
-  let K = 0;
-  for (const cm of held) K += cm.codim;
+  const hs = held.map((h) => normHeld(h, n));
+  const K = totalDrive(hs);
 
   const c = new Float64Array(n);
   const gradC = new Float64Array(n);
@@ -90,12 +91,14 @@ export function flow(
     return { status: 'diverged', iters: 0, energy: NaN };
   }
 
-  // Held Jacobian at the current c, in chart coords (Jx = J_C · Dι).
+  // Held Jacobian at the current c, in chart coords (Jx = J_C · Dι) — the driven
+  // rows of each constraint, stacked.
   const heldJacX = (): void => {
     let off = 0;
-    for (const cm of held) {
-      cm.jacobian(c, Jc.subarray(off * n, (off + cm.codim) * n));
-      off += cm.codim;
+    for (const h of hs) {
+      h.fn.jacobian(c, h.jacBuf);
+      Jc.set(h.jacBuf.subarray(0, h.drive * n), off * n);
+      off += h.drive;
     }
     chart.pullbackRows(Jc, K, Jx);
   };

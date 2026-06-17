@@ -2,10 +2,10 @@
  * project — minimum-norm Gauss–Newton projection onto the intersection of
  * submanifolds ⋂{gᵢ = 0}, run entirely in a Chart's coordinates X.
  *
- * Problem-agnostic: it takes a `Chart` and abstract `ConstraintMap`s, NOT a
- * `Triangulation`. The torus (or any other problem data) lives inside the
- * constraints' closures; the chart owns the parameterization/gauge. This is the
- * generalization of `newtonFlatten`:
+ * Problem-agnostic: it takes a `Chart` and abstract `Constraint`s (each an `Fn`
+ * from `functions/`, optionally with usage), NOT a `Triangulation`. The torus (or
+ * any other problem data) lives inside the maps' closures; the chart owns the
+ * parameterization/gauge. This is the generalization of `newtonFlatten`:
  *   - identity chart + [flat]                         ≡ newtonFlatten
  *   - pinCoords chart + [flat, collinear, collinear]  ≡ semiSolutionFlatten
  *
@@ -30,8 +30,9 @@
  * Mutates `x` (chart coordinates) in place. Pure: no three.js, no DOM.
  */
 
-import { infNorm, solveDenseInPlace } from '../math/newton.ts';
-import type { Chart, ConstraintMap } from './types.ts';
+import { solveDenseInPlace } from '../math/newton.ts';
+import { normHeld, residualOf, totalDrive } from './held.ts';
+import type { Chart, Constraint } from './types.ts';
 
 export type ProjectStatus = 'converged' | 'diverged' | 'max-iters';
 
@@ -53,7 +54,7 @@ export interface ProjectResult {
 export function project(
   chart: Chart,
   x: Float64Array,
-  constraints: readonly ConstraintMap[],
+  constraints: readonly Constraint[],
   opts: ProjectOptions = {},
 ): ProjectResult {
   const d = chart.dim;
@@ -66,30 +67,30 @@ export function project(
   const maxIters = opts.maxIters ?? 50;
   const lambda = opts.damping ?? 1e-12;
 
-  let K = 0;
-  for (const cm of constraints) K += cm.codim;
+  const hs = constraints.map((cm) => normHeld(cm, n));
+  const K = totalDrive(hs);               // Σ driven rows
 
   const c = new Float64Array(n);          // realized config ι(x)
-  const F = new Float64Array(K);          // stacked residuals
-  const Jc = new Float64Array(K * n);     // stacked Jacobians in C (stride n)
+  const F = new Float64Array(K);          // stacked driving residuals
+  const Jc = new Float64Array(K * n);     // stacked driving Jacobians in C (stride n)
   const Jx = new Float64Array(K * d);     // pulled back to X (stride d)
   const aug = new Float64Array(K * (K + 1)); // [G + λI | F]
   const w = new Float64Array(K);
 
-  // Residual at the current x: realize ι(x) into c, evaluate every constraint
-  // into its slice of F (the driving residual the step uses). Convergence is the
-  // max over each constraint's HONEST measure — `residual()` when given (e.g.
-  // `flat` measures all V deficits though it drives V−1), else ‖value slice‖∞.
+  // Residual at the current x: realize ι(x) into c, evaluate every constraint's
+  // FULL value (into its scratch), then copy its DRIVING rows into F. Convergence
+  // is the max over each constraint's honest measure — a custom `measure` if given
+  // (none needed for `flat`: ‖value‖∞ over all V deficits already IS the full
+  // residual), else ‖full value‖∞.
   const evalResidual = (): number => {
     chart.realize(x, c);
     let off = 0;
     let m = 0;
-    for (const cm of constraints) {
-      const slice = F.subarray(off, off + cm.codim);
-      cm.value(c, slice);
-      const r = cm.residual ? cm.residual(c) : infNorm(slice);
+    for (const h of hs) {
+      const r = residualOf(h, c);          // fills h.valueBuf (all fn.dim rows)
       if (r > m) m = r;
-      off += cm.codim;
+      for (let i = 0; i < h.drive; i++) F[off + i] = h.valueBuf[i];
+      off += h.drive;
     }
     return m;
   };
@@ -101,11 +102,12 @@ export function project(
     if (!isFinite(curNorm) || curNorm > 1e8) return { status: 'diverged', iters: iter, residualNorm: curNorm };
     if (iter === maxIters) return { status: 'max-iters', iters: iter, residualNorm: curNorm };
 
-    // Jacobians in C (c is current from the last evalResidual), then pull back.
+    // Driving Jacobians in C (c is current from the last evalResidual), then pull back.
     let off = 0;
-    for (const cm of constraints) {
-      cm.jacobian(c, Jc.subarray(off * n, (off + cm.codim) * n));
-      off += cm.codim;
+    for (const h of hs) {
+      h.fn.jacobian(c, h.jacBuf);                                   // full fn.dim × n
+      Jc.set(h.jacBuf.subarray(0, h.drive * n), off * n);          // first `drive` rows
+      off += h.drive;
     }
     chart.pullbackRows(Jc, K, Jx);
 
