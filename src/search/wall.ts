@@ -35,16 +35,16 @@ export interface WallOptions extends FlowSearchOptions {
 }
 
 export function wallAttempt(
-  torus: Triangulation,
+  triang: Triangulation,
   opts: WallOptions,
 ): (seed: Float64Array) => Certificate | null {
-  const f = flat(torus);
+  const f = flat(triang);
   const { c } = opts;
   const angleTol = opts.angleTol ?? 1e-10;
   const reTol = opts.reTol ?? 1e-9;
   return flattenFlowEmbed(
-    torus,
-    (seed) => [f, modulusWall(torus, seed, c)],   // freeze the wall chart at the seed
+    triang,
+    (seed) => [f, modulusWall(triang, seed, c)],   // freeze the wall chart at the seed
     (cert) => cert.coneDeficit < angleTol && Math.abs(Math.abs(cert.tauHat[0]) - c) < reTol && cert.embedded,
     opts,
   );

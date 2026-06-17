@@ -31,14 +31,14 @@ export interface DevelopedSheetOptions {
 const UP = new THREE.Vector3(0, 1, 0);
 
 export function developedSheet(paper: PaperTorus, opts: DevelopedSheetOptions): THREE.Group {
-  const torus = paper.torus;
+  const triang = paper.triang;
   // unfold with the torus's computed marking (developOrder → attach)
-  const net = developNet(torus, paper.positions);
-  const F = torus.triangles.length;
+  const net = developNet(triang, paper.positions);
+  const F = triang.triangles.length;
 
   // ---- flat face mesh: net corners at z=0, with the torus's lattice UVs (M⁻¹·P,
   //      computed from THIS net so geometry and texture always agree). ----
-  const uv = latticeUV(torus, paper.positions, { repeat: opts.uvRepeat ?? 1, net });
+  const uv = latticeUV(triang, paper.positions, { repeat: opts.uvRepeat ?? 1, net });
   const pos = new Float32Array(F * 3 * 3);
   for (let t = 0; t < F; t++) {
     for (let k = 0; k < 3; k++) {

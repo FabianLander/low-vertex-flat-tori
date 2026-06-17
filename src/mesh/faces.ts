@@ -29,24 +29,24 @@ export interface FacesOptions {
 }
 
 export function facesGeometry(paper: PaperTorus, opts: FacesOptions = {}): THREE.BufferGeometry {
-  const torus = paper.torus;
+  const triang = paper.triang;
   const thickness = opts.thickness ?? 0;
 
-  let position = splatFacePositions(torus, paper.positions);
-  let uv = opts.uv ? latticeUV(torus, paper.positions, { repeat: opts.uvRepeat }) : undefined;
+  let position = splatFacePositions(triang, paper.positions);
+  let uv = opts.uv ? latticeUV(triang, paper.positions, { repeat: opts.uvRepeat }) : undefined;
 
   if (thickness > 0) {
     // Inner skin: every vertex pushed inward along its outward normal.
     const sign = outwardSign(paper);
     const inner = new Float64Array(paper.positions.length);
     const n: [number, number, number] = [0, 0, 0];
-    for (let i = 0; i < torus.vertexCount; i++) {
+    for (let i = 0; i < triang.vertexCount; i++) {
       vertexOutward(paper, i, sign, n);
       inner[3 * i]     = paper.positions[3 * i]     - thickness * n[0];
       inner[3 * i + 1] = paper.positions[3 * i + 1] - thickness * n[1];
       inner[3 * i + 2] = paper.positions[3 * i + 2] - thickness * n[2];
     }
-    const posInner = splatFacePositions(torus, inner);
+    const posInner = splatFacePositions(triang, inner);
     reverseWinding(posInner, 3); // flip so the inner skin faces the cavity
     position = concat(position, posInner);
     if (uv) {

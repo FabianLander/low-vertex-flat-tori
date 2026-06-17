@@ -25,20 +25,20 @@ export type EmbeddingViolation = {
 };
 
 /** The realization is embedded iff no two triangle interiors cross. */
-export function isEmbedded(torus: Triangulation, positions: ArrayLike<number>): boolean {
-  return firstViolation(torus, positions) === null;
+export function isEmbedded(triang: Triangulation, positions: ArrayLike<number>): boolean {
+  return firstViolation(triang, positions) === null;
 }
 
 /** The first crossing found, or null if embedded. */
-export function firstViolation(torus: Triangulation, positions: ArrayLike<number>): EmbeddingViolation | null {
-  const { triangles } = torus;
-  for (const [t1, t2] of torus.disjointTrianglePairs) {
+export function firstViolation(triang: Triangulation, positions: ArrayLike<number>): EmbeddingViolation | null {
+  const { triangles } = triang;
+  for (const [t1, t2] of triang.disjointTrianglePairs) {
     const a = triangles[t1], b = triangles[t2];
     if (triangleTriangleIntersect(positions, a[0], a[1], a[2], b[0], b[1], b[2])) {
       return { kind: 'tri-tri', t1, t2 };
     }
   }
-  for (const pair of torus.sharedVertexTrianglePairs) {
+  for (const pair of triang.sharedVertexTrianglePairs) {
     const t1 = triangles[pair.a], t2 = triangles[pair.b];
     if (segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2])
       || segmentTriangleIntersect(positions, pair.bOpp[0], pair.bOpp[1], t1[0], t1[1], t1[2])) {
@@ -49,16 +49,16 @@ export function firstViolation(torus: Triangulation, positions: ArrayLike<number
 }
 
 /** Every crossing (for diagnostics / painting). */
-export function allViolations(torus: Triangulation, positions: ArrayLike<number>): EmbeddingViolation[] {
-  const { triangles } = torus;
+export function allViolations(triang: Triangulation, positions: ArrayLike<number>): EmbeddingViolation[] {
+  const { triangles } = triang;
   const out: EmbeddingViolation[] = [];
-  for (const [t1, t2] of torus.disjointTrianglePairs) {
+  for (const [t1, t2] of triang.disjointTrianglePairs) {
     const a = triangles[t1], b = triangles[t2];
     if (triangleTriangleIntersect(positions, a[0], a[1], a[2], b[0], b[1], b[2])) {
       out.push({ kind: 'tri-tri', t1, t2 });
     }
   }
-  for (const pair of torus.sharedVertexTrianglePairs) {
+  for (const pair of triang.sharedVertexTrianglePairs) {
     const t1 = triangles[pair.a], t2 = triangles[pair.b];
     const hit = segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2])
       || segmentTriangleIntersect(positions, pair.bOpp[0], pair.bOpp[1], t1[0], t1[1], t1[2]);
@@ -68,9 +68,9 @@ export function allViolations(torus: Triangulation, positions: ArrayLike<number>
 }
 
 /** Per-face scalar: 1 on triangles involved in any violation, 0 elsewhere (for painting). */
-export function violationFaceScalars(torus: Triangulation, positions: ArrayLike<number>, out?: Float32Array): Float32Array {
-  const r = out ?? new Float32Array(torus.triangles.length);
+export function violationFaceScalars(triang: Triangulation, positions: ArrayLike<number>, out?: Float32Array): Float32Array {
+  const r = out ?? new Float32Array(triang.triangles.length);
   r.fill(0);
-  for (const v of allViolations(torus, positions)) { r[v.t1] = 1; r[v.t2] = 1; }
+  for (const v of allViolations(triang, positions)) { r[v.t1] = 1; r[v.t2] = 1; }
   return r;
 }

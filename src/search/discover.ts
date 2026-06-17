@@ -21,10 +21,10 @@ export interface DiscoverOptions extends FlowSearchOptions {
 }
 
 export function discoverAttempt(
-  torus: Triangulation,
+  triang: Triangulation,
   opts: DiscoverOptions,
 ): (seed: Float64Array) => Certificate | null {
-  const held = [flat(torus)];
+  const held = [flat(triang)];
   const angleTol = opts.angleTol ?? 1e-10;
-  return flattenFlowEmbed(torus, () => held, (c) => c.coneDeficit < angleTol && c.embedded, opts);
+  return flattenFlowEmbed(triang, () => held, (c) => c.coneDeficit < angleTol && c.embedded, opts);
 }

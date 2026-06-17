@@ -41,13 +41,13 @@ export interface FlowSearchOptions {
 }
 
 export function flattenFlowEmbed(
-  torus: Triangulation,
+  triang: Triangulation,
   buildHeld: (seed: Float64Array) => readonly Constraint[],
   accept: (cert: Certificate) => boolean,
   opts: FlowSearchOptions,
 ): (seed: Float64Array) => Certificate | null {
-  const chart = identity(torus.vertexCount * 3);
-  const region = embedded(torus);
+  const chart = identity(triang.vertexCount * 3);
+  const region = embedded(triang);
   const flowOpts = {
     region,
     stepSize: opts.stepSize ?? 0.001,
@@ -60,7 +60,7 @@ export function flattenFlowEmbed(
     if (project(chart, x, held).status !== 'converged') return null;
     flow(chart, x, held, opts.energy, flowOpts);                   // reach embedded
     if (opts.fattenEnergy) flow(chart, x, held, opts.fattenEnergy, flowOpts); // fatten the margin
-    const cert = certify(torus, x);
+    const cert = certify(triang, x);
     return accept(cert) ? cert : null;
   };
 }

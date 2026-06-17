@@ -32,18 +32,18 @@ const cache = new WeakMap<Triangulation, SavedMarking>();
  * step (harmonic layout + min-cut), run by `compute-markings` to fill the cache.
  * Deterministic and memoized, so saving it is a pure optimization.
  */
-export function canonicalDecoration(torus: Triangulation): SavedMarking {
-  const hit = cache.get(torus);
+export function canonicalDecoration(triang: Triangulation): SavedMarking {
+  const hit = cache.get(triang);
   if (hit) return hit;
-  const layout = harmonicLayout(torus);
-  const { domain, cut } = exactMinCutDomain(torus, layout);
+  const layout = harmonicLayout(triang);
+  const { domain, cut } = exactMinCutDomain(triang, layout);
   // Order the SAME minimal domain as a centered spiral (root nearest the
   // centroid, outward) rather than exactMinCutDomain's raw BFS-from-0 — same
   // domain, but central triangles develop first.
-  const { order: developOrder } = windingDevelop(torus, domain);
-  const generatorLoops = cutGenerators(torus, layout, cut) ?? homologyGenerators(torus.triangles);
+  const { order: developOrder } = windingDevelop(triang, domain);
+  const generatorLoops = cutGenerators(triang, layout, cut) ?? homologyGenerators(triang.triangles);
   const decoration: SavedMarking = { cut, developOrder, generatorLoops };
-  cache.set(torus, decoration);
+  cache.set(triang, decoration);
   return decoration;
 }
 
@@ -56,8 +56,8 @@ export function canonicalDecoration(torus: Triangulation): SavedMarking {
  * = area. Null if the cut disconnects the vertices or no unimodular pair exists
  * (caller falls back to the tree–cotree basis).
  */
-function cutGenerators(torus: Triangulation, layout: HarmonicLayout, cut: number[]): number[][] | null {
-  const { edges, vertexCount } = torus;
+function cutGenerators(triang: Triangulation, layout: HarmonicLayout, cut: number[]): number[][] | null {
+  const { edges, vertexCount } = triang;
   const cutSet = new Set(cut);
 
   // primal spanning tree (BFS over vertices) using only non-cut edges

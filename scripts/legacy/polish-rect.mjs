@@ -48,8 +48,8 @@ function flag(name) { return flags(name)[0]; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 function hasFlag(name) { return args.indexOf(name) !== -1; }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 const reMax = num(flag('--re-max'), 1e-3);
 const imMin = num(flag('--im-min'), 0);
 const imMax = num(flag('--im-max'), Infinity);
@@ -71,7 +71,7 @@ for (const inp of inputs) {
 }
 
 console.log('polish-rect');
-console.log(`  type:       #${torus.id}`);
+console.log(`  type:       #${triang.id}`);
 console.log(`  inputs:     ${files.length} file(s) from ${inputs.join(', ')}`);
 console.log(`  select:     |Re τ̂| < ${reMax}${imMin > 0 || imMax < Infinity ? `,  Im τ̂ in [${imMin}, ${imMax === Infinity ? '∞' : imMax}]` : ''}`);
 console.log(`  verify:     deficit < ${angleTol}, |Re τ̂| < ${reTol}, embedded`);
@@ -92,31 +92,31 @@ for (const file of files) {
     const p = new Float64Array(N);
     for (let i = 0; i < N; i++) p[i] = Number(parts[i]);
 
-    const tauHat = reduceModulus(modulus(torus, p).tau);
+    const tauHat = reduceModulus(modulus(triang, p).tau);
     if (Math.abs(tauHat[0]) >= reMax) continue;
     if (tauHat[1] < imMin || tauHat[1] > imMax) continue;
     selected++;
 
     // Freeze the reducing matrix at the seed, then project onto
     // { flat } ∩ { Re(g·τ) = 0 }.
-    const { m } = reduceModulusWithMatrix(modulus(torus, p).tau);
-    const rect = { label: 'Re(g·τ)', value: (q) => applyMobius(m, modulus(torus, q).tau)[0] };
-    const nr = newtonFlatten(torus, p, { tolerance: 1e-12, extraConstraints: [rect] });
+    const { m } = reduceModulusWithMatrix(modulus(triang, p).tau);
+    const rect = { label: 'Re(g·τ)', value: (q) => applyMobius(m, modulus(triang, q).tau)[0] };
+    const nr = newtonFlatten(triang, p, { tolerance: 1e-12, extraConstraints: [rect] });
     if (nr.status !== 'converged') continue;
     converged++;
 
-    const reFinal = Math.abs(reduceModulus(modulus(torus, p).tau)[0]);
-    if (!(maxConeDeficit(torus, p) < angleTol) || !(reFinal < reTol)) continue;
-    if (!isEmbedded(torus, p)) continue;
+    const reFinal = Math.abs(reduceModulus(modulus(triang, p).tau)[0]);
+    if (!(maxConeDeficit(triang, p) < angleTol) || !(reFinal < reTol)) continue;
+    if (!isEmbedded(triang, p)) continue;
 
     if (unitArea) {
-      const k = 1 / linearSize(torus, p);
+      const k = 1 / linearSize(triang, p);
       for (let i = 0; i < N; i++) p[i] *= k;
     }
     kept++;
     let row = p[0].toString();
     for (let i = 1; i < N; i++) row += ',' + p[i].toString();
-    pool.push({ row, im: reduceModulus(modulus(torus, p).tau)[1] });
+    pool.push({ row, im: reduceModulus(modulus(triang, p).tau)[1] });
   }
 }
 

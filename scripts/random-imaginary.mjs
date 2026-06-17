@@ -44,8 +44,8 @@ const args = process.argv.slice(2);
 function flag(n) { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 
-const torus = byId(7);
-const N = torus.vertexCount * 3;
+const triang = byId(7);
+const N = triang.vertexCount * 3;
 const T = num(flag('--im'), 1.0);                 // target Im τ̂ (square torus i = 1.0)
 const SIGMA = num(flag('--sigma'), 0.15);
 const FLOW_ITERS = num(flag('--flow-iters'), 200);
@@ -56,12 +56,12 @@ const seedFile = resolve(flag('--seed-file') ?? 'data/curated/rectangular-t7.csv
 const outBase = resolve((flag('--out') ?? `samples/random-i-${T}`).replace(/\.csv$/, ''));
 
 const chart = identity(N);
-const region = embedded(torus);
-const flatC = flat(torus);
+const region = embedded(triang);
+const flatC = flat(triang);
 // The UN-CROSSING energy: cut-off area is 0 iff no triangles cross (= embedded)
 // and grows with penetration depth, so its descent separates crossing triangles —
 // unlike cell-margin, which only fattens an already-embedded surface.
-const uncross = makeCutOffArea(torus);
+const uncross = makeCutOffArea(triang);
 
 // Base: the lowest-Im embedded rectangular torus (keeps the frozen chart valid near t).
 let base = null, baseIm = Infinity;
@@ -69,7 +69,7 @@ for (const l of readFileSync(seedFile, 'utf8').split('\n')) {
   if (!l.trim()) continue;
   const p = Float64Array.from(l.split(',').slice(0, N).map(Number));
   if (p.length !== N || p.some(Number.isNaN)) continue;
-  const c = certify(torus, p);
+  const c = certify(triang, p);
   if (c.embedded && Math.abs(c.tauHat[0]) < 1e-3 && c.tauHat[1] < baseIm) { base = p; baseIm = c.tauHat[1]; }
 }
 if (!base) { process.stderr.write(`no embedded rectangular base seed in ${seedFile}\n`); process.exit(1); }
@@ -95,7 +95,7 @@ while ((Date.now() - startMs) / 3.6e6 < MAX_HOURS) {
   const p = Float64Array.from(base);
   for (let i = 0; i < N; i++) p[i] += SIGMA * gauss();
 
-  const held = [flatC, fixedModulus(torus, p, [0, T])];
+  const held = [flatC, fixedModulus(triang, p, [0, T])];
   const x = new Float64Array(N);
   chart.lift(p, x);
   const pr = project(chart, x, held, { tolerance: 1e-12, maxIters: 120 });
@@ -107,7 +107,7 @@ while ((Date.now() - startMs) / 3.6e6 < MAX_HOURS) {
       flow(chart, x, held, uncross, { stepSize: 0.004, maxIters: FLOW_ITERS, energyTol: 1e-12 });
       chart.realize(x, p);
     }
-    const c = certify(torus, p);
+    const c = certify(triang, p);
     if (c.margin > bestMargin) bestMargin = c.margin;
     if (c.embedded) {
       embeddedN++;

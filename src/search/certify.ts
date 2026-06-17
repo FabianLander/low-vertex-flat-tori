@@ -34,12 +34,12 @@ export interface Certificate {
   readonly rotDefect: number;
 }
 
-export function certify(torus: Triangulation, positions: ArrayLike<number>): Certificate {
-  const m = modulus(torus, positions);
+export function certify(triang: Triangulation, positions: ArrayLike<number>): Certificate {
+  const m = modulus(triang, positions);
   return {
-    coneDeficit: maxConeDeficit(torus, positions),
-    embedded: isEmbedded(torus, positions),
-    margin: minMargin(torus, positions).margin,
+    coneDeficit: maxConeDeficit(triang, positions),
+    embedded: isEmbedded(triang, positions),
+    margin: minMargin(triang, positions).margin,
     tau: m.tau,
     tauHat: reduceModulus(m.tau),
     area: m.area,

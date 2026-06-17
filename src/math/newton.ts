@@ -123,13 +123,13 @@ export type NewtonResult = {
 };
 
 export function newtonFlatten(
-  torus: Triangulation,
+  triang: Triangulation,
   positions: Float64Array,
   opts: NewtonOptions = {},
 ): NewtonResult {
-  const N = torus.vertexCount * 3;     // coordinate count
-  const KFULL = torus.vertexCount;     // full deficit vector (honest convergence check)
-  const KD = torus.vertexCount - 1;    // independent cone constraints (Gauss–Bonnet)
+  const N = triang.vertexCount * 3;     // coordinate count
+  const KFULL = triang.vertexCount;     // full deficit vector (honest convergence check)
+  const KD = triang.vertexCount - 1;    // independent cone constraints (Gauss–Bonnet)
   const extras = opts.extraConstraints ?? [];
   const KE = extras.length;
   const K = KD + KE;                   // total constraints driving the step
@@ -165,7 +165,7 @@ export function newtonFlatten(
   // Full residual: all deficits + extras. ‖·‖∞ over everything, so
   // convergence is honest on flatness AND the extra constraints.
   const evalResidual = (): number => {
-    coneAngleDeficits(torus, positions, F);
+    coneAngleDeficits(triang, positions, F);
     let m = infNorm(F);
     for (let e = 0; e < KE; e++) {
       FX[e] = extras[e].value(positions);
@@ -189,15 +189,15 @@ export function newtonFlatten(
 
     // ---- Jacobian J[r * N + c] = ∂R_r/∂x_c ----
     if (analytic) {
-      coneAngleJacobian(torus, positions, J);    // exact, one pass, fills all rows
+      coneAngleJacobian(triang, positions, J);    // exact, one pass, fills all rows
     } else {
       // Central finite differences (default).
       for (let c = 0; c < N; c++) {
         const saved = positions[c];
         positions[c] = saved + h;
-        coneAngleDeficits(torus, positions, Fp);
+        coneAngleDeficits(triang, positions, Fp);
         positions[c] = saved - h;
-        coneAngleDeficits(torus, positions, Fm);
+        coneAngleDeficits(triang, positions, Fm);
         positions[c] = saved;
         for (let r = 0; r < KD; r++) {
           J[r * N + c] = (Fp[r] - Fm[r]) * invTwoH;

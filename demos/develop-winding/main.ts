@@ -55,7 +55,7 @@ function draw(): void {
   ctx.clearRect(0, 0, W, H);
   ctx.lineJoin = 'round';
 
-  const torus = ALL_TORI[idx];
+  const triang = ALL_TORI[idx];
   const net = nets[idx];
   const byId = new Map(net.tiles.map((t) => [t.id, t]));
   const f = fit(net.tiles.flatMap((t) => t.corners), W, H); // stable: fit full domain
@@ -94,7 +94,7 @@ function draw(): void {
     ctx.font = '11px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const id of shown) {
       const tile = byId.get(id)!;
-      const tri = torus.triangles[id];
+      const tri = triang.triangles[id];
       for (let k = 0; k < 3; k++) {
         const x = f.sx(tile.corners[k]), y = f.sy(tile.corners[k]);
         const key = `${x.toFixed(1)},${y.toFixed(1)}`;
@@ -113,7 +113,7 @@ function draw(): void {
     ? `placing T${cur.t} onto T${cur.parent} across edge ${cur.edge[0]}–${cur.edge[1]}`
     : `root T${cur.t}`;
   const lines = [
-    `torus ${torus.id}/7  ${torus.name}   deg=[${torus.degreeSequence}]   (↑ ↓ switch)`,
+    `torus ${triang.id}/7  ${triang.name}   deg=[${triang.degreeSequence}]   (↑ ↓ switch)`,
     `winding develop  step ${step}/16  —  ${placing}`,
     `[← → step · Space ${playing ? 'pause' : 'play'} · r reset · v labels]`,
   ];

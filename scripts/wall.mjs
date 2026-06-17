@@ -39,8 +39,8 @@ import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
 import { makeChordLengthSquared } from '../src/conditions/embedded/index.ts';
 
 const a = makeArgs(process.argv);
-const torus = byId(a.num('--type', 7));
-const N = torus.vertexCount * 3;
+const triang = byId(a.num('--type', 7));
+const N = triang.vertexCount * 3;
 const c = a.num('--c', 0);
 const seed = a.num('--seed', Date.now() >>> 0);
 const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);
@@ -55,8 +55,8 @@ if (pool.length === 0) { console.error(`empty pool: ${seedFile}`); process.exit(
 const sigma = logSigma(a.num('--sigma-min', 0.005), a.num('--sigma-max', 0.08), rng);
 const drawSeed = poolSeeds(pool, sigma, rng);
 
-const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(torus) : makeCutOffArea(torus);
-const attempt = wallAttempt(torus, {
+const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(triang) : makeCutOffArea(triang);
+const attempt = wallAttempt(triang, {
   c,
   energy,
   angleTol: a.num('--angle-tol', 1e-10),
@@ -74,7 +74,7 @@ const start = Date.now();
 let lastReport = start;
 let accepted = 0;
 
-console.log(`wall  type #${torus.id}  |Re τ̂|=${c}  energy ${energy.label}  pool ${pool.length}  rng-seed ${seed}`);
+console.log(`wall  type #${triang.id}  |Re τ̂|=${c}  energy ${energy.label}  pool ${pool.length}  rng-seed ${seed}`);
 console.log(`  → ${out}${feedback ? '  [feedback]' : ''}`);
 process.on('SIGINT', () => { console.log('\n— interrupted —'); process.exit(0); });
 

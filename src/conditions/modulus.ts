@@ -35,9 +35,9 @@ import type { Fn } from '../functions/types.ts';
  * only on (near-)flat configs — off the flat locus the holonomy isn't a pure
  * translation; callers project onto `flat` first.
  */
-export function tau(torus: Triangulation): Fn {
+export function tau(triang: Triangulation): Fn {
   return fdFn('tau', 2, (c, out) => {
-    const t = modulus(torus, c).tau;
+    const t = modulus(triang, c).tau;
     out[0] = t[0];
     out[1] = t[1];
   });
@@ -73,17 +73,17 @@ function mobiusMap(m: Sl2z): SmoothMap {
 }
 
 /** Frozen modulus map c ↦ applyMobius(m, τ(c)) ∈ ℝ², smooth in the seed's chamber. */
-function frozenModulus(torus: Triangulation, seed: ArrayLike<number>): { fn: Fn; tauHat: V2 } {
-  const { tau: tauHat, m } = reduceModulusWithMatrix(modulus(torus, seed).tau);
-  return { fn: postcompose(mobiusMap(m), tau(torus), 'frozenModulus'), tauHat };
+function frozenModulus(triang: Triangulation, seed: ArrayLike<number>): { fn: Fn; tauHat: V2 } {
+  const { tau: tauHat, m } = reduceModulusWithMatrix(modulus(triang, seed).tau);
+  return { fn: postcompose(mobiusMap(m), tau(triang), 'frozenModulus'), tauHat };
 }
 
 /**
  * The condition { τ̂ = τ̂₀ } — a single moduli point, as an `Fn` (dim 2). Chart
  * frozen at `seed`: g(c) = applyMobius(m, τ(c)) − τ̂₀.
  */
-export function fixedModulus(torus: Triangulation, seed: ArrayLike<number>, tauHat0: V2): Fn {
-  const { fn } = frozenModulus(torus, seed);
+export function fixedModulus(triang: Triangulation, seed: ArrayLike<number>, tauHat0: V2): Fn {
+  const { fn } = frozenModulus(triang, seed);
   return postcompose(affine([1, 0, 0, 1], [-tauHat0[0], -tauHat0[1]]), fn, 'fixedModulus');
 }
 
@@ -92,8 +92,8 @@ export function fixedModulus(torus: Triangulation, seed: ArrayLike<number>, tauH
  * between, as an `Fn` (dim 1). Chart (and the sign of Re τ̂) frozen at `seed`:
  * g(c) = Re(applyMobius(m, τ(c))) − sgn·c.
  */
-export function modulusWall(torus: Triangulation, seed: ArrayLike<number>, c: number): Fn {
-  const { fn, tauHat } = frozenModulus(torus, seed);
+export function modulusWall(triang: Triangulation, seed: ArrayLike<number>, c: number): Fn {
+  const { fn, tauHat } = frozenModulus(triang, seed);
   const sgn = tauHat[0] >= 0 ? 1 : -1;
   return postcompose(affine([1, 0], [-sgn * c]), fn, `modulusWall(${c})`);
 }

@@ -47,9 +47,9 @@ function len(p: ArrayLike<number>, i: number, j: number): number {
 
 /** Total surface area Σ ½‖(b−a)×(c−a)‖ over the F triangles (the intrinsic area;
  *  = covolume of Λ when the generators are a unit-index basis). */
-export function totalArea(torus: Triangulation, p: ArrayLike<number>): number {
+export function totalArea(triang: Triangulation, p: ArrayLike<number>): number {
   let area = 0;
-  for (const [a, b, c] of torus.triangles) {
+  for (const [a, b, c] of triang.triangles) {
     const oa = 3 * a, ob = 3 * b, oc = 3 * c;
     const e1x = p[ob] - p[oa], e1y = p[ob + 1] - p[oa + 1], e1z = p[ob + 2] - p[oa + 2];
     const e2x = p[oc] - p[oa], e2y = p[oc + 1] - p[oa + 1], e2z = p[oc + 2] - p[oa + 2];
@@ -60,8 +60,8 @@ export function totalArea(torus: Triangulation, p: ArrayLike<number>): number {
 }
 
 /** Local index (0,1,2) of global vertex g within triangle t. */
-function localIndex(torus: Triangulation, t: number, g: number): number {
-  const tri = torus.triangles[t];
+function localIndex(triang: Triangulation, t: number, g: number): number {
+  const tri = triang.triangles[t];
   if (tri[0] === g) return 0;
   if (tri[1] === g) return 1;
   if (tri[2] === g) return 2;
@@ -131,9 +131,9 @@ function placeThird(Pi: V2, Pj: V2, rI: number, rJ: number): [V2, V2] {
  * shared edge (`marking.attach`). The non-tree shared edges become the boundary
  * identifications (`cutEdges`), each carrying its holonomy translation.
  */
-export function developNet(torus: Triangulation, p: ArrayLike<number>): DevelopedNet {
-  const { developOrder: order, attach } = torus.fundamentalDomain;
-  const F = torus.triangles.length;
+export function developNet(triang: Triangulation, p: ArrayLike<number>): DevelopedNet {
+  const { developOrder: order, attach } = triang.fundamentalDomain;
+  const F = triang.triangles.length;
   const corners: V2[][] = new Array(F);
   const placedAt = new Array<number>(F).fill(-1);
   const treeEdges: number[] = [];
@@ -143,7 +143,7 @@ export function developNet(torus: Triangulation, p: ArrayLike<number>): Develope
   // --- root: developOrder[0], laid out CCW ---
   const root = order[0];
   {
-    const [a, b, c] = torus.triangles[root];
+    const [a, b, c] = triang.triangles[root];
     const A: V2 = [0, 0];
     const B: V2 = [len(p, a, b), 0];
     const [cand0, cand1] = placeThird(A, B, len(p, c, a), len(p, c, b));
@@ -157,11 +157,11 @@ export function developNet(torus: Triangulation, p: ArrayLike<number>): Develope
   for (let i = 1; i < order.length; i++) {
     const t = order[i];
     const { parent, u: su, v: sv } = attach[t];
-    const Pu = corners[parent][localIndex(torus, parent, su)];
-    const Pv = corners[parent][localIndex(torus, parent, sv)];
-    const lu = localIndex(torus, t, su), lv = localIndex(torus, t, sv);
+    const Pu = corners[parent][localIndex(triang, parent, su)];
+    const Pv = corners[parent][localIndex(triang, parent, sv)];
+    const lu = localIndex(triang, t, su), lv = localIndex(triang, t, sv);
     const lw = 3 - lu - lv;
-    const w = torus.triangles[t][lw];
+    const w = triang.triangles[t][lw];
     const [cand0, cand1] = placeThird(Pu, Pv, len(p, w, su), len(p, w, sv));
     const cn: V2[] = new Array(3);
     cn[lu] = Pu; cn[lv] = Pv; cn[lw] = cand0;
@@ -176,11 +176,11 @@ export function developNet(torus: Triangulation, p: ArrayLike<number>): Develope
 
   // --- cut edges: every shared edge not used by the tree ---
   const cutEdges: CutEdge[] = [];
-  for (const [k, [t1, t2]] of torus.edgeToTris) {
+  for (const [k, [t1, t2]] of triang.edgeToTris) {
     if (treeKeys.has(k)) continue;
     const [u, v] = edgeEnds(k);
-    const P1u = corners[t1][localIndex(torus, t1, u)], P1v = corners[t1][localIndex(torus, t1, v)];
-    const P2u = corners[t2][localIndex(torus, t2, u)], P2v = corners[t2][localIndex(torus, t2, v)];
+    const P1u = corners[t1][localIndex(triang, t1, u)], P1v = corners[t1][localIndex(triang, t1, v)];
+    const P2u = corners[t2][localIndex(triang, t2, u)], P2v = corners[t2][localIndex(triang, t2, v)];
     const translation: V2 = [P1u[0] - P2u[0], P1u[1] - P2u[1]];
     // rotational defect: angle between the two edge-image vectors.
     const e1x = P1v[0] - P1u[0], e1y = P1v[1] - P1u[1];
@@ -226,13 +226,13 @@ function complexDiv(v2: V2, v1: V2): V2 {
  * sum those edge vectors around the loop. The sum over a closed loop is the net
  * displacement between the start and end lifts, i.e. the holonomy translation.
  */
-function loopHolonomy(torus: Triangulation, net: DevelopedNet, loop: readonly number[]): V2 {
+function loopHolonomy(triang: Triangulation, net: DevelopedNet, loop: readonly number[]): V2 {
   let x = 0, y = 0;
   for (let k = 0; k + 1 < loop.length; k++) {
     const a = loop[k], b = loop[k + 1];
-    const t = torus.edgeToTris.get(edgeKey(a, b))![0];
-    const Pa = net.corners[t][localIndex(torus, t, a)];
-    const Pb = net.corners[t][localIndex(torus, t, b)];
+    const t = triang.edgeToTris.get(edgeKey(a, b))![0];
+    const Pa = net.corners[t][localIndex(triang, t, a)];
+    const Pb = net.corners[t][localIndex(triang, t, b)];
     x += Pb[0] - Pa[0];
     y += Pb[1] - Pa[1];
   }
@@ -240,13 +240,13 @@ function loopHolonomy(torus: Triangulation, net: DevelopedNet, loop: readonly nu
 }
 
 /** Compute the modulus τ from the holonomy of the two generator loops. */
-export function modulus(torus: Triangulation, p: ArrayLike<number>): Modulus {
-  const net = developNet(torus, p);
-  const area = totalArea(torus, p);
+export function modulus(triang: Triangulation, p: ArrayLike<number>): Modulus {
+  const net = developNet(triang, p);
+  const area = totalArea(triang, p);
   let rotDefect = 0;
   for (const c of net.cutEdges) rotDefect = Math.max(rotDefect, c.rotDefect);
-  let v1 = loopHolonomy(torus, net, torus.marking.generatorLoops[0]);
-  let v2 = loopHolonomy(torus, net, torus.marking.generatorLoops[1]);
+  let v1 = loopHolonomy(triang, net, triang.marking.generatorLoops[0]);
+  let v2 = loopHolonomy(triang, net, triang.marking.generatorLoops[1]);
   if (cross(v1, v2) < 0) [v1, v2] = [v2, v1]; // orient so τ ∈ ℍ (consistent across dataset)
   return {
     v1, v2,

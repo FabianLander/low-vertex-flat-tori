@@ -36,10 +36,10 @@ import { certify, type Certificate } from './certify.ts';
  * current |Re τ̂| off the config; `held` rebuilds `[flat, modulusWall(s)]` AT the
  * current point (the per-step re-freeze of the SL(2,ℤ) chart).
  */
-export function wallFamily(torus: Triangulation): Family {
+export function wallFamily(triang: Triangulation): Family {
   return {
-    param: (c) => Math.abs(reduceModulus(modulus(torus, c).tau)[0]),
-    held: (c, s) => [flat(torus), modulusWall(torus, c, s)],
+    param: (c) => Math.abs(reduceModulus(modulus(triang, c).tau)[0]),
+    held: (c, s) => [flat(triang), modulusWall(triang, c, s)],
   };
 }
 
@@ -75,13 +75,13 @@ export interface MarchOutcome {
  * the outcome, or `null` if no embedded starting torus could be found.
  */
 export function marchToWallAttempt(
-  torus: Triangulation,
+  triang: Triangulation,
   opts: MarchModulusOptions,
 ): (seed: Float64Array) => MarchOutcome | null {
-  const chart = identity(torus.vertexCount * 3);
-  const held0 = [flat(torus)];
-  const region = embedded(torus);
-  const family = wallFamily(torus);
+  const chart = identity(triang.vertexCount * 3);
+  const held0 = [flat(triang)];
+  const region = embedded(triang);
+  const family = wallFamily(triang);
   const angleTol = opts.angleTol ?? 1e-10;
   const flowOpts = {
     region,
@@ -97,11 +97,11 @@ export function marchToWallAttempt(
     // 1b. Optionally fatten the margin so the march has room to move (Fabi's energy
     //     is zero on the embedded set; the cell-margin energy is alive there).
     if (opts.fattenEnergy) flow(chart, seed, held0, opts.fattenEnergy, flowOpts);
-    const start = certify(torus, seed);
+    const start = certify(triang, seed);
     if (!(start.coneDeficit < angleTol && start.embedded)) return null;
 
     // 2. March |Re τ̂| onto the wall, re-freezing + gating embedded each step.
     const r = march(chart, seed, family, opts.c, { region });
-    return { cert: certify(torus, seed), status: r.status, reached: r.param };
+    return { cert: certify(triang, seed), status: r.status, reached: r.param };
   };
 }

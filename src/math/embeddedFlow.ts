@@ -81,7 +81,7 @@ export type FlowResult = {
 };
 
 export function embeddedFlow(
-  torus: Triangulation,
+  triang: Triangulation,
   positions: Float64Array,
   energy: ScalarFn,
   opts: FlowOptions = {},
@@ -104,7 +104,7 @@ export function embeddedFlow(
   let initialEnergy = -1, minEnergy = Infinity;
 
   // Land on F before starting (in case caller's seed isn't flat).
-  let nr = newtonFlatten(torus, positions, opts.newtonOpts);
+  let nr = newtonFlatten(triang, positions, opts.newtonOpts);
   let totalNewton = nr.iters;
   if (nr.status !== 'converged') {
     return {
@@ -158,7 +158,7 @@ export function embeddedFlow(
         for (let i = 0; i < positions.length; i++) positions[i] -= stepSize * dirScale * grad[i];
       }
 
-      nr = newtonFlatten(torus, positions, opts.newtonOpts);
+      nr = newtonFlatten(triang, positions, opts.newtonOpts);
       totalNewton += nr.iters;
       if (nr.status !== 'converged') {
         return {
@@ -176,7 +176,7 @@ export function embeddedFlow(
       let accepted = false;
       for (let bt = 0; bt < maxBacktracks; bt++) {
         for (let i = 0; i < positions.length; i++) positions[i] = saved[i] - alpha * dirScale * grad[i];
-        nr = newtonFlatten(torus, positions, opts.newtonOpts);
+        nr = newtonFlatten(triang, positions, opts.newtonOpts);
         totalNewton += nr.iters;
         if (nr.status === 'converged' && feasible(positions) && energy.compute(positions) < e) {
           accepted = true;

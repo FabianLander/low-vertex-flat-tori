@@ -26,7 +26,7 @@ export interface TorusViewOptions {
 }
 
 export class TorusView extends THREE.Group {
-  private readonly torus: Triangulation;
+  private readonly triang: Triangulation;
   private readonly faceCount: number;       // = torus.triangles.length
   private readonly edgeCount: number;        // = torus.edges.length
   private readonly vertexCount: number;
@@ -45,13 +45,13 @@ export class TorusView extends THREE.Group {
 
   private readonly _dummy = new THREE.Object3D();
 
-  constructor(torus: Triangulation, opts: TorusViewOptions = {}) {
+  constructor(triang: Triangulation, opts: TorusViewOptions = {}) {
     super();
 
-    this.torus = torus;
-    this.faceCount = torus.triangles.length;
-    this.edgeCount = torus.edges.length;
-    this.vertexCount = torus.vertexCount;
+    this.triang = triang;
+    this.faceCount = triang.triangles.length;
+    this.edgeCount = triang.edges.length;
+    this.vertexCount = triang.vertexCount;
     const FACE_VERTS = this.faceCount * 3;
     const EDGE_VERTS = this.edgeCount * 2;
 
@@ -100,7 +100,7 @@ export class TorusView extends THREE.Group {
 
     // Faces: splat 3 vertex positions per triangle.
     for (let t = 0; t < this.faceCount; t++) {
-      const [a, b, c] = this.torus.triangles[t];
+      const [a, b, c] = this.triang.triangles[t];
       const base = t * 9;
       const oa = 3 * a, ob = 3 * b, oc = 3 * c;
       this.facePositions[base    ] = p[oa];
@@ -119,7 +119,7 @@ export class TorusView extends THREE.Group {
 
     // Edges: endpoint pairs.
     for (let e = 0; e < this.edgeCount; e++) {
-      const [i, j] = this.torus.edges[e];
+      const [i, j] = this.triang.edges[e];
       const base = e * 6;
       const oi = 3 * i, oj = 3 * j;
       this.edgePositions[base    ] = p[oi];

@@ -83,14 +83,14 @@ const cam = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeig
 // translucent torus in a pivot at the origin (rotate + z-slide)
 const { face } = paperMaterials({ paperColor: '#dcbf6f', gridColor: '#2435AF', gridMinorColor: '#4e5988' });
 face.transparent = true; face.opacity = 0.4;
-const torus = styledTorus(paper, { surface: 'grid', edges: false, faceMaterial: face });
+const triang = styledTorus(paper, { surface: 'grid', edges: false, faceMaterial: face });
 const pivot = new THREE.Group();
-pivot.add(torus);
+pivot.add(triang);
 scene.add(pivot);
 
 // frame the FIXED camera on the torus's actual bounds (a slightly-elevated 3/4 view)
 pivot.updateMatrixWorld(true);
-const tbox = new THREE.Box3().setFromObject(torus);
+const tbox = new THREE.Box3().setFromObject(triang);
 const tcenter = tbox.getCenter(new THREE.Vector3());
 const trad = tbox.getBoundingSphere(new THREE.Sphere()).radius || maxR;
 const cdist = (trad / Math.sin((cam.fov * Math.PI / 180) / 2)) * 1.6;

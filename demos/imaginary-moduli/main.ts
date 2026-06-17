@@ -321,13 +321,13 @@ function showTorus3D(c: Klass, i: number): void {
   const group = new THREE.Group();
 
   // folded torus: grid face, no edges, centered in a spin pivot
-  const torus = styledTorus(paper, { surface: 'grid', edges: false, faceMaterial: insetFace });
-  torus.updateMatrixWorld(true);
-  const tbox = new THREE.Box3().setFromObject(torus);
+  const triang = styledTorus(paper, { surface: 'grid', edges: false, faceMaterial: insetFace });
+  triang.updateMatrixWorld(true);
+  const tbox = new THREE.Box3().setFromObject(triang);
   const tr = tbox.getBoundingSphere(new THREE.Sphere()).radius || 1;
-  torus.position.sub(tbox.getCenter(new THREE.Vector3()));   // centered at the pivot origin → spins in place
+  triang.position.sub(tbox.getCenter(new THREE.Vector3()));   // centered at the pivot origin → spins in place
   const pivot = new THREE.Group();
-  pivot.add(torus);
+  pivot.add(triang);
   torusPivot = pivot;
 
   // developed net: grid face + black very-thin tube fold lines

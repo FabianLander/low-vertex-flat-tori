@@ -82,8 +82,8 @@ function flags(name) {
 function flag(name) { return flags(name)[0]; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 
 const TARGET = 0.5;
 const seed = num(flag('--seed'), Date.now() >>> 0);
@@ -110,17 +110,17 @@ function gaussian() {
 }
 
 function unitArea(p) {
-  const k = 1 / linearSize(torus, p);
+  const k = 1 / linearSize(triang, p);
   for (let i = 0; i < N; i++) p[i] *= k;
 }
 function certify(p) {
-  if (maxConeDeficit(torus, p) > angleTol || !isEmbedded(torus, p)) return null;
-  const margin = minMargin(torus, p).margin;
+  if (maxConeDeficit(triang, p) > angleTol || !isEmbedded(triang, p)) return null;
+  const margin = minMargin(triang, p).margin;
   if (margin < MARGIN_MIN) return null;   // numerically meaningless embeddedness
-  const t = reduceModulus(modulus(torus, p).tau);
+  const t = reduceModulus(modulus(triang, p).tau);
   return {
     re: t[0], im: t[1],
-    deficit: maxConeDeficit(torus, p),
+    deficit: maxConeDeficit(triang, p),
     margin,
     dist: Math.abs(Math.abs(t[0]) - TARGET),
   };
@@ -211,28 +211,28 @@ const scratch = new Float64Array(N);
 /** Guarded flow on `energy` from `from`; returns a fresh verified position or null. */
 function runFlow(from, energy, iters) {
   const q = Float64Array.from(from);
-  embeddedFlow(torus, q, energy, {
+  embeddedFlow(triang, q, energy, {
     stepSize: STEP,
     energyTol: -Infinity,            // objective goes negative — never converge on energy
     gradientTol: 1e-12,
     maxIters: iters,
     normalizeGradient: true,
-    feasible: (x) => isEmbedded(torus, x),
+    feasible: (x) => isEmbedded(triang, x),
     newtonOpts: { tolerance: 1e-12 },
   });
   unitArea(q);
-  newtonFlatten(torus, q, { tolerance: 1e-12 });
+  newtonFlatten(triang, q, { tolerance: 1e-12 });
   return certify(q) ? q : null;
 }
 
 /** FLOW move: pull champion toward the wall, anchored at Im = c. */
 function flowMove(parent, c) {
-  const { tau, m } = reduceModulusWithMatrix(modulus(torus, parent.p).tau);
+  const { tau, m } = reduceModulusWithMatrix(modulus(triang, parent.p).tau);
   const sgn = tau[0] >= 0 ? 1 : -1;
   const mu = Math.max(parent.margin, 1e-9) * 0.25;
-  const barrier = makeCellBarrier(torus, { delta: DELTA, strength: 1 });
+  const barrier = makeCellBarrier(triang, { delta: DELTA, strength: 1 });
   const energy = energyFromCompute('pull+anchor', (q) => {
-    const t = applyMobius(m, modulus(torus, q).tau);
+    const t = applyMobius(m, modulus(triang, q).tau);
     const dIm = t[1] - c;
     return -sgn * t[0] + IM_PULL * dIm * dIm + mu * barrier.compute(q);
   });
@@ -241,7 +241,7 @@ function flowMove(parent, c) {
 
 /** FATTEN move: barrier only. */
 function fattenMove(parent) {
-  return runFlow(parent.p, makeCellBarrier(torus, { delta: DELTA, strength: 1 }), Math.floor(FLOW_ITERS / 2));
+  return runFlow(parent.p, makeCellBarrier(triang, { delta: DELTA, strength: 1 }), Math.floor(FLOW_ITERS / 2));
 }
 
 // ---- main loop ----
@@ -301,7 +301,7 @@ while (running && (Date.now() - start) / 3600000 < maxHours) {
     for (let k = 0; k < KICKS; k++) {
       const sigma = rng() < 0.1 ? sigmaBase * 10 : sigmaBase;
       for (let i = 0; i < N; i++) scratch[i] = parent.p[i] + sigma * gaussian();
-      if (newtonFlatten(torus, scratch, { tolerance: 1e-12 }).status !== 'converged') continue;
+      if (newtonFlatten(triang, scratch, { tolerance: 1e-12 }).status !== 'converged') continue;
       const cert = certify(scratch);
       if (cert) { saveAll(scratch, cert); install(scratch, cert); }
     }

@@ -69,8 +69,8 @@ function flag(name) {
 function num(v, d) { return v === undefined ? d : Number(v); }
 function hasFlag(name) { return args.indexOf(name) !== -1; }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
 const rngName = flag('--rng') ?? 'xoshiro';
@@ -96,11 +96,11 @@ const seedFileAbs = resolve(flag('--seed-file') ?? 'data/rect/pool.csv');
 /** Frozen-chart rectangularity constraint for a seed whose reduced modulus
  *  is reached by the SL(2,ℤ) element m. */
 function rectConstraint(m) {
-  return { label: 'Re(g·τ)', value: (q) => applyMobius(m, modulus(torus, q).tau)[0] };
+  return { label: 'Re(g·τ)', value: (q) => applyMobius(m, modulus(triang, q).tau)[0] };
 }
 
 function normalizeUnitArea(arr) {
-  const s = linearSize(torus, arr);
+  const s = linearSize(triang, arr);
   if (s > 0) { const k = 1 / s; for (let i = 0; i < N; i++) arr[i] *= k; }
 }
 
@@ -121,10 +121,10 @@ const pool = []; // { p: Float64Array, m: Sl2z }
     const p = new Float64Array(N);
     for (let i = 0; i < N; i++) p[i] = Number(parts[i]);
     if (unitArea) normalizeUnitArea(p);
-    const red = reduceModulusWithMatrix(modulus(torus, p).tau);
+    const red = reduceModulusWithMatrix(modulus(triang, p).tau);
     // Pool hygiene: only walk from genuinely flat, rectangular, embedded tori.
-    if (maxConeDeficit(torus, p) > angleTol || Math.abs(red.tau[0]) > reTol
-        || !isEmbedded(torus, p)) { rejected++; continue; }
+    if (maxConeDeficit(triang, p) > angleTol || Math.abs(red.tau[0]) > reTol
+        || !isEmbedded(triang, p)) { rejected++; continue; }
     pool.push({ p, m: red.m });
   }
   if (rejected > 0) console.log(`(pool: rejected ${rejected} row(s) failing flat/rect/embedded checks)`);
@@ -141,7 +141,7 @@ if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 const pathForPart = (n) => `${baseOut}-${n.toString().padStart(3, '0')}.csv`;
 
 console.log('sample-rect — random walk on the rectangular locus (Re τ̂ = 0)');
-console.log(`  type:        #${torus.id}`);
+console.log(`  type:        #${triang.id}`);
 console.log(`  rng:         ${rngName}  seed=${seed}`);
 console.log(`  pool:        ${seedFileAbs}  (${pool.length} tori)${feedback ? '  [feedback ON]' : ''}`);
 console.log(`  σ:           ${sigmaDist}[${sigmaMin}, ${sigmaMax}]`);
@@ -157,7 +157,7 @@ console.log();
 {
   const pairs = [
     ['script', 'sample-rect'],
-    ['type', `#${torus.id} (${torus.name})`],
+    ['type', `#${triang.id} (${triang.name})`],
     ['rng', rngName], ['seed', seed],
     ['seed-file', seedFileAbs], ['feedback', feedback],
     ['sigma-dist', sigmaDist], ['sigma-min', sigmaMin], ['sigma-max', sigmaMax],
@@ -251,7 +251,7 @@ while (tries < maxTries && saved < maxAccepts) {
   tries++;
 
   // 2. Project onto { flat } ∩ { Re(g·τ) = 0 } in the seed's frozen chart.
-  const nr = newtonFlatten(torus, p, {
+  const nr = newtonFlatten(triang, p, {
     tolerance: newtonTol,
     extraConstraints: [rectConstraint(pick.m)],
   });
@@ -259,10 +259,10 @@ while (tries < maxTries && saved < maxAccepts) {
     newtonOk++;
 
     // 3. Verify (independent of the frozen chart), then gate on embedded.
-    const red = reduceModulusWithMatrix(modulus(torus, p).tau);
-    if (maxConeDeficit(torus, p) < angleTol && Math.abs(red.tau[0]) < reTol) {
+    const red = reduceModulusWithMatrix(modulus(triang, p).tau);
+    if (maxConeDeficit(triang, p) < angleTol && Math.abs(red.tau[0]) < reTol) {
       verifiedFlatRect++;
-      if (isEmbedded(torus, p)) {
+      if (isEmbedded(triang, p)) {
         if (unitArea) normalizeUnitArea(p);
         let row = p[0].toString();
         for (let i = 1; i < N; i++) row += ',' + p[i].toString();

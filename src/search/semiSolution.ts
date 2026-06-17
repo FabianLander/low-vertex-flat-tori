@@ -46,19 +46,19 @@ export interface SemiSolutionOptions {
  * immersion (records τ and the embedded flag).
  */
 export function semiSolutionAttempt(
-  torus: Triangulation,
+  triang: Triangulation,
   opts: SemiSolutionOptions = {},
 ): (seed: Float64Array) => Certificate | null {
-  const n = torus.vertexCount * 3;
+  const n = triang.vertexCount * 3;
   const chart = pinCoords(DS_BASE_Z, n);
-  const held = [flat(torus), collinear(1, 2, 3), collinear(4, 5, 6)];
+  const held = [flat(triang), collinear(1, 2, 3), collinear(4, 5, 6)];
   const angleTol = opts.angleTol ?? 1e-10;
   const x = new Float64Array(chart.dim);
   return (seed) => {
     chart.lift(seed, x);                                   // 24 → 18 free coords
     if (project(chart, x, held).status !== 'converged') return null;
     chart.realize(x, seed);                                // 18 → 24, into the seed buffer
-    const cert = certify(torus, seed);
+    const cert = certify(triang, seed);
     return cert.coneDeficit < angleTol ? cert : null;
   };
 }

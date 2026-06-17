@@ -21,7 +21,7 @@ import { exactMinCutDomain } from '../../src/topology/fundamentalDomain';
 const data = ALL_TORI.map((t) => {
   const layout = harmonicLayout(t);
   const ex = exactMinCutDomain(t, layout);       // provably-minimal fundamental domain
-  return { torus: t, layout, dom: ex.domain, ext: ex.exterior };
+  return { triang: t, layout, dom: ex.domain, ext: ex.exterior };
 });
 
 let idx = data.length - 1;            // start on #7 (equilateral-lattice sanity check)
@@ -89,9 +89,9 @@ function draw(): void {
   ctx.clearRect(0, 0, W, H);
   ctx.lineJoin = 'round';
   const d = data[idx];
-  const { torus, layout } = d;
+  const { triang, layout } = d;
   const dom = d.dom;
-  const F = torus.triangles.length;
+  const F = triang.triangles.length;
 
   // ---- universal-cover patch covering the visible window ----
   const win = { x0: wx(0), x1: wx(W), y0: wy(H), y1: wy(0) };
@@ -129,7 +129,7 @@ function draw(): void {
       const seen = new Set<string>();
       ctx.font = '11px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (const t of dom) {
-        const tri = torus.triangles[t.id];
+        const tri = triang.triangles[t.id];
         for (let k = 0; k < 3; k++) {
           const x = sx(t.corners[k]), y = sy(t.corners[k]);
           const key = `${x.toFixed(1)},${y.toFixed(1)}`;
@@ -154,7 +154,7 @@ function draw(): void {
 
   // ---- HUD ----
   const lines = [
-    `torus ${torus.id}  ${torus.name}   V=${torus.vertexCount}  deg=[${torus.degreeSequence}]   (↑ ↓ switch)`,
+    `torus ${triang.id}  ${triang.name}   V=${triang.vertexCount}  deg=[${triang.degreeSequence}]   (↑ ↓ switch)`,
     `minimal fundamental domain · exposed edges ${d.ext} (cut ${d.ext / 2})  ·  ${tiles.length} tiles shown`,
     `[drag · scroll · d domain ${showDomain ? '✓' : '·'} · l lattice ${showLattice ? '✓' : '·'} · t tri-ids ${showTriIds ? '✓' : '·'} · v vtx-ids ${showVtxIds ? '✓' : '·'} · r reset]`,
   ];

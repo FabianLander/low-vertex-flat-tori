@@ -37,21 +37,21 @@ import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
 import { makeChordLengthSquared } from '../src/conditions/embedded/index.ts';
 
 const a = makeArgs(process.argv);
-const torus = byId(a.num('--type', 7));
-const N = torus.vertexCount * 3;
+const triang = byId(a.num('--type', 7));
+const N = triang.vertexCount * 3;
 const seed = a.num('--seed', Date.now() >>> 0);
 const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);
 
 const mode = a.flag('--seed-mode') ?? 'rich';
-if (mode === 'rich' && torus.id !== 7) { console.error('--seed-mode rich needs Rich (#7); use --seed-mode uniform'); process.exit(1); }
+if (mode === 'rich' && triang.id !== 7) { console.error('--seed-mode rich needs Rich (#7); use --seed-mode uniform'); process.exit(1); }
 const sMin = a.num('--sigma-min', 0.005), sMax = a.num('--sigma-max', 0.15);
 const sigma = (a.flag('--sigma-dist') ?? 'log') === 'uniform' ? uniformSigma(sMin, sMax, rng) : logSigma(sMin, sMax, rng);
 const drawSeed = mode === 'uniform'
   ? uniformSeeds(N, a.num('--seed-size', 1.0), rng)
   : perturbedSeeds(RICH_REFERENCE.positions, sigma, rng);
 
-const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(torus) : makeCutOffArea(torus);
-const attempt = discoverAttempt(torus, {
+const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(triang) : makeCutOffArea(triang);
+const attempt = discoverAttempt(triang, {
   energy,
   angleTol: a.num('--angle-tol', 1e-10),
   stepSize: a.num('--step-size', 0.001),
@@ -66,7 +66,7 @@ const start = Date.now();
 let lastReport = start;
 let accepted = 0;
 
-console.log(`discover  type #${torus.id}  energy ${energy.label}  seed-mode ${mode}  rng-seed ${seed}`);
+console.log(`discover  type #${triang.id}  energy ${energy.label}  seed-mode ${mode}  rng-seed ${seed}`);
 console.log(`  → ${out}`);
 
 process.on('SIGINT', () => { console.log('\n— interrupted —'); process.exit(0); });

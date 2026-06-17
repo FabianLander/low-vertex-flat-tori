@@ -48,7 +48,7 @@ function cellRects(W: number, H: number, n: number): Rect[] {
 }
 
 function drawCell(rect: Rect, idx: number): void {
-  const torus = ALL_TORI[idx];
+  const triang = ALL_TORI[idx];
   const L = layouts[idx];
 
   // view window = fundamental-domain bounding box + a thin ring of neighbors
@@ -94,7 +94,7 @@ function drawCell(rect: Rect, idx: number): void {
   // vertex labels (one per vertex, at its base position)
   if (showLabels) {
     ctx.font = '11px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (let v = 0; v < torus.vertexCount; v++) {
+    for (let v = 0; v < triang.vertexCount; v++) {
       const x = sx(L.vertexPos[v]), y = sy(L.vertexPos[v]);
       ctx.fillStyle = '#0e0e12'; ctx.beginPath(); ctx.arc(x, y, 8, 0, 2 * Math.PI); ctx.fill();
       ctx.strokeStyle = 'rgba(220,225,240,0.5)'; ctx.lineWidth = 1; ctx.stroke();
@@ -106,9 +106,9 @@ function drawCell(rect: Rect, idx: number): void {
   // title
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   ctx.font = 'bold 14px system-ui'; ctx.fillStyle = '#e8e8ec';
-  ctx.fillText(`#${torus.id}  ${torus.name}`, rect.x + 14, rect.y + 20);
+  ctx.fillText(`#${triang.id}  ${triang.name}`, rect.x + 14, rect.y + 20);
   ctx.font = '11px ui-monospace, monospace'; ctx.fillStyle = 'rgba(200,210,230,0.7)';
-  ctx.fillText(`deg [${torus.degreeSequence.join(' ')}]`, rect.x + 14, rect.y + 34);
+  ctx.fillText(`deg [${triang.degreeSequence.join(' ')}]`, rect.x + 14, rect.y + 34);
 
   // cell border
   ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;

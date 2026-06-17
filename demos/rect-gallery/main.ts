@@ -168,16 +168,16 @@ function buildSubject(reframe: boolean): void {
   const group = new THREE.Group();
 
   // folded torus, hovering above the ground, in a center pivot (drag to spin)
-  const torus = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  torus.setEdgesVisible(CONFIG.creases);
-  torus.rotation.z = Math.PI / 2;
-  fitInPlace(torus, CONFIG.torusSize);
-  torus.position.y += CONFIG.torusLift;
-  const tc = new THREE.Box3().setFromObject(torus).getCenter(new THREE.Vector3());
-  torus.position.sub(tc);
+  const triang = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
+  triang.setEdgesVisible(CONFIG.creases);
+  triang.rotation.z = Math.PI / 2;
+  fitInPlace(triang, CONFIG.torusSize);
+  triang.position.y += CONFIG.torusLift;
+  const tc = new THREE.Box3().setFromObject(triang).getCenter(new THREE.Vector3());
+  triang.position.sub(tc);
   torusPivot = new THREE.Group();
   torusPivot.position.copy(tc);
-  torusPivot.add(torus);
+  torusPivot.add(triang);
   group.add(torusPivot);
 
   // developed net — keep its scale factor so the rectangle shares it

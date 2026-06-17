@@ -75,8 +75,8 @@ for (const spec of inputs) {
   if (!existsSync(path)) { console.log(`skip ${pathRaw}: not found`); continue; }
   const type = typeRaw ? Number(typeRaw) : Number((basename(path).match(/t(\d)/) || [])[1]);
   if (!(type >= 1 && type <= 7)) { console.log(`skip ${pathRaw}: cannot read type from name (pass PATH=TYPE)`); continue; }
-  const torus = byId(type);
-  const N = torus.vertexCount * 3;
+  const triang = byId(type);
+  const N = triang.vertexCount * 3;
 
   // ---- 1. prefilter on the stored certificate, with slack (25 reτ̂, 27 margin) ----
   const cand = [];
@@ -98,11 +98,11 @@ for (const spec of inputs) {
   for (const parts of cand) {
     const p = new Float64Array(N);
     for (let i = 0; i < N; i++) p[i] = +parts[i];
-    const deficit = maxConeDeficit(torus, p);
-    const tHat = reduceModulus(modulus(torus, p).tau);
+    const deficit = maxConeDeficit(triang, p);
+    const tHat = reduceModulus(modulus(triang, p).tau);
     const d = distToWall(tHat[0]);
-    if (!(deficit < angleTol) || !(d <= reMax) || !isEmbedded(torus, p)) continue;
-    const margin = minMargin(torus, p).margin;
+    if (!(deficit < angleTol) || !(d <= reMax) || !isEmbedded(triang, p)) continue;
+    const margin = minMargin(triang, p).margin;
     if (!(margin >= marginMin)) continue;
     let row = p[0].toString();
     for (let i = 1; i < N; i++) row += ',' + p[i].toString();

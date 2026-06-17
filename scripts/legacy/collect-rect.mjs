@@ -71,8 +71,8 @@ function flags(name) {
 function flag(name) { return flags(name)[0]; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
 const BUCKET = num(flag('--bucket'), 0.02);
@@ -95,25 +95,25 @@ const logMin = Math.log(sigmaMin), logMax = Math.log(sigmaMax);
 const drawSigma = () => Math.exp(logMin + rng() * (logMax - logMin));
 
 function unitArea(p) {
-  const k = 1 / linearSize(torus, p);
+  const k = 1 / linearSize(triang, p);
   for (let i = 0; i < N; i++) p[i] *= k;
 }
 
 /** Project p exactly onto { flat ∧ rectangular } in the chart frozen at p
  *  itself; returns the verified certificate or null. */
 function projectAndVerify(p) {
-  const { m } = reduceModulusWithMatrix(modulus(torus, p).tau);
-  const nr = newtonFlatten(torus, p, {
+  const { m } = reduceModulusWithMatrix(modulus(triang, p).tau);
+  const nr = newtonFlatten(triang, p, {
     tolerance: 1e-12,
-    extraConstraints: [{ value: (q) => applyMobius(m, modulus(torus, q).tau)[0] }],
+    extraConstraints: [{ value: (q) => applyMobius(m, modulus(triang, q).tau)[0] }],
   });
   if (nr.status !== 'converged') return null;
   unitArea(p);
-  const deficit = maxConeDeficit(torus, p);
-  const t = reduceModulus(modulus(torus, p).tau);
+  const deficit = maxConeDeficit(triang, p);
+  const t = reduceModulus(modulus(triang, p).tau);
   if (!(deficit < angleTol) || !(Math.abs(t[0]) < reTol)) return null;
-  if (!isEmbedded(torus, p)) return null;
-  return { re: t[0], im: t[1], deficit, margin: minMargin(torus, p).margin };
+  if (!isEmbedded(triang, p)) return null;
+  return { re: t[0], im: t[1], deficit, margin: minMargin(triang, p).margin };
 }
 
 // ---- archive: Im bucket → champion (max margin) ----

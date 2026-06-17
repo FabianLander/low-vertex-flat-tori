@@ -40,11 +40,11 @@ export function edgesGeometry(paper: PaperTorus, opts: EdgesOptions = {}): THREE
   const unit = new THREE.CylinderGeometry(radius, radius, 1, radialSegments, 1, true);
 
   const parts: THREE.BufferGeometry[] = [];
-  for (const [i, j] of paper.torus.edges) {
+  for (const [i, j] of paper.triang.edges) {
     a.set(p[3 * i], p[3 * i + 1], p[3 * i + 2]);
     b.set(p[3 * j], p[3 * j + 1], p[3 * j + 2]);
     if (offset !== 0) {
-      const [t1, t2] = paper.torus.edgeToTris.get(edgeKey(i, j))!;
+      const [t1, t2] = paper.triang.edgeToTris.get(edgeKey(i, j))!;
       edgeOutward(paper, t1, t2, sign, nrm);
       a.x += nrm[0] * offset; a.y += nrm[1] * offset; a.z += nrm[2] * offset;
       b.x += nrm[0] * offset; b.y += nrm[1] * offset; b.z += nrm[2] * offset;

@@ -14,10 +14,10 @@ import type { Region } from '../../solvers/types.ts';
 import { isEmbedded } from './gate.ts';
 import { minMargin } from './margin.ts';
 
-export function embedded(torus: Triangulation): Region {
+export function embedded(triang: Triangulation): Region {
   return {
     label: 'embedded',
-    contains: (c) => isEmbedded(torus, c),
-    margin: (c) => minMargin(torus, c).margin,
+    contains: (c) => isEmbedded(triang, c),
+    margin: (c) => minMargin(triang, c).margin,
   };
 }

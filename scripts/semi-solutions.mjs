@@ -28,7 +28,7 @@ import { collect } from '../src/search/collect.ts';
 import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '../src/search/semiSolution.ts';
 
 const a = makeArgs(process.argv);
-const torus = byId(7); // the DS construction is the degree-6-regular #7 torus
+const triang = byId(7); // the DS construction is the degree-6-regular #7 torus
 const seed = a.num('--seed', Date.now() >>> 0);
 const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);
 
@@ -38,7 +38,7 @@ const drawSeed = doyleSchwartzTentSeeds(rng, {
   yMin: a.num('--y-min', 0.7),
   yMax: a.num('--y-max', 1.5),
 });
-const attempt = semiSolutionAttempt(torus, { angleTol: a.num('--angle-tol', 1e-10) });
+const attempt = semiSolutionAttempt(triang, { angleTol: a.num('--angle-tol', 1e-10) });
 
 const out = resolve(a.flag('--out') ?? `samples/semi-${Date.now()}.csv`);
 mkdirSync(dirname(out), { recursive: true });
@@ -48,7 +48,7 @@ const start = Date.now();
 let lastReport = start;
 let accepted = 0;
 
-console.log(`semi-solutions  type #${torus.id}  σ∈[${a.num('--sigma-min', 0)}, ${a.num('--sigma-max', 0.1)}]  rng-seed ${seed}`);
+console.log(`semi-solutions  type #${triang.id}  σ∈[${a.num('--sigma-min', 0)}, ${a.num('--sigma-max', 0.1)}]  rng-seed ${seed}`);
 console.log(`  → ${out}`);
 process.on('SIGINT', () => { console.log('\n— interrupted —'); process.exit(0); });
 

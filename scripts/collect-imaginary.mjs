@@ -49,8 +49,8 @@ const args = process.argv.slice(2);
 function flag(name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 
-const torus = byId(7);                 // RICH — the degree-6-regular triangulation
-const N = torus.vertexCount * 3;       // 24
+const triang = byId(7);                 // RICH — the degree-6-regular triangulation
+const N = triang.vertexCount * 3;       // 24
 const seedFile = resolve(flag('--seed-file') ?? 'data/curated/rectangular-t7.csv');
 const IM_MIN = num(flag('--im-min'), 1.0);
 const IM_MAX = num(flag('--im-max'), 3.0);
@@ -61,12 +61,12 @@ const outBase = resolve((flag('--out') ?? 'samples/imaginary-t7').replace(/\.csv
 // The Re τ̂ = 0, Im τ̂ = s family, the chart, and the embedded region
 // ---------------------------------------------------------------------------
 const chart = identity(N);
-const region = embedded(torus);
-const flatC = flat(torus);
-const imOf = (c) => reduceModulus(modulus(torus, c).tau)[1];
+const region = embedded(triang);
+const flatC = flat(triang);
+const imOf = (c) => reduceModulus(modulus(triang, c).tau)[1];
 const family = {
   param: imOf,                                          // current Im τ̂
-  held: (c, s) => [flatC, fixedModulus(torus, c, [0, s])], // {flat ∧ τ̂ = (0, s)}, re-frozen at c
+  held: (c, s) => [flatC, fixedModulus(triang, c, [0, s])], // {flat ∧ τ̂ = (0, s)}, re-frozen at c
 };
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ for (const l of readFileSync(seedFile, 'utf8').split('\n')) {
   if (!l.trim()) continue;
   const p = Float64Array.from(l.split(',').slice(0, N).map(Number));
   if (p.length !== N || p.some(Number.isNaN)) continue;
-  const c = certify(torus, p);
+  const c = certify(triang, p);
   if (c.embedded && Math.abs(c.tauHat[0]) < 1e-3) seeds.push({ p, im: c.tauHat[1] });
 }
 if (!seeds.length) { process.stderr.write(`no embedded rectangular seeds in ${seedFile}\n`); process.exit(1); }
@@ -116,7 +116,7 @@ for (const t of targets.filter((t) => t >= im0)) {
   const x = Float64Array.from(seed.p);
   const r = march(chart, x, family, t, { region, maxSteps: 300 });
   const p = new Float64Array(N); chart.realize(x, p);
-  const c = certify(torus, p);
+  const c = certify(triang, p);
   if (r.status === 'reached' && c.embedded) {
     recordHit(t, p, c);
     process.stderr.write(`  Im=${t.toFixed(2)}: embedded (seed Im=${seed.im.toFixed(3)}) margin=${c.margin.toExponential(2)}\n`);
@@ -135,7 +135,7 @@ if (downTargets.length) {
   for (const t of downTargets) {
     const r = march(chart, x, family, t, { region, maxSteps: 800 });
     const p = new Float64Array(N); chart.realize(x, p);
-    const c = certify(torus, p);
+    const c = certify(triang, p);
     if (r.status === 'reached' && c.embedded) {
       recordHit(t, p, c);
       process.stderr.write(`  Im=${t.toFixed(2)}: reached, embedded, margin=${c.margin.toExponential(2)}\n`);

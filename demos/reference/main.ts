@@ -40,13 +40,13 @@ fill.position.set(-2, -1, -3);
 scene.add(fill);
 
 // ---- Triangulation + view ----
-const torus = RICH_REFERENCE;
+const triang = RICH_REFERENCE;
 const view = new TorusView(RICH, { vertexRadius: 0.05 });
-view.sync(torus);
+view.sync(triang);
 
 const absDeficits = new Float32Array(RICH.vertexCount);
 for (let i = 0; i < RICH.vertexCount; i++) {
-  absDeficits[i] = Math.abs(torus.coneAngleDeficit(i));
+  absDeficits[i] = Math.abs(triang.coneAngleDeficit(i));
 }
 view.setVertexScalars(absDeficits, DEFICIT_PALETTE);
 
@@ -87,7 +87,7 @@ panel.appendChild(list);
 const TOL = 1e-3;
 let maxAbs = 0;
 for (let i = 0; i < RICH.vertexCount; i++) {
-  const a = torus.coneAngle(i);
+  const a = triang.coneAngle(i);
   const d = TWO_PI - a;
   if (Math.abs(d) > maxAbs) maxAbs = Math.abs(d);
 

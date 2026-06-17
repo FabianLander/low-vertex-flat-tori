@@ -21,8 +21,8 @@ const TWO_PI = Math.PI * 2;
 // ─── the measurement ────────────────────────────────────────────────────────
 
 /** Cone angle θ_i: the sum of corner angles at vertex i over its incident triangles. */
-export function coneAngleAt(torus: Triangulation, positions: ArrayLike<number>, i: number): number {
-  const link = torus.vertexLinks[i];
+export function coneAngleAt(triang: Triangulation, positions: ArrayLike<number>, i: number): number {
+  const link = triang.vertexLinks[i];
   const oi = 3 * i;
   const xi = positions[oi], yi = positions[oi + 1], zi = positions[oi + 2];
   let total = 0;
@@ -43,24 +43,24 @@ export function coneAngleAt(torus: Triangulation, positions: ArrayLike<number>, 
 }
 
 /** All V cone angles. */
-export function coneAngles(torus: Triangulation, positions: ArrayLike<number>, out?: Float64Array): Float64Array {
-  const r = out ?? new Float64Array(torus.vertexCount);
-  for (let i = 0; i < torus.vertexCount; i++) r[i] = coneAngleAt(torus, positions, i);
+export function coneAngles(triang: Triangulation, positions: ArrayLike<number>, out?: Float64Array): Float64Array {
+  const r = out ?? new Float64Array(triang.vertexCount);
+  for (let i = 0; i < triang.vertexCount; i++) r[i] = coneAngleAt(triang, positions, i);
   return r;
 }
 
 /** Per-vertex deficit δ_i = 2π − θ_i. Zero at every vertex ⟺ the realization is flat. */
-export function coneAngleDeficits(torus: Triangulation, positions: ArrayLike<number>, out?: Float64Array): Float64Array {
-  const r = out ?? new Float64Array(torus.vertexCount);
-  for (let i = 0; i < torus.vertexCount; i++) r[i] = TWO_PI - coneAngleAt(torus, positions, i);
+export function coneAngleDeficits(triang: Triangulation, positions: ArrayLike<number>, out?: Float64Array): Float64Array {
+  const r = out ?? new Float64Array(triang.vertexCount);
+  for (let i = 0; i < triang.vertexCount; i++) r[i] = TWO_PI - coneAngleAt(triang, positions, i);
   return r;
 }
 
 /** max_i |δ_i| — the flatness residual (the certificate, and `project`'s convergence test for `flat`). */
-export function maxConeDeficit(torus: Triangulation, positions: ArrayLike<number>): number {
+export function maxConeDeficit(triang: Triangulation, positions: ArrayLike<number>): number {
   let m = 0;
-  for (let i = 0; i < torus.vertexCount; i++) {
-    const d = Math.abs(TWO_PI - coneAngleAt(torus, positions, i));
+  for (let i = 0; i < triang.vertexCount; i++) {
+    const d = Math.abs(TWO_PI - coneAngleAt(triang, positions, i));
     if (d > m) m = d;
   }
   return m;
@@ -81,11 +81,11 @@ export function maxConeDeficit(torus: Triangulation, positions: ArrayLike<number
  * so contributions accumulate with a leading minus. A link-neighbor is the `l` of
  * one corner and the `j` of the next; both contributions land in its slot.
  */
-export function coneAngleJacobian(torus: Triangulation, positions: ArrayLike<number>, out: Float64Array): void {
-  const N_COORDS = torus.vertexCount * 3;
+export function coneAngleJacobian(triang: Triangulation, positions: ArrayLike<number>, out: Float64Array): void {
+  const N_COORDS = triang.vertexCount * 3;
   out.fill(0);
-  for (let i = 0; i < torus.vertexCount; i++) {
-    const link = torus.vertexLinks[i];
+  for (let i = 0; i < triang.vertexCount; i++) {
+    const link = triang.vertexLinks[i];
     const oi = 3 * i;
     const xi = positions[oi], yi = positions[oi + 1], zi = positions[oi + 2];
     const row = i * N_COORDS;
@@ -125,12 +125,12 @@ export function coneAngleJacobian(torus: Triangulation, positions: ArrayLike<num
 }
 
 /** The cone-deficit map as an `Fn` (dim V): value = the V deficits, jacobian = the analytic derivative. */
-export function coneDeficit(torus: Triangulation): Fn {
+export function coneDeficit(triang: Triangulation): Fn {
   return {
     label: 'coneDeficit',
-    dim: torus.vertexCount,
-    value: (c, out) => { coneAngleDeficits(torus, c, out); },
-    jacobian: (c, out) => { coneAngleJacobian(torus, c, out); },
+    dim: triang.vertexCount,
+    value: (c, out) => { coneAngleDeficits(triang, c, out); },
+    jacobian: (c, out) => { coneAngleJacobian(triang, c, out); },
   };
 }
 
@@ -146,6 +146,6 @@ export function coneDeficit(torus: Triangulation): Fn {
  * default ‖value‖∞ over all V rows of `coneDeficit` IS `maxConeDeficit`, so the
  * dropped deficit cannot lag above tolerance unseen.
  */
-export function flat(torus: Triangulation): Held {
-  return { fn: coneDeficit(torus), drive: torus.vertexCount - 1 };
+export function flat(triang: Triangulation): Held {
+  return { fn: coneDeficit(triang), drive: triang.vertexCount - 1 };
 }

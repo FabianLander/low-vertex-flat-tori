@@ -41,8 +41,8 @@ function flags(name) {
 function flag(name) { return flags(name)[0]; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 const bucket = num(flag('--bucket'), 0.05);
 const reTol = num(flag('--re-tol'), 1e-6);
 const angleTol = num(flag('--angle-tol'), 1e-10);
@@ -78,18 +78,18 @@ for (const file of files) {
     const p = new Float64Array(N);
     for (let i = 0; i < N; i++) p[i] = Number(parts[i]);
 
-    const deficit = maxConeDeficit(torus, p);
+    const deficit = maxConeDeficit(triang, p);
     if (!(deficit < angleTol)) continue;
-    const tauHat = reduceModulus(modulus(torus, p).tau);
+    const tauHat = reduceModulus(modulus(triang, p).tau);
     if (!(Math.abs(tauHat[0]) < reTol)) continue;
-    if (!isEmbedded(torus, p)) continue;
+    if (!isEmbedded(triang, p)) continue;
     verified++;
 
-    const margin = minMargin(torus, p).margin;   // scale-free fatness
+    const margin = minMargin(triang, p).margin;   // scale-free fatness
     const b = Math.floor(tauHat[1] / bucket);
     const cur = best.get(b);
     if (!cur || margin > cur.margin) {
-      const k = 1 / linearSize(torus, p);
+      const k = 1 / linearSize(triang, p);
       for (let i = 0; i < N; i++) p[i] *= k;     // unit area
       let row = p[0].toString();
       for (let i = 1; i < N; i++) row += ',' + p[i].toString();

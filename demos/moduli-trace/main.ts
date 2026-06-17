@@ -86,7 +86,7 @@ const baseScale = (DIAMETER / 2) / TORUS_HALF_W;
 let tx = CENTER[0], ty = CENTER[1], scale = baseScale;
 let count = N_POINTS, maxDist = TUBE;
 let showCloud = true, showCurve = true;
-let torus = buildTorus(tx, ty, scale);
+let triang = buildTorus(tx, ty, scale);
 
 function sampleShape(curves: PlaneCurve[]): { matches: Match<Src>[] } {
   const total = curves.reduce((s, c) => s + c.length, 0);
@@ -126,7 +126,7 @@ function fit(): { sx: (p: Vec2) => number; sy: (p: Vec2) => number } {
 function draw(): void {
   ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
   const f = fit();
-  const { matches } = sampleShape(torus);
+  const { matches } = sampleShape(triang);
 
   if (showCloud) {
     ctx.fillStyle = 'rgba(150,160,180,0.45)';
@@ -135,7 +135,7 @@ function draw(): void {
 
   if (showCurve) {
     ctx.strokeStyle = 'rgba(235,238,245,0.85)'; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
-    for (const cv of torus) {
+    for (const cv of triang) {
       ctx.beginPath();
       cv.polyline.forEach((p, i) => { const X = f.sx(p), Y = f.sy(p); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
       ctx.stroke();
@@ -165,7 +165,7 @@ function draw(): void {
 }
 
 function downloadCSV(): void {
-  const { matches } = sampleShape(torus);
+  const { matches } = sampleShape(triang);
   const seen = new Set<Float64Array>();
   const rows: string[] = [];
   for (const m of matches) {
@@ -197,7 +197,7 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'c') { showCurve = !showCurve; }
   else if (k === 'w') { downloadCSV(); return; }
   else return;
-  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-', '_'].includes(k)) torus = buildTorus(tx, ty, scale);
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-', '_'].includes(k)) triang = buildTorus(tx, ty, scale);
   e.preventDefault();
   draw();
 });

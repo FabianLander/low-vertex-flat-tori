@@ -70,11 +70,11 @@ type Entry = { paper: PaperTorus; type: number; deficit: number; margin: number;
 const entries: Entry[] = [];
 for (const path of Object.keys(csvFiles).sort()) {
   const type = Number(path.match(/gallery-t(\d+)\.csv$/)![1]);
-  const torus = byId(type);
-  const group: Entry[] = parseEmbeddings(csvFiles[path], torus).map((paper) => {
-    const deficit = maxConeDeficit(torus, paper.positions);
-    const tau = reduceModulus(modulus(torus, paper.positions).tau);
-    const margin = minMargin(torus, paper.positions).margin;
+  const triang = byId(type);
+  const group: Entry[] = parseEmbeddings(csvFiles[path], triang).map((paper) => {
+    const deficit = maxConeDeficit(triang, paper.positions);
+    const tau = reduceModulus(modulus(triang, paper.positions).tau);
+    const margin = minMargin(triang, paper.positions).margin;
     return { paper, type, deficit, margin, tau: [tau[0], tau[1]] as const };
   });
   group.sort((a, b) => a.tau[1] - b.tau[1]);   // within a type: thinnest → tallest
@@ -141,16 +141,16 @@ function buildSubject(reframe: boolean): void {
   const group = new THREE.Group();
 
   // folded torus, hovering above, in a center pivot (drag to spin)
-  const torus = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  torus.setEdgesVisible(CONFIG.creases);
-  torus.rotation.z = Math.PI / 2;
-  fitInPlace(torus, CONFIG.torusSize);
-  torus.position.y += CONFIG.torusLift;
-  const tc = new THREE.Box3().setFromObject(torus).getCenter(new THREE.Vector3());
-  torus.position.sub(tc);
+  const triang = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
+  triang.setEdgesVisible(CONFIG.creases);
+  triang.rotation.z = Math.PI / 2;
+  fitInPlace(triang, CONFIG.torusSize);
+  triang.position.y += CONFIG.torusLift;
+  const tc = new THREE.Box3().setFromObject(triang).getCenter(new THREE.Vector3());
+  triang.position.sub(tc);
   torusPivot = new THREE.Group();
   torusPivot.position.copy(tc);
-  torusPivot.add(torus);
+  torusPivot.add(triang);
   group.add(torusPivot);
 
   // modulus cell on the ground: unit-area lattice basis 1, τ̂ ⟹

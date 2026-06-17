@@ -76,8 +76,8 @@ function flags(name) {
 function flag(name) { return flags(name)[0]; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 
 const targetRe = num(flag('--target-re'), 0.5);
 const seed = num(flag('--seed'), Date.now() >>> 0);
@@ -105,14 +105,14 @@ function gaussian() {
 }
 
 // ---- helpers -------------------------------------------------------------
-const distOf = (p) => Math.abs(Math.abs(reduceModulus(modulus(torus, p).tau)[0]) - targetRe);
-const imOf = (p) => reduceModulus(modulus(torus, p).tau)[1];
+const distOf = (p) => Math.abs(Math.abs(reduceModulus(modulus(triang, p).tau)[0]) - targetRe);
+const imOf = (p) => reduceModulus(modulus(triang, p).tau)[1];
 function unitArea(p) {
-  const k = 1 / linearSize(torus, p);
+  const k = 1 / linearSize(triang, p);
   for (let i = 0; i < N; i++) p[i] *= k;
 }
 function healthy(p) {
-  return maxConeDeficit(torus, p) < ANGLE_TOL && isEmbedded(torus, p);
+  return maxConeDeficit(triang, p) < ANGLE_TOL && isEmbedded(triang, p);
 }
 
 // ---- load seeds ----------------------------------------------------------
@@ -158,9 +158,9 @@ const logPath = `${baseOut}.log.csv`;
 appendFileSync(logPath, 'elapsedSec,generation,bestDist,bestIm,medianDist,minMargin\n');
 
 function certRow(p) {
-  const t = reduceModulus(modulus(torus, p).tau);
-  const def = maxConeDeficit(torus, p);
-  const mar = minMargin(torus, p).margin;
+  const t = reduceModulus(modulus(triang, p).tau);
+  const def = maxConeDeficit(triang, p);
+  const mar = minMargin(triang, p).margin;
   let row = p[0].toString();
   for (let i = 1; i < N; i++) row += ',' + p[i].toString();
   return row + `,${def},${t[0]},${t[1]},${mar}`;
@@ -187,17 +187,17 @@ const scratch = new Float64Array(N);
 function flowPhase(member, energy, iters) {
   scratch.set(member.p);
   const before = member.dist;
-  embeddedFlow(torus, member.p, energy, {
+  embeddedFlow(triang, member.p, energy, {
     stepSize: STEP,
     energyTol: -Infinity,            // objectives go negative — never "converge" on energy
     gradientTol: 1e-12,
     maxIters: iters,
     normalizeGradient: true,         // barrier is stiff near contact
-    feasible: (q) => isEmbedded(torus, q),
+    feasible: (q) => isEmbedded(triang, q),
     newtonOpts: { tolerance: 1e-12 },
   });
   unitArea(member.p);
-  newtonFlatten(torus, member.p, { tolerance: 1e-12 });
+  newtonFlatten(triang, member.p, { tolerance: 1e-12 });
   if (!healthy(member.p)) { member.p.set(scratch); return before; }
   const after = distOf(member.p);
   // fattening may trade a little dist for margin — allow a bounded loss
@@ -211,25 +211,25 @@ function generation(member) {
   const startDist = member.dist;
 
   // 1. fatten when thin (barrier alone) — gives the kicks room to act
-  let margin = minMargin(torus, member.p).margin;
+  let margin = minMargin(triang, member.p).margin;
   if (margin < MARGIN_FLOOR) {
-    flowPhase(member, makeCellBarrier(torus, { delta: DELTA, strength: 1 }), FATTEN_ITERS);
-    margin = minMargin(torus, member.p).margin;
+    flowPhase(member, makeCellBarrier(triang, { delta: DELTA, strength: 1 }), FATTEN_ITERS);
+    margin = minMargin(triang, member.p).margin;
   }
 
   // 2. push: constant pull toward the wall + margin-scaled barrier.
   //    μ ∝ margin ⟹ the barrier engages at the CURRENT margin scale, so the
   //    flow slides along the embedded boundary instead of stalling on it.
   {
-    const { tau, m } = reduceModulusWithMatrix(modulus(torus, member.p).tau);
+    const { tau, m } = reduceModulusWithMatrix(modulus(triang, member.p).tau);
     const sgn = tau[0] >= 0 ? 1 : -1;
     const mu = Math.max(margin, 1e-7) * 0.25;
-    const barrier = makeCellBarrier(torus, { delta: DELTA, strength: 1 });
+    const barrier = makeCellBarrier(triang, { delta: DELTA, strength: 1 });
     const pull = targetRe === 0 ? (r) => Math.abs(r) : (r) => -sgn * r;
     const energy = energyFromCompute('push-re', (q) =>
-      pull(applyMobius(m, modulus(torus, q).tau)[0]) + mu * barrier.compute(q));
+      pull(applyMobius(m, modulus(triang, q).tau)[0]) + mu * barrier.compute(q));
     flowPhase(member, energy, FLOW_ITERS);
-    margin = minMargin(torus, member.p).margin;
+    margin = minMargin(triang, member.p).margin;
   }
 
   // 3. kick ratchet: margin-scaled kicks, accept only strict dist improvements
@@ -237,11 +237,11 @@ function generation(member) {
   for (let k = 0; k < KICK_TRIES; k++) {
     const sigma = rng() < 0.1 ? sigmaBase * 10 : sigmaBase;
     for (let i = 0; i < N; i++) scratch[i] = member.p[i] + sigma * gaussian();
-    const nr = newtonFlatten(torus, scratch, { tolerance: 1e-12 });
+    const nr = newtonFlatten(triang, scratch, { tolerance: 1e-12 });
     if (nr.status !== 'converged') continue;
     const d = distOf(scratch);
     if (d >= member.dist) continue;
-    if (maxConeDeficit(torus, scratch) > ANGLE_TOL || !isEmbedded(torus, scratch)) continue;
+    if (maxConeDeficit(triang, scratch) > ANGLE_TOL || !isEmbedded(triang, scratch)) continue;
     member.p.set(scratch);
     member.dist = d;
   }
@@ -265,16 +265,16 @@ while (running && (Date.now() - start) / 3600000 < maxHours) {
     if (m.dist < best.dist - 1e-12) {
       best = { p: Float64Array.from(m.p), dist: m.dist };
       saveBest();
-      const t = reduceModulus(modulus(torus, m.p).tau);
+      const t = reduceModulus(modulus(triang, m.p).tau);
       console.log(`  ★ new best  dist=${m.dist.toExponential(4)}  Re=${t[0].toFixed(7)}  Im=${t[1].toFixed(5)}  `
-        + `margin=${minMargin(torus, m.p).margin.toExponential(1)}  gen=${gen}  t=${((Date.now() - start) / 60000).toFixed(1)}m`);
+        + `margin=${minMargin(triang, m.p).margin.toExponential(1)}  gen=${gen}  t=${((Date.now() - start) / 60000).toFixed(1)}m`);
     }
     // restart stagnant unprotected members near the global best
     if (i >= PROTECT && m.sinceImprove >= STAGNATE) {
-      const sigma = Math.max(minMargin(torus, best.p).margin, 1e-6) * 2;
+      const sigma = Math.max(minMargin(triang, best.p).margin, 1e-6) * 2;
       for (let tries = 0; tries < 50; tries++) {
         for (let j = 0; j < N; j++) scratch[j] = best.p[j] + sigma * gaussian();
-        if (newtonFlatten(torus, scratch, { tolerance: 1e-12 }).status === 'converged' && healthy(scratch)) {
+        if (newtonFlatten(triang, scratch, { tolerance: 1e-12 }).status === 'converged' && healthy(scratch)) {
           m.p.set(scratch);
           m.dist = distOf(scratch);
           break;
@@ -286,7 +286,7 @@ while (running && (Date.now() - start) / 3600000 < maxHours) {
 
   savePop();
   const dists = members.map((m) => m.dist).sort((a, b) => a - b);
-  const margins = members.map((m) => minMargin(torus, m.p).margin);
+  const margins = members.map((m) => minMargin(triang, m.p).margin);
   appendFileSync(logPath, `${((Date.now() - start) / 1000).toFixed(0)},${gen},${best.dist},${imOf(best.p)},${dists[Math.floor(dists.length / 2)]},${Math.min(...margins)}\n`);
 
   if (Date.now() - lastReport > reportSecs * 1000) {
@@ -298,7 +298,7 @@ while (running && (Date.now() - start) / 3600000 < maxHours) {
 }
 
 savePop();
-const t = reduceModulus(modulus(torus, best.p).tau);
+const t = reduceModulus(modulus(triang, best.p).tau);
 console.log(`\n— done — gen=${gen}  best dist=${best.dist.toExponential(4)}  (Re=${t[0].toFixed(8)}, Im=${t[1].toFixed(6)})`);
 console.log(`bests:     ${bestPath}`);
 console.log(`resume:    npm run push-re -- --in ${popPath} --target-re ${targetRe}`);

@@ -10,7 +10,7 @@ import type { PaperTorus } from '../math/embedding';
 /** Unit normal of triangle t, as (b−a)×(c−a) normalized (orientation as authored). */
 function faceNormal(paper: PaperTorus, t: number, out: [number, number, number]): void {
   const p = paper.positions;
-  const [a, b, c] = paper.torus.triangles[t];
+  const [a, b, c] = paper.triang.triangles[t];
   const oa = 3 * a, ob = 3 * b, oc = 3 * c;
   const ux = p[ob] - p[oa], uy = p[ob + 1] - p[oa + 1], uz = p[ob + 2] - p[oa + 2];
   const vx = p[oc] - p[oa], vy = p[oc + 1] - p[oa + 1], vz = p[oc + 2] - p[oa + 2];
@@ -26,7 +26,7 @@ function faceNormal(paper: PaperTorus, t: number, out: [number, number, number])
 export function outwardSign(paper: PaperTorus): number {
   const p = paper.positions;
   let v6 = 0;
-  for (const [a, b, c] of paper.torus.triangles) {
+  for (const [a, b, c] of paper.triang.triangles) {
     const oa = 3 * a, ob = 3 * b, oc = 3 * c;
     const ax = p[oa], ay = p[oa + 1], az = p[oa + 2];
     const bx = p[ob], by = p[ob + 1], bz = p[ob + 2];
@@ -52,7 +52,7 @@ export function edgeOutward(paper: PaperTorus, t1: number, t2: number, sign: num
 export function vertexOutward(paper: PaperTorus, i: number, sign: number, out: [number, number, number]): void {
   const n: [number, number, number] = [0, 0, 0];
   let sx = 0, sy = 0, sz = 0;
-  const tris = paper.torus.triangles;
+  const tris = paper.triang.triangles;
   for (let t = 0; t < tris.length; t++) {
     const [a, b, c] = tris[t];
     if (a === i || b === i || c === i) {

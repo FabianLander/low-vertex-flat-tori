@@ -35,18 +35,18 @@ import { makeChordLengthSquared } from '../src/conditions/embedded/index.ts';
 import { makeCellMargin } from '../src/conditions/embedded/index.ts';
 
 const a = makeArgs(process.argv);
-const torus = byId(7);
+const triang = byId(7);
 const c = a.num('--c', 0);
 const seed = a.num('--seed', Date.now() >>> 0);
 const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);
 
 const sigma = logSigma(a.num('--sigma-min', 0.02), a.num('--sigma-max', 0.12), rng);
 const drawSeed = perturbedSeeds(RICH_REFERENCE.positions, sigma, rng);
-const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(torus) : makeCutOffArea(torus);
+const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(triang) : makeCutOffArea(triang);
 // --fatten ε: push the start to margin ε before marching, so it has room to move.
 const fatten = a.flag('--fatten');
-const fattenEnergy = fatten !== undefined ? makeCellMargin(torus, { epsilon: Number(fatten) }) : undefined;
-const attempt = marchToWallAttempt(torus, { c, energy, fattenEnergy, angleTol: a.num('--angle-tol', 1e-10) });
+const fattenEnergy = fatten !== undefined ? makeCellMargin(triang, { epsilon: Number(fatten) }) : undefined;
+const attempt = marchToWallAttempt(triang, { c, energy, fattenEnergy, angleTol: a.num('--angle-tol', 1e-10) });
 
 const out = resolve(a.flag('--out') ?? `samples/march-${Date.now()}.csv`);
 mkdirSync(dirname(out), { recursive: true });
@@ -56,7 +56,7 @@ const start = Date.now();
 let lastReport = start;
 let reached = 0, blocked = 0;
 
-console.log(`march-modulus  type #${torus.id}  → wall |Re τ̂|=${c}  energy ${energy.label}  rng-seed ${seed}`);
+console.log(`march-modulus  type #${triang.id}  → wall |Re τ̂|=${c}  energy ${energy.label}  rng-seed ${seed}`);
 console.log(`  → ${out} (tori that reached the wall)`);
 process.on('SIGINT', () => { console.log('\n— interrupted —'); process.exit(0); });
 

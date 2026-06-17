@@ -27,16 +27,16 @@ import { forEachCellGap } from './margin.ts';
 // ─── overlap energies (Fabi's) ──────────────────────────────────────────────
 
 /** Σ of squared intersection-chord lengths over non-adjacent triangle pairs. */
-export function makeChordLengthSquared(torus: Triangulation): ScalarFn {
-  const tris = torus.triangles;
+export function makeChordLengthSquared(triang: Triangulation): ScalarFn {
+  const tris = triang.triangles;
   return fdScalar('chord length²', (positions) => {
     let E = 0;
-    for (const [tA, tB] of torus.disjointTrianglePairs) {
+    for (const [tA, tB] of triang.disjointTrianglePairs) {
       const A = tris[tA], B = tris[tB];
       const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
       if (c) E += c.length * c.length;
     }
-    for (const pair of torus.sharedVertexTrianglePairs) {
+    for (const pair of triang.sharedVertexTrianglePairs) {
       const A = tris[pair.a], B = tris[pair.b];
       const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
       if (c) E += c.length * c.length;
@@ -54,10 +54,10 @@ const EPS = 1e-12;
  * reduce to min(t₁·t₂, 1 − t₁·t₂).
  */
 function smallerPieceRatio(
-  torus: Triangulation, positions: ArrayLike<number>, triIdx: number,
+  triang: Triangulation, positions: ArrayLike<number>, triIdx: number,
   npx: number, npy: number, npz: number, refX: number, refY: number, refZ: number,
 ): number {
-  const T = torus.triangles[triIdx];
+  const T = triang.triangles[triIdx];
   const o0 = 3 * T[0], o1 = 3 * T[1], o2 = 3 * T[2];
   const v0x = positions[o0], v0y = positions[o0 + 1], v0z = positions[o0 + 2];
   const v1x = positions[o1], v1y = positions[o1 + 1], v1z = positions[o1 + 2];
@@ -86,8 +86,8 @@ function smallerPieceRatio(
   return Math.min(prod, 1 - prod);
 }
 
-function pairCutOffEnergy(torus: Triangulation, positions: ArrayLike<number>, tA: number, tB: number): number {
-  const A = torus.triangles[tA], B = torus.triangles[tB];
+function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, tA: number, tB: number): number {
+  const A = triang.triangles[tA], B = triang.triangles[tB];
   const oa0 = 3 * A[0], oa1 = 3 * A[1], oa2 = 3 * A[2];
   const ob0 = 3 * B[0], ob1 = 3 * B[1], ob2 = 3 * B[2];
   const c = triTriChord(positions, oa0, oa1, oa2, ob0, ob1, ob2);
@@ -107,17 +107,17 @@ function pairCutOffEnergy(torus: Triangulation, positions: ArrayLike<number>, tA
   const eB2x = b2x - b0x, eB2y = b2y - b0y, eB2z = b2z - b0z;
   const nBx = eB1y * eB2z - eB1z * eB2y, nBy = eB1z * eB2x - eB1x * eB2z, nBz = eB1x * eB2y - eB1y * eB2x;
 
-  const ratioA = smallerPieceRatio(torus, positions, tA, nBx, nBy, nBz, b0x, b0y, b0z);
-  const ratioB = smallerPieceRatio(torus, positions, tB, nAx, nAy, nAz, a0x, a0y, a0z);
+  const ratioA = smallerPieceRatio(triang, positions, tA, nBx, nBy, nBz, b0x, b0y, b0z);
+  const ratioB = smallerPieceRatio(triang, positions, tB, nAx, nAy, nAz, a0x, a0y, a0z);
   return c.length * c.length * (ratioA + ratioB);
 }
 
 /** Σ ℓ² · (smaller-piece-area ratios) — chord²-modulated cut-off area. */
-export function makeCutOffArea(torus: Triangulation): ScalarFn {
+export function makeCutOffArea(triang: Triangulation): ScalarFn {
   return fdScalar('cut-off area (chord²-modulated)', (positions) => {
     let E = 0;
-    for (const [tA, tB] of torus.disjointTrianglePairs) E += pairCutOffEnergy(torus, positions, tA, tB);
-    for (const pair of torus.sharedVertexTrianglePairs) E += pairCutOffEnergy(torus, positions, pair.a, pair.b);
+    for (const [tA, tB] of triang.disjointTrianglePairs) E += pairCutOffEnergy(triang, positions, tA, tB);
+    for (const pair of triang.sharedVertexTrianglePairs) E += pairCutOffEnergy(triang, positions, pair.a, pair.b);
     return E;
   });
 }
@@ -136,13 +136,13 @@ export interface CellMarginOptions {
  * every pair is ≥ ε apart. Alive in Ω's interior (penalizes near-misses), so
  * descending it fattens a barely-embedded torus to margin ε.
  */
-export function makeCellMargin(torus: Triangulation, opts: CellMarginOptions = {}): ScalarFn {
+export function makeCellMargin(triang: Triangulation, opts: CellMarginOptions = {}): ScalarFn {
   const eps = opts.epsilon ?? 0.1;
   const weight = opts.weight ?? 1;
   const invEps = 1 / eps;
   return fdScalar(`cell-margin (ε=${eps}, c=${weight})`, (p) => {
     let E = 0;
-    forEachCellGap(torus, p, (g) => { if (g < eps) E += weight * (1 - g * invEps); });
+    forEachCellGap(triang, p, (g) => { if (g < eps) E += weight * (1 - g * invEps); });
     return E;
   });
 }

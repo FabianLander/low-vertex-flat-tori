@@ -52,7 +52,7 @@ for (const file of all) {
   const base = join(inDir, file.replace(/-\d{3}\.csv$/, '').replace(/\.csv$/, ''));
   const type = typeOfBase(base, parseRow(lines[0]));
   if (type == null) { console.log(`  ?? ${file}: could not determine type — skipped`); continue; }
-  const torus = byId(type);
+  const triang = byId(type);
 
   let kept = 0;
   for (const line of lines) {
@@ -60,7 +60,7 @@ for (const file of all) {
     if (cols.length !== DIM) continue;
     const p = parseRow(line);
     checked++;
-    if (!(maxConeDeficit(torus, p) < FLAT_TOL) || !isEmbedded(torus, p)) { rejected++; continue; }
+    if (!(maxConeDeficit(triang, p) < FLAT_TOL) || !isEmbedded(triang, p)) { rejected++; continue; }
     if (!byType.has(type)) byType.set(type, new Set());
     const before = byType.get(type).size;
     byType.get(type).add(line);
@@ -79,12 +79,12 @@ console.log('  ' + '-'.repeat(60));
 const indexLines = [];
 for (const type of types) {
   const rows = [...byType.get(type)];
-  const torus = byId(type);
+  const triang = byId(type);
   const outFile = join(outDir, `type-${type}.csv`);
   writeFileSync(outFile, rows.join('\n') + '\n');
   const srcs = sources.get(type);
   console.log(`  #${type}     ${String(rows.length).padStart(5)}      ${srcs.length} file(s): ${srcs.map((s) => s.file).join(', ')}`);
-  indexLines.push(`type-${type}.csv : ${rows.length} flat embedded examples of triangulation #${type} (${torus.name}), deg[${torus.degreeSequence}]`);
+  indexLines.push(`type-${type}.csv : ${rows.length} flat embedded examples of triangulation #${type} (${triang.name}), deg[${triang.degreeSequence}]`);
 }
 writeFileSync(join(outDir, 'README.txt'),
   `Flat embedded 8-vertex tori, grouped by triangulation type.\n`

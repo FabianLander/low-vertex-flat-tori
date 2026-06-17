@@ -64,8 +64,8 @@ function solve(A: number[][], b: number[]): number[] {
 const sgn = (u: number, v: number) => (u < v ? 1 : -1); // cochain stored for min→max
 
 /** Tree–cotree: primal spanning tree edges + the two H₁ generator edges. */
-function treeCotree(torus: Triangulation): { inT: Set<number>; gens: number[] } {
-  const { edges, triangles, edgeToTris, vertexCount } = torus;
+function treeCotree(triang: Triangulation): { inT: Set<number>; gens: number[] } {
+  const { edges, triangles, edgeToTris, vertexCount } = triang;
   const adj: number[][] = Array.from({ length: vertexCount }, () => []);
   for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }
   const inT = new Set<number>();
@@ -89,8 +89,8 @@ function treeCotree(torus: Triangulation): { inT: Set<number>; gens: number[] } 
 }
 
 /** Integer cocycle vanishing on T with the given values on the two generators. */
-function cocycle(torus: Triangulation, inT: Set<number>, gens: number[], gVals: [number, number]): Map<number, number> {
-  const { edges, triangles } = torus;
+function cocycle(triang: Triangulation, inT: Set<number>, gens: number[], gVals: [number, number]): Map<number, number> {
+  const { edges, triangles } = triang;
   const unk: number[] = [];
   const idx = new Map<number, number>();
   const fixed = new Map<number, number>();
@@ -142,11 +142,11 @@ function invSqrt2x2(a: number, b: number, d: number): [number, number, number, n
 }
 
 /** Develop a torus into a flat-torus harmonic embedding (see module doc). */
-export function harmonicLayout(torus: Triangulation): HarmonicLayout {
-  const { edges, triangles, vertexCount } = torus;
-  const { inT, gens } = treeCotree(torus);
-  const al = cocycle(torus, inT, gens, [1, 0]);
-  const be = cocycle(torus, inT, gens, [0, 1]);
+export function harmonicLayout(triang: Triangulation): HarmonicLayout {
+  const { edges, triangles, vertexCount } = triang;
+  const { inT, gens } = treeCotree(triang);
+  const al = cocycle(triang, inT, gens, [1, 0]);
+  const be = cocycle(triang, inT, gens, [0, 1]);
 
   const jump = (i: number, j: number): [number, number] => {
     const k = edgeKey(i, j), s = sgn(i, j);

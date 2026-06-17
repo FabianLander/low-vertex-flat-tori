@@ -70,8 +70,8 @@ for (const s of SPECS) (byType.get(s.type) ?? byType.set(s.type, []).get(s.type)
 
 let grand = 0;
 for (const [type, fileList] of [...byType.entries()].sort((a, b) => a[0] - b[0])) {
-  const torus = byId(type);
-  const N = torus.vertexCount * 3;
+  const triang = byId(type);
+  const N = triang.vertexCount * 3;
   const best = new Map();  // Im bucket → { row, im, re, margin, deficit }
   let scanned = 0, verified = 0;
   for (const file of fileList) {
@@ -85,17 +85,17 @@ for (const [type, fileList] of [...byType.entries()].sort((a, b) => a[0] - b[0])
       scanned++;
       const p = new Float64Array(N);
       for (let i = 0; i < N; i++) p[i] = Number(parts[i]);
-      const deficit = maxConeDeficit(torus, p);
+      const deficit = maxConeDeficit(triang, p);
       if (!(deficit < angleTol)) continue;
-      const tHat = reduceModulus(modulus(torus, p).tau);
+      const tHat = reduceModulus(modulus(triang, p).tau);
       if (!(Math.abs(Math.abs(tHat[0]) - TARGET) < reTol)) continue;
-      if (!isEmbedded(torus, p)) continue;
+      if (!isEmbedded(triang, p)) continue;
       verified++;
-      const margin = minMargin(torus, p).margin;
+      const margin = minMargin(triang, p).margin;
       const b = Math.round(tHat[1] / bucket);
       const cur = best.get(b);
       if (!cur || margin > cur.margin) {
-        const k = 1 / linearSize(torus, p);
+        const k = 1 / linearSize(triang, p);
         for (let i = 0; i < N; i++) p[i] *= k;       // unit area
         let row = p[0].toString();
         for (let i = 1; i < N; i++) row += ',' + p[i].toString();

@@ -28,12 +28,12 @@ const flag = (n) => { const i = args.indexOf(n); return i === -1 ? undefined : a
 const num = (v, d) => (v === undefined ? d : Number(v));
 
 const type = num(flag('--type'), 2);
-const torus = byId(type);
+const triang = byId(type);
 const top = num(flag('--top'), 5000);
 const shards = num(flag('--shards'), 5);
 const inSpec = flag('--in') ?? 'samples';
 const outDir = resolve(flag('--out-dir') ?? `samples/type${type}-seeds`);
-const DIM = torus.vertexCount * 3;
+const DIM = triang.vertexCount * 3;
 const SAMPLE_BYTES = DIM * 4;
 
 // Resolve input .bin files: a dir (glob type<N>*-emb-*.bin) or comma-list of files.
@@ -46,7 +46,7 @@ if (existsSync(inSpec) && statSync(inSpec).isDirectory()) {
 }
 if (files.length === 0) { console.error(`no input .bin files matched ${inSpec}`); process.exit(1); }
 
-console.log(`rank-seeds  type #${type} (${torus.name})`);
+console.log(`rank-seeds  type #${type} (${triang.name})`);
 console.log(`  inputs: ${files.map((f) => f.split('/').pop()).join(', ')}`);
 
 // Load + dedupe exact samples.
@@ -68,10 +68,10 @@ console.log(`  loaded ${samples.length.toLocaleString()} unique embedded tori`);
 
 // Score each by L∞ (primary) and RMS (tiebreak) of cone-angle defects.
 const scored = samples.map((p) => {
-  const d = coneAngleDeficits(torus, p);
+  const d = coneAngleDeficits(triang, p);
   let sumSq = 0;
   for (let i = 0; i < d.length; i++) sumSq += d[i] * d[i];
-  return { p, linf: maxConeDeficit(torus, p), rms: Math.sqrt(sumSq / d.length) };
+  return { p, linf: maxConeDeficit(triang, p), rms: Math.sqrt(sumSq / d.length) };
 });
 scored.sort((a, b) => (a.linf - b.linf) || (a.rms - b.rms));
 

@@ -23,15 +23,15 @@ import type { Triangulation } from '../topology/triangulation';
 import { developNet, modulus, type DevelopedNet } from '../topology/develop';
 
 export function latticeUV(
-  torus: Triangulation,
+  triang: Triangulation,
   positions: ArrayLike<number>,
   opts: { repeat?: number; net?: DevelopedNet } = {},
 ): Float32Array {
   const repeat = opts.repeat ?? 1;
   // Reuse a caller-supplied net (e.g. unfolded with a specific attachment) so the
   // UVs line up with that exact net; otherwise unfold with the default tree.
-  const net = opts.net ?? developNet(torus, positions);
-  const { v1, v2 } = modulus(torus, positions);
+  const net = opts.net ?? developNet(triang, positions);
+  const { v1, v2 } = modulus(triang, positions);
 
   // Invert M = [v1 v2] (columns) so uv = M⁻¹·P gives lattice coordinates.
   const det = v1[0] * v2[1] - v1[1] * v2[0];
@@ -41,7 +41,7 @@ export function latticeUV(
   const m00 =  v2[1] * inv, m01 = -v2[0] * inv;
   const m10 = -v1[1] * inv, m11 =  v1[0] * inv;
 
-  const F = torus.triangles.length;
+  const F = triang.triangles.length;
   const out = new Float32Array(F * 3 * 2);
   for (let t = 0; t < F; t++) {
     const corners = net.corners[t];

@@ -70,8 +70,8 @@ function flag(name) {
 function num(v, d) { return v === undefined ? d : Number(v); }
 function hasFlag(name) { return args.indexOf(name) !== -1; }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
 const rngName = flag('--rng') ?? 'xoshiro';
@@ -109,7 +109,7 @@ const outDir = dirname(baseOut);
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
 console.log('search-near-rect — perturb · flatten · keep if embedded and almost rectangular');
-console.log(`  type:        #${torus.id}`);
+console.log(`  type:        #${triang.id}`);
 console.log(`  rng:         ${rngName}  seed=${seed}`);
 console.log(`  seeds:       ${seedFileAbs}  (${pool.length} tori)${feedback ? '  [feedback ON]' : ''}`);
 console.log(`  σ:           ${sigma}`);
@@ -166,26 +166,26 @@ while (tries < maxTries && saved < maxAccepts) {
   for (let i = 0; i < N; i++) p[i] = seedRow[i] + sigma * gaussian();
   tries++;
 
-  const nr = newtonFlatten(torus, p, { tolerance: newtonTol });
-  if (nr.status === 'converged' && maxConeDeficit(torus, p) < angleTol) {
+  const nr = newtonFlatten(triang, p, { tolerance: newtonTol });
+  if (nr.status === 'converged' && maxConeDeficit(triang, p) < angleTol) {
     flatOk++;
-    let tauHat = reduceModulus(modulus(torus, p).tau);
+    let tauHat = reduceModulus(modulus(triang, p).tau);
     let re = Math.abs(Math.abs(tauHat[0]) - targetRe);   // distance to the target locus
     if (re < reKeep) {
       reOk++;
-      if (isEmbedded(torus, p)) {
+      if (isEmbedded(triang, p)) {
         // normalize to unit area (preserves flat / embedded / τ), re-flatten,
         // and measure the recorded certificate (deficit, τ̂) on exactly what
         // is written to disk.
-        const k = 1 / linearSize(torus, p);
+        const k = 1 / linearSize(triang, p);
         for (let i = 0; i < N; i++) p[i] *= k;
-        const polish = newtonFlatten(torus, p, { tolerance: newtonTol });
-        const deficit = maxConeDeficit(torus, p);
+        const polish = newtonFlatten(triang, p, { tolerance: newtonTol });
+        const deficit = maxConeDeficit(triang, p);
         if (polish.status !== 'converged' || !(deficit < angleTol)) continue;
-        tauHat = reduceModulus(modulus(torus, p).tau);
+        tauHat = reduceModulus(modulus(triang, p).tau);
         re = Math.abs(Math.abs(tauHat[0]) - targetRe);
-        if (!(re < reKeep) || !isEmbedded(torus, p)) continue;
-        const margin = minMargin(torus, p).margin;
+        if (!(re < reKeep) || !isEmbedded(triang, p)) continue;
+        const margin = minMargin(triang, p).margin;
         let row = p[0].toString();
         for (let i = 1; i < N; i++) row += ',' + p[i].toString();
         row += ',' + deficit.toString() + ',' + tauHat[0].toString() + ',' + tauHat[1].toString() + ',' + margin.toString();

@@ -171,14 +171,14 @@ export type ScanOpts = {
  * Mutates `positions` in place.
  */
 export function semiSolutionFlatten(
-  torus: Triangulation,
+  triang: Triangulation,
   positions: Float64Array,
   opts: SemiNewtonOpts = {},
 ): SemiNewtonResult {
   // Pin the six planar vertices to the XY-plane; frozenCoords keeps them there.
   for (const c of FROZEN_Z) positions[c] = 0;
 
-  const result = newtonFlatten(torus, positions, {
+  const result = newtonFlatten(triang, positions, {
     tolerance: opts.tolerance ?? 1e-12,
     maxIters: opts.maxIters ?? 80,
     damping: opts.damping ?? 1e-12,
@@ -191,7 +191,7 @@ export function semiSolutionFlatten(
   return {
     status: result.status,
     iters: result.iters,
-    coneResidual: maxConeDeficit(torus, positions),
+    coneResidual: maxConeDeficit(triang, positions),
     collinearResidual: collinearResidualNorm(positions),
   };
 }
@@ -213,7 +213,7 @@ export function semiSolutionFlatten(
  * To find semi-solutions with Re(τ) = 0 or Re(τ) = ½, filter the returned
  * array by r.tau?.[0].
  */
-export function scanSemiSolutions(torus: Triangulation, opts: ScanOpts): SemiSolution[] {
+export function scanSemiSolutions(triang: Triangulation, opts: ScanOpts): SemiSolution[] {
   const results: SemiSolution[] = [];
 
   for (const { x, y } of opts.seeds) {
@@ -229,16 +229,16 @@ export function scanSemiSolutions(torus: Triangulation, opts: ScanOpts): SemiSol
       if (positions[2]  <= 0) positions[2]  = 1e-3;
       if (positions[23] <= 0) positions[23] = 1e-3;
 
-      const result = semiSolutionFlatten(torus, positions, opts.newtonOpts);
+      const result = semiSolutionFlatten(triang, positions, opts.newtonOpts);
       const converged = result.status === 'converged';
 
       let tau: readonly [number, number] | null = null;
       let embedded = false;
 
       if (converged) {
-        const m = modulus(torus, positions);
+        const m = modulus(triang, positions);
         tau = [m.tau[0], m.tau[1]];
-        embedded = isEmbedded(torus, positions);
+        embedded = isEmbedded(triang, positions);
       }
 
       results.push({

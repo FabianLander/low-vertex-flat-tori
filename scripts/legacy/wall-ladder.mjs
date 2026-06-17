@@ -77,8 +77,8 @@ function flags(name) {
 function flag(name) { return flags(name)[0]; }
 function num(v, d) { return v === undefined ? d : Number(v); }
 
-const torus = byId(num(flag('--type'), 7));
-const N = torus.vertexCount * 3;
+const triang = byId(num(flag('--type'), 7));
+const N = triang.vertexCount * 3;
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
 const SLICES = (flag('--slices') ?? '0.44,0.45,0.46,0.47,0.475,0.48,0.485,0.49,0.4925,0.495,0.4975,0.499,0.4995')
@@ -104,27 +104,27 @@ function gaussian() {
 const logMin = Math.log(sigmaMin), logMax = Math.log(sigmaMax);
 
 function unitArea(p) {
-  const k = 1 / linearSize(torus, p);
+  const k = 1 / linearSize(triang, p);
   for (let i = 0; i < N; i++) p[i] *= k;
 }
 
 /** Frozen-chart slice constraint at |Re| = c for the chart/sign of p itself. */
 function sliceConstraint(p, c) {
-  const { tau, m } = reduceModulusWithMatrix(modulus(torus, p).tau);
+  const { tau, m } = reduceModulusWithMatrix(modulus(triang, p).tau);
   const sgn = tau[0] >= 0 ? 1 : -1;
-  return { value: (q) => applyMobius(m, modulus(torus, q).tau)[0] - sgn * c };
+  return { value: (q) => applyMobius(m, modulus(triang, q).tau)[0] - sgn * c };
 }
 
 /** Project p exactly onto { flat ∧ |Re τ̂| = c }; verify; return cert or null. */
 function projectAndVerify(p, c) {
-  const nr = newtonFlatten(torus, p, { tolerance: 1e-12, extraConstraints: [sliceConstraint(p, c)] });
+  const nr = newtonFlatten(triang, p, { tolerance: 1e-12, extraConstraints: [sliceConstraint(p, c)] });
   if (nr.status !== 'converged') return null;
   unitArea(p);
-  const deficit = maxConeDeficit(torus, p);
-  const t = reduceModulus(modulus(torus, p).tau);
+  const deficit = maxConeDeficit(triang, p);
+  const t = reduceModulus(modulus(triang, p).tau);
   if (!(deficit < angleTol) || !(Math.abs(Math.abs(t[0]) - c) < reTol)) return null;
-  if (!isEmbedded(torus, p)) return null;
-  const margin = minMargin(torus, p).margin;
+  if (!isEmbedded(triang, p)) return null;
+  const margin = minMargin(triang, p).margin;
   if (margin < MARGIN_MIN) return null;
   return { re: t[0], im: t[1], deficit, margin };
 }
@@ -133,7 +133,7 @@ function projectAndVerify(p, c) {
  *  one big min-norm jump usually breaks embeddedness; many small ones often
  *  survive. Returns the on-slice certificate or null. */
 function marchToSlice(p, c) {
-  let cur = Math.abs(reduceModulus(modulus(torus, p).tau)[0]);
+  let cur = Math.abs(reduceModulus(modulus(triang, p).tau)[0]);
   let step = Math.max(Math.abs(c - cur) / 8, 1e-4);
   let halvings = 0;
   const saved = new Float64Array(N);
@@ -159,27 +159,27 @@ function marchToSlice(p, c) {
  *  exactly onto the slice. Returns the certificate or null. */
 function climbToSlice(p, c, deadline) {
   for (let round = 0; round < 500 && Date.now() < deadline; round++) {
-    const before = Math.abs(reduceModulus(modulus(torus, p).tau)[0]);
+    const before = Math.abs(reduceModulus(modulus(triang, p).tau)[0]);
     if (before >= c - 1e-4) break;
-    const { tau, m } = reduceModulusWithMatrix(modulus(torus, p).tau);
+    const { tau, m } = reduceModulusWithMatrix(modulus(triang, p).tau);
     const sgn = tau[0] >= 0 ? 1 : -1;
-    const mu = Math.max(minMargin(torus, p).margin, 1e-9) * 0.25;
-    const barrier = makeCellBarrier(torus, { delta: 0.02, strength: 1 });
+    const mu = Math.max(minMargin(triang, p).margin, 1e-9) * 0.25;
+    const barrier = makeCellBarrier(triang, { delta: 0.02, strength: 1 });
     const energy = energyFromCompute('pull', (q) =>
-      -sgn * applyMobius(m, modulus(torus, q).tau)[0] + mu * barrier.compute(q));
-    embeddedFlow(torus, p, energy, {
+      -sgn * applyMobius(m, modulus(triang, q).tau)[0] + mu * barrier.compute(q));
+    embeddedFlow(triang, p, energy, {
       stepSize: 1e-3,
       energyTol: -Infinity,
       gradientTol: 1e-12,
       maxIters: 200,
       normalizeGradient: true,
-      feasible: (x) => isEmbedded(torus, x),
+      feasible: (x) => isEmbedded(triang, x),
       newtonOpts: { tolerance: 1e-12 },
     });
     unitArea(p);
-    newtonFlatten(torus, p, { tolerance: 1e-12 });
-    if (maxConeDeficit(torus, p) > angleTol || !isEmbedded(torus, p)) return null;
-    const after = Math.abs(reduceModulus(modulus(torus, p).tau)[0]);
+    newtonFlatten(triang, p, { tolerance: 1e-12 });
+    if (maxConeDeficit(triang, p) > angleTol || !isEmbedded(triang, p)) return null;
+    const after = Math.abs(reduceModulus(modulus(triang, p).tau)[0]);
     if (after < before + 1e-5) break;   // stalled
   }
   // a failed projection mangles p — snapshot so the march starts clean
@@ -194,13 +194,13 @@ function climbToSlice(p, c, deadline) {
  *  with the slice constraint inside every Newton re-projection. */
 function fattenOnSlice(p, c) {
   const q = Float64Array.from(p);
-  embeddedFlow(torus, q, makeCellBarrier(torus, { delta: 0.02, strength: 1 }), {
+  embeddedFlow(triang, q, makeCellBarrier(triang, { delta: 0.02, strength: 1 }), {
     stepSize: 1e-3,
     energyTol: -Infinity,
     gradientTol: 1e-12,
     maxIters: FATTEN_ITERS,
     normalizeGradient: true,
-    feasible: (x) => isEmbedded(torus, x),
+    feasible: (x) => isEmbedded(triang, x),
     newtonOpts: { tolerance: 1e-12, extraConstraints: [sliceConstraint(q, c)] },
   });
   const cert = projectAndVerify(q, c);
@@ -229,7 +229,7 @@ for (const f of files) {
 }
 if (initial.length === 0) { console.error('wall-ladder: no seeds'); process.exit(1); }
 // fattest first — entry attempts start from the most robust tori
-initial.sort((a, b) => minMargin(torus, b).margin - minMargin(torus, a).margin);
+initial.sort((a, b) => minMargin(triang, b).margin - minMargin(triang, a).margin);
 
 // ---- output ----
 const outDir = dirname(baseOut);
@@ -273,7 +273,7 @@ for (const c of SLICES) {
   // try entrants whose CURRENT |Re| is nearest the slice first — points above
   // the slice project DOWN into the embedded side easily, no climbing needed
   const ranked = pool
-    .map((p) => ({ p, d: Math.abs(Math.abs(reduceModulus(modulus(torus, p).tau)[0]) - c) }))
+    .map((p) => ({ p, d: Math.abs(Math.abs(reduceModulus(modulus(triang, p).tau)[0]) - c) }))
     .sort((a, b) => a.d - b.d)
     .map((x) => x.p);
   for (const p of ranked) {

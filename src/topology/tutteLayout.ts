@@ -52,9 +52,9 @@ const localIndex = (tri: readonly number[], g: number): number => {
 };
 
 /** Develop a torus into a cut fundamental polygon (see module doc). */
-export function tutteLayout(torus: Triangulation): TutteLayout {
-  const { triangles, edgeToTris } = torus;
-  const { attach } = torus.fundamentalDomain;
+export function tutteLayout(triang: Triangulation): TutteLayout {
+  const { triangles, edgeToTris } = triang;
+  const { attach } = triang.fundamentalDomain;
   const F = triangles.length;
 
   // tree edges (glued) vs cut edges (boundary)
@@ -173,10 +173,10 @@ export function tileSignedArea2(c: readonly XY[]): number {
  * per generator (segments may break across the cut — that is the loop crossing
  * the fundamental-domain boundary).
  */
-export function generatorSegments(torus: Triangulation, layout: TutteLayout): [XY, XY][][] {
-  const { triangles, edgeToTris } = torus;
+export function generatorSegments(triang: Triangulation, layout: TutteLayout): [XY, XY][][] {
+  const { triangles, edgeToTris } = triang;
   const at = (t: number, g: number): XY => layout.tiles[t].corners[localIndex(triangles[t], g)];
-  return torus.marking.generatorLoops.map((loop) => {
+  return triang.marking.generatorLoops.map((loop) => {
     const segs: [XY, XY][] = [];
     for (let k = 0; k + 1 < loop.length; k++) {
       const a = loop[k], b = loop[k + 1];

@@ -43,7 +43,7 @@ const MAX_FINDS = 60_000;       // per-family cap (memory / responsiveness)
 const MAX_POOL = 20_000;        // cap feedback-grown seed pools
 
 type Family = {
-  key: string; type: number; color: string; torus: Triangulation; N: number;
+  key: string; type: number; color: string; triang: Triangulation; N: number;
   pool: Float64Array[];                 // seed positions (grows via feedback)
   seedTau: { re: number; im: number }[];// where the original champions develop (markers)
   // parallel find arrays
@@ -65,8 +65,8 @@ function rows(text: string, N: number): number[][] {
 }
 
 function makeFamily(key: string, type: number, color: string, raw: string): Family {
-  const torus = byId(type);
-  const N = torus.vertexCount * 3;
+  const triang = byId(type);
+  const N = triang.vertexCount * 3;
   const pool: Float64Array[] = [];
   const seedTau: { re: number; im: number }[] = [];
   for (const r of rows(raw, N)) {
@@ -74,11 +74,11 @@ function makeFamily(key: string, type: number, color: string, raw: string): Fami
     if (r.length >= 28 && Math.abs(Math.abs(r[25]) - TARGET_RE) > SEED_RE_TOL) continue;
     const p = Float64Array.from(r.slice(0, N));
     pool.push(p);
-    const t = modulus(torus, p).tau;
+    const t = modulus(triang, p).tau;
     seedTau.push({ re: t[0], im: t[1] });
   }
   return {
-    key, type, color, torus, N, pool, seedTau,
+    key, type, color, triang, N, pool, seedTau,
     rawRe: [], rawIm: [], redRe: [], redIm: [], cone: [], margin: [], pos: [],
     attempts: 0, accepts: 0, bestMargin: 0, active: true, visible: true, drawn: 0,
   };
@@ -103,22 +103,22 @@ function attempt(f: Family, scratch: Float64Array): boolean {
   const seed = f.pool[(rng() * f.pool.length) | 0];
   for (let i = 0; i < f.N; i++) scratch[i] = seed[i] + params.sigma * gaussian();
 
-  const nr = newtonFlatten(f.torus, scratch, { tolerance: params.newtonTol });
-  if (nr.status !== 'converged' || maxConeDeficit(f.torus, scratch) >= params.angleTol) return false;
-  let tHat = reduceModulus(modulus(f.torus, scratch).tau);
+  const nr = newtonFlatten(f.triang, scratch, { tolerance: params.newtonTol });
+  if (nr.status !== 'converged' || maxConeDeficit(f.triang, scratch) >= params.angleTol) return false;
+  let tHat = reduceModulus(modulus(f.triang, scratch).tau);
   if (Math.abs(Math.abs(tHat[0]) - TARGET_RE) >= params.band) return false;
-  if (!isEmbedded(f.torus, scratch)) return false;
+  if (!isEmbedded(f.triang, scratch)) return false;
 
   // normalize to unit area (preserves flat/embedded/τ), re-flatten, re-check
-  const k = 1 / linearSize(f.torus, scratch);
+  const k = 1 / linearSize(f.triang, scratch);
   for (let i = 0; i < f.N; i++) scratch[i] *= k;
-  const polish = newtonFlatten(f.torus, scratch, { tolerance: params.newtonTol });
-  const cone = maxConeDeficit(f.torus, scratch);
+  const polish = newtonFlatten(f.triang, scratch, { tolerance: params.newtonTol });
+  const cone = maxConeDeficit(f.triang, scratch);
   if (polish.status !== 'converged' || cone >= params.angleTol) return false;
-  const raw = modulus(f.torus, scratch).tau;
+  const raw = modulus(f.triang, scratch).tau;
   tHat = reduceModulus(raw);
-  if (Math.abs(Math.abs(tHat[0]) - TARGET_RE) >= params.band || !isEmbedded(f.torus, scratch)) return false;
-  const margin = minMargin(f.torus, scratch).margin;
+  if (Math.abs(Math.abs(tHat[0]) - TARGET_RE) >= params.band || !isEmbedded(f.triang, scratch)) return false;
+  const margin = minMargin(f.triang, scratch).margin;
 
   if (f.pos.length < MAX_FINDS) {
     const p = Float64Array.from(scratch.subarray(0, f.N));

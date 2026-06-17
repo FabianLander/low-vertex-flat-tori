@@ -66,7 +66,7 @@ let grand = 0;
 for (const s of SPECS) {
   const posPath = join(IN, s.pos);
   if (!existsSync(posPath)) { console.log(`skip ${s.name}: no ${s.pos}`); continue; }
-  const torus = byId(s.type);
+  const triang = byId(s.type);
   const rows = dataRows(posPath);
   // cone/margin source, row-aligned with `rows`
   const info = s.info ? dataRows(join(IN, s.info)) : null;
@@ -77,7 +77,7 @@ for (const s of SPECS) {
     const r = rows[i];
     if (r.length < 24) { dropped++; continue; }
     const p = Float64Array.from(r.slice(0, 24));
-    const m = modulus(torus, p);
+    const m = modulus(triang, p);
     if (m.rotDefect > ROT_TOL) { dropped++; continue; }
     let cone, margin;
     if (s.cols28) { cone = r[24]; margin = r[27]; }

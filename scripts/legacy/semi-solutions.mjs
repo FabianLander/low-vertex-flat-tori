@@ -21,7 +21,7 @@
  *   npm run semi-solutions -- 2>/dev/null   # suppress progress to stderr
  */
 
-import { torus7 as torus } from '../../src/topology/torus7.ts';
+import { torus7 as triang } from '../../src/topology/torus7.ts';
 import { scanSemiSolutions } from '../../src/math/semiSolution.ts';
 import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
@@ -99,7 +99,7 @@ process.stderr.write(
   `${seeds.length * perturbations.length} runs...\n`,
 );
 
-const results = scanSemiSolutions(torus, { seeds, perturbations });
+const results = scanSemiSolutions(triang, { seeds, perturbations });
 
 const nConverged = results.filter(r => r.converged).length;
 const nEmbedded  = results.filter(r => r.embedded).length;

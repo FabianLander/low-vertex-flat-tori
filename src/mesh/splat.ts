@@ -14,11 +14,11 @@ import type { Triangulation } from '../topology/triangulation';
 
 /** Face corner positions, length = triangles.length * 9. */
 export function splatFacePositions(
-  torus: Triangulation,
+  triang: Triangulation,
   positions: ArrayLike<number>,
   out?: Float32Array,
 ): Float32Array {
-  const tris = torus.triangles;
+  const tris = triang.triangles;
   const buf = out ?? new Float32Array(tris.length * 9);
   for (let t = 0; t < tris.length; t++) {
     const [a, b, c] = tris[t];

@@ -51,8 +51,8 @@ function num(value, defaultVal) {
   return value === undefined ? defaultVal : Number(value);
 }
 
-const torus = byId(num(flag('--type'), 7));   // combinatorial type 1..7 (default 7 = Rich)
-const N = torus.vertexCount * 3;     // 24
+const triang = byId(num(flag('--type'), 7));   // combinatorial type 1..7 (default 7 = Rich)
+const N = triang.vertexCount * 3;     // 24
 const SAMPLE_BYTES = N * 4;     // 96
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
@@ -74,7 +74,7 @@ if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 const pathForPart = (label, n) => `${baseOut}-${label}-${n.toString().padStart(3, '0')}.bin`;
 
 console.log('sample-embedded');
-console.log(`  type:           #${torus.id} (${torus.name})`);
+console.log(`  type:           #${triang.id} (${triang.name})`);
 console.log(`  rng:            ${rngName}`);
 console.log(`  seed:           ${seed}`);
 console.log(`  cube:           [-${size}, ${size}]^${N}`);
@@ -95,7 +95,7 @@ console.log();
 {
   const pairs = [
     ['script', 'sample-embedded'],
-    ['type', `#${torus.id} (${torus.name})`],
+    ['type', `#${triang.id} (${triang.name})`],
     ['rng', rngName],
     ['seed', seed],
     ['size', size],
@@ -215,7 +215,7 @@ process.on('SIGINT', () => {
 while (tries < maxTries && embAccepts < maxAccepts) {
   for (let i = 0; i < N; i++) p[i] = (rng() * 2 - 1) * size;
   tries++;
-  if (isEmbedded(torus, p)) {
+  if (isEmbedded(triang, p)) {
     // Stage 1: save the embedded random torus.
     embStaging.set(p, embStagingCount * N);
     embStagingCount++;
@@ -227,10 +227,10 @@ while (tries < maxTries && embAccepts < maxAccepts) {
     // Stage 2: copy, Newton-flatten, re-check embedded.
     if (flatten) {
       pCopy.set(p);
-      const r = newtonFlatten(torus, pCopy, { tolerance: newtonTol });
+      const r = newtonFlatten(triang, pCopy, { tolerance: newtonTol });
       if (r.status === 'converged') {
         newtonConverged++;
-        if (isEmbedded(torus, pCopy)) {
+        if (isEmbedded(triang, pCopy)) {
           flatStaging.set(pCopy, flatStagingCount * N);
           flatStagingCount++;
           flatAccepts++;

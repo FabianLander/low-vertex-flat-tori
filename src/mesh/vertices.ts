@@ -30,7 +30,7 @@ export function verticesGeometry(paper: PaperTorus, opts: VerticesOptions = {}):
   const m = new THREE.Matrix4();
 
   const parts: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < paper.torus.vertexCount; i++) {
+  for (let i = 0; i < paper.triang.vertexCount; i++) {
     let x = p[3 * i], y = p[3 * i + 1], z = p[3 * i + 2];
     if (offset !== 0) {
       vertexOutward(paper, i, sign, nrm);

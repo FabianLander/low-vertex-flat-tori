@@ -80,7 +80,7 @@ import { totalArea } from '../../src/topology/develop.ts';
  *  preserves flatness and embeddedness). linearSize = √area, so dividing by it
  *  makes area = 1. */
 function normalizeUnitArea(arr) {
-  const s = linearSize(torus, arr);
+  const s = linearSize(triang, arr);
   if (s > 0) { const k = 1 / s; for (let i = 0; i < N; i++) arr[i] *= k; }
 }
 
@@ -93,13 +93,13 @@ function flag(name) {
 function num(v, d) { return v === undefined ? d : Number(v); }
 function hasFlag(name) { return args.indexOf(name) !== -1; }
 
-const torus = byId(num(flag('--type'), 7)); // which of the 7 types (default 7 = Rich)
-const N = torus.vertexCount * 3;             // 24
+const triang = byId(num(flag('--type'), 7)); // which of the 7 types (default 7 = Rich)
+const N = triang.vertexCount * 3;             // 24
 
 const seed = num(flag('--seed'), Date.now() >>> 0);
 const rngName = flag('--rng') ?? 'xoshiro';   // 'xoshiro' (default, 2^128) | 'mulberry' (legacy, 2^32)
 const seedMode = flag('--seed-mode') ?? 'rich';
-if (seedMode === 'rich' && torus.id !== 7) { console.error(`--seed-mode rich perturbs Rich's #7 reference embedding; type ${torus.id} has none — use --seed-mode uniform`); process.exit(1); }
+if (seedMode === 'rich' && triang.id !== 7) { console.error(`--seed-mode rich perturbs Rich's #7 reference embedding; type ${triang.id} has none — use --seed-mode uniform`); process.exit(1); }
 const seedSize = num(flag('--seed-size'), 1.0);
 const sigmaMin = num(flag('--sigma-min'), 0.005);
 const sigmaMax = num(flag('--sigma-max'), 0.15);
@@ -180,8 +180,8 @@ const reportSecs = num(flag('--report-secs'), 30);
 const energyName = flag('--energy') ?? 'cutoff';
 
 let energy;
-if (energyName === 'cutoff' || energyName === 'cut-off-area') energy = makeCutOffArea(torus);
-else if (energyName === 'chord2' || energyName === 'chord-length-squared') energy = makeChordLengthSquared(torus);
+if (energyName === 'cutoff' || energyName === 'cut-off-area') energy = makeCutOffArea(triang);
+else if (energyName === 'chord2' || energyName === 'chord-length-squared') energy = makeChordLengthSquared(triang);
 else {
   console.error(`unknown --energy: ${energyName}; choices: cutoff, chord2`);
   process.exit(1);
@@ -195,7 +195,7 @@ if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 const pathForPart = (n) => `${baseOut}-${n.toString().padStart(3, '0')}.csv`;
 
 console.log('sample-flat');
-console.log(`  type:           #${torus.id}`);
+console.log(`  type:           #${triang.id}`);
 console.log(`  rng:            ${rngName}`);
 console.log(`  seed:           ${seed}`);
 console.log(`  seed mode:      ${seedMode}`);
@@ -233,7 +233,7 @@ console.log();
 {
   const pairs = [
     ['script', 'sample-flat'],
-    ['type', `#${torus.id} (${torus.name})`],
+    ['type', `#${triang.id} (${triang.name})`],
     ['rng', rngName],
     ['seed', seed],
     ['seed-mode', seedMode],
@@ -342,9 +342,9 @@ function gaussian() {
  * true iff the positions are flat to `angleTol` AND embedded.
  */
 function verify(positions) {
-  const deficit = maxConeDeficit(torus, positions);
+  const deficit = maxConeDeficit(triang, positions);
   if (!(deficit < angleTol)) return false;
-  if (!isEmbedded(torus, positions)) return false;
+  if (!isEmbedded(triang, positions)) return false;
   return true;
 }
 
@@ -443,7 +443,7 @@ while (tries < maxTries && saved < maxAccepts && !sweepDone) {
   tries++;
 
   // 2. Newton-flatten.
-  const nr = newtonFlatten(torus, p, { tolerance: 1e-10 });
+  const nr = newtonFlatten(triang, p, { tolerance: 1e-10 });
   if (nr.status !== 'converged') {
     if (Date.now() - lastReport > reportMs) report();
     continue;
@@ -451,7 +451,7 @@ while (tries < maxTries && saved < maxAccepts && !sweepDone) {
   newtonOk++;
 
   // 3. Repulsion flow.
-  const fr = embeddedFlow(torus, p, energy, {
+  const fr = embeddedFlow(triang, p, energy, {
     stepSize,
     energyTol: 1e-12,
     gradientTol: 1e-12,
@@ -467,8 +467,8 @@ while (tries < maxTries && saved < maxAccepts && !sweepDone) {
   else if (fr.status === 'rejected') flowRejected++;
 
   // Closeness scores for the flat config the flow settled at (eNorm = 0 ⟺ embedded).
-  const eNorm = fr.energy / totalArea(torus, p);
-  const viol = allViolations(torus, p).length;
+  const eNorm = fr.energy / totalArea(triang, p);
+  const viol = allViolations(triang, p).length;
   if (eNorm < intMinE) { intMinE = eNorm; intMinEViol = viol; }
   if (viol < intMinV) { intMinV = viol; intMinVE = eNorm; }
   if (eNorm < gMinE) { gMinE = eNorm; gMinEViol = viol; gBestP.set(p); }

@@ -40,20 +40,20 @@ function flag(name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] 
 function num(v, d) { return v === undefined ? d : Number(v); }
 
 const TYPE = num(flag('--type'), 7);
-const torus = byId(TYPE);
-const N = torus.vertexCount * 3;
+const triang = byId(TYPE);
+const N = triang.vertexCount * 3;
 const ANCHORS = num(flag('--anchors'), 12);
 const IM_MIN = num(flag('--im-min'), 1.0);        // target: the square torus i
 const seedFile = resolve(flag('--seed-file') ?? `data/curated/rectangular-t${TYPE}.csv`);
 const outBase = resolve((flag('--out') ?? `samples/march-to-i-t${TYPE}`).replace(/\.csv$/, ''));
 
 const chart = identity(N);
-const region = embedded(torus);
-const flatC = flat(torus);
-const imOf = (c) => reduceModulus(modulus(torus, c).tau)[1];
+const region = embedded(triang);
+const flatC = flat(triang);
+const imOf = (c) => reduceModulus(modulus(triang, c).tau)[1];
 const family = {
   param: imOf,
-  held: (c, s) => [flatC, fixedModulus(torus, c, [0, s])],
+  held: (c, s) => [flatC, fixedModulus(triang, c, [0, s])],
 };
 
 // Fine continuation: tiny terminal steps + many halvings → march very close to the
@@ -74,7 +74,7 @@ for (const l of readFileSync(seedFile, 'utf8').split('\n')) {
   if (!l.trim()) continue;
   const p = Float64Array.from(l.split(',').slice(0, N).map(Number));
   if (p.length !== N || p.some(Number.isNaN)) continue;
-  const c = certify(torus, p);
+  const c = certify(triang, p);
   if (c.embedded && Math.abs(c.tauHat[0]) < 1e-3) seeds.push({ p, im: c.tauHat[1] });
 }
 seeds.sort((a, b) => a.im - b.im);
@@ -93,7 +93,7 @@ for (const a of anchors) {
   const r = march(chart, x, family, IM_MIN, marchOpts);
   const p = new Float64Array(N);
   chart.realize(x, p);
-  const c = certify(torus, p);
+  const c = certify(triang, p);
   info.push({ startIm: a.im, pinchIm: r.param, status: r.status, embedded: c.embedded, margin: c.margin });
   if (c.embedded) {
     pinchRows.push({ im: c.tauHat[1], row: Array.from(p).join(',') + `,${c.coneDeficit},${c.tauHat[0]},${c.tauHat[1]},${c.margin}` });
