@@ -21,8 +21,8 @@ import type { Region } from '../solvers/types.ts';
 import type { ScalarFn } from '../functions/types.ts';
 import { isEmbedded } from '../math/embedded.ts';
 import { minMargin } from '../functions/minMargin.ts';
-import { makeCellMargin } from '../math/energies/cellMargin.ts';
-import { makeCellBarrier } from '../math/energies/cellBarrier.ts';
+import { makeCellMargin } from '../functions/energies/cellMargin.ts';   // clean rebuild
+import { makeCellBarrier } from '../math/energies/cellBarrier.ts';      // barrier not yet rebuilt (parked)
 
 export interface EmbeddedOptions {
   /** Fatness target for the enter (repulsion) energy, in units of √area. */

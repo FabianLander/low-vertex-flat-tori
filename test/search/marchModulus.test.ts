@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { marchToWallAttempt, wallFamily } from './marchModulus.ts';
-import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
-import { makeCutOffArea } from '../functions/energies/cutOffArea.ts';
-import { modulus, reduceModulus } from '../topology/develop.ts';
-import { RICH } from '../triangulations/index.ts';
+import { marchToWallAttempt, wallFamily } from '../../src/search/marchModulus.ts';
+import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
+import { makeCutOffArea } from '../../src/functions/energies/cutOffArea.ts';
+import { modulus, reduceModulus } from '../../src/topology/develop.ts';
+import { RICH } from '../../src/triangulations/index.ts';
 
 describe('marchModulus — transport a torus onto a modulus wall', () => {
   it('the wall family reads |Re τ̂| and holds flat ∧ the wall', () => {
@@ -25,7 +25,6 @@ describe('marchModulus — transport a torus onto a modulus wall', () => {
     expect(outcome.cert.coneDeficit).toBeLessThan(1e-8);
     expect(['reached', 'blocked', 'max-iters']).toContain(outcome.status);
     expect(outcome.reached).toBeGreaterThanOrEqual(0);
-    // If it reached the wall, it really is (near-)rectangular.
     if (outcome.status === 'reached') {
       expect(Math.abs(outcome.cert.tauHat[0])).toBeLessThan(1e-6);
     }

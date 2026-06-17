@@ -27,8 +27,13 @@ import { flow } from '../solvers/flow.ts';
 import { certify, type Certificate } from './certify.ts';
 
 export interface FlowSearchOptions {
-  /** The repulsion energy to descend toward embeddedness. */
+  /** The repulsion energy to descend toward embeddedness (Fabi's chord²/cutOffArea). */
   energy: ScalarFn;
+  /** Optional FATTENING energy descended after reaching embedded — a near-miss
+   *  repulsion (`functions/energies/cellMargin`) that pushes the torus to a robust
+   *  margin (Fabi's energy can't: it's zero on the embedded set). Holds `flat`,
+   *  gated embedded. Gives later motion (e.g. `march`) room to move. */
+  fattenEnergy?: ScalarFn;
   /** Flow tangent step length. Default 0.001. */
   stepSize?: number;
   /** Per-attempt cap on flow iterations. Default 500. */
@@ -53,7 +58,8 @@ export function flattenFlowEmbed(
   return (x) => {
     const held = buildHeld(x);            // [flat] or [flat, modulusWall(seed, c)]
     if (project(chart, x, held).status !== 'converged') return null;
-    flow(chart, x, held, opts.energy, flowOpts);
+    flow(chart, x, held, opts.energy, flowOpts);                   // reach embedded
+    if (opts.fattenEnergy) flow(chart, x, held, opts.fattenEnergy, flowOpts); // fatten the margin
     const cert = certify(torus, x);
     return accept(cert) ? cert : null;
   };

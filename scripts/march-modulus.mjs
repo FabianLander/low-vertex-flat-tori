@@ -14,6 +14,8 @@
  *   --seed N          RNG seed     --rng NAME  xoshiro|mulberry
  *   --sigma-min/max N seed perturbation σ (default 0.02 .. 0.12)
  *   --energy NAME     cutoff (default) | chord2
+ *   --fatten EPS      fatten the start to margin EPS (cell-margin energy) before
+ *                       marching, so it has room to move (off by default)
  *   --max-tries N (∞)   --max-accepts N (default 50)
  *   --out PATH        CSV out for tori that REACHED the wall (default samples/march-<ts>.csv)
  *   --report-secs N   progress interval (default 10)
@@ -30,6 +32,7 @@ import { marchToWallAttempt } from '../src/search/marchModulus.ts';
 import { perturbedSeeds, logSigma } from '../src/search/seeds.ts';
 import { makeCutOffArea } from '../src/functions/energies/cutOffArea.ts';
 import { makeChordLengthSquared } from '../src/functions/energies/chordLengthSquared.ts';
+import { makeCellMargin } from '../src/functions/energies/cellMargin.ts';
 
 const a = makeArgs(process.argv);
 const torus = byId(7);
@@ -40,7 +43,10 @@ const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);
 const sigma = logSigma(a.num('--sigma-min', 0.02), a.num('--sigma-max', 0.12), rng);
 const drawSeed = perturbedSeeds(RICH_REFERENCE.positions, sigma, rng);
 const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(torus) : makeCutOffArea(torus);
-const attempt = marchToWallAttempt(torus, { c, energy, angleTol: a.num('--angle-tol', 1e-10) });
+// --fatten ε: push the start to margin ε before marching, so it has room to move.
+const fatten = a.flag('--fatten');
+const fattenEnergy = fatten !== undefined ? makeCellMargin(torus, { epsilon: Number(fatten) }) : undefined;
+const attempt = marchToWallAttempt(torus, { c, energy, fattenEnergy, angleTol: a.num('--angle-tol', 1e-10) });
 
 const out = resolve(a.flag('--out') ?? `samples/march-${Date.now()}.csv`);
 mkdirSync(dirname(out), { recursive: true });

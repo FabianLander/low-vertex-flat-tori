@@ -21,11 +21,18 @@ god-object** — a search is just a seed source, an `attempt` recipe, and the
 - `discover.ts` — find any flat embedded torus. `held = [flat]`.
 - `wall.ts` — find flat embedded tori on a modulus wall `|Re τ̂| = c` (rectangular
   c=0, rhombic c=½). `held = [flat, modulusWall(seed, c)]` — the same recipe, flow
-  staying on the wall.
+  staying on the wall (one direct `project`, frozen chart, near targets only).
+- `marchModulus.ts` — reach a FAR wall by continuation instead of one direct solve:
+  `march` the target `|Re τ̂|` leaf-by-leaf (re-freezing the chart each step, embedded
+  gate active), crossing chambers and reporting the **pinch** where Ω closes if the
+  wall is unreachable. `wallFamily` + `marchToWallAttempt`.
+- `semiSolution.ts` — the Doyle–Schwartz semi-solution scan: a flat *immersion*
+  search ("semi" = embeddedness recorded, not required). DS tent seeds → `project(
+  pinCoords(baseZ), [flat, collinear(1,2,3), collinear(4,5,6)])` → certify;
+  `semiSolutionAttempt` + `doyleSchwartzTentSeeds`.
 
-The core operations (`project`/`flow`/`march`) live in `solvers/`; the conditions
-in `submanifolds/`/`regions/`; the maps in `functions/`; charts/seeds in
+The three runnable searches are thin `scripts/` wrappers over this folder:
+`npm run discover`, `npm run wall`, `npm run semi-solutions`. The core operations
+(`project`/`flow`/`march`) live in `solvers/`; the conditions in
+`submanifolds/`/`regions/`; the maps in `functions/`; charts/seeds in
 `configuration/`. The old discovery scripts are archived in `scripts/legacy/`.
-
-To come: a `march`-based driver (continuation to a far modulus target) and the
-semi-solution scan rebuilt as a search (DS seed + pinned chart + collinear).

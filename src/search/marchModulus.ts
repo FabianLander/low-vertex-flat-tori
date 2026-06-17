@@ -46,8 +46,12 @@ export function wallFamily(torus: Triangulation): Family {
 export interface MarchModulusOptions {
   /** Target wall: |Re τ̂| = c (0 = rectangular, ½ = rhombic). */
   c: number;
-  /** Repulsion energy used to reach an embedded starting torus. */
+  /** Repulsion energy used to reach an embedded starting torus (Fabi's chord²/cutOffArea). */
   energy: ScalarFn;
+  /** Optional FATTENING energy (`functions/energies/cellMargin`) descended after
+   *  reaching embedded, before marching — pushes the start to a robust margin so
+   *  the march has room to move the modulus instead of pinching at step one. */
+  fattenEnergy?: ScalarFn;
   /** Accept threshold on the flatness residual max|2π−θ|. Default 1e-10. */
   angleTol?: number;
   /** Flow step toward the embedded start. Default 0.001. */
@@ -90,6 +94,9 @@ export function marchToWallAttempt(
     // 1. Reach a flat embedded starting torus (the march needs a point in F ∩ Ω).
     if (project(chart, seed, held0).status !== 'converged') return null;
     flow(chart, seed, held0, opts.energy, flowOpts);
+    // 1b. Optionally fatten the margin so the march has room to move (Fabi's energy
+    //     is zero on the embedded set; the cell-margin energy is alive there).
+    if (opts.fattenEnergy) flow(chart, seed, held0, opts.fattenEnergy, flowOpts);
     const start = certify(torus, seed);
     if (!(start.coneDeficit < angleTol && start.embedded)) return null;
 

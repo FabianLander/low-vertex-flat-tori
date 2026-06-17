@@ -15,9 +15,9 @@ degree 5/7 — so **nothing may assume degree 6**.
 
 ```bash
 npm install                       # once
-npm test                          # vitest run (all *.test.ts under src/)
+npm test                          # vitest run (all *.test.ts under test/, mirroring src/)
 npm run test:watch
-npx vitest run src/topology/develop.test.ts    # a single test file
+npx vitest run test/topology/develop.test.ts    # a single test file
 npx vitest run -t "modulus"                    # tests matching a name
 npx tsc --noEmit                  # typecheck — this is the lint (no eslint configured)
 ```
