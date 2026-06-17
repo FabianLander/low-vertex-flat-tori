@@ -72,4 +72,15 @@ describe('coneDeficit Fn', () => {
       }
     }
   });
+
+  it('jacobian columns sum to ~0 (Gauss–Bonnet on ∂R: Σ_v ∂δ_v ≡ 0)', () => {
+    const p = Float64Array.from(RICH_REFERENCE.positions, (v) => v + 0.05);
+    const J = new Float64Array(V * N);
+    fn.jacobian(p, J);
+    for (let col = 0; col < N; col++) {
+      let s = 0;
+      for (let r = 0; r < V; r++) s += J[r * N + col];
+      expect(Math.abs(s)).toBeLessThan(1e-9);
+    }
+  });
 });

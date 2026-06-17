@@ -25,8 +25,8 @@
 import { byId } from '../../src/triangulations';
 import type { Triangulation } from '../../src/topology/triangulation';
 import { modulus, reduceModulus } from '../../src/topology/develop';
-import { newtonFlatten } from '../../src/math/newton';
-import { maxConeDeficit } from '../../src/conditions/flat';
+import { project } from '../../src/solvers/project';
+import { flat, maxConeDeficit } from '../../src/conditions/flat';
 import { isEmbedded } from '../../src/conditions/embedded/index';
 import { minMargin, linearSize } from '../../src/conditions/embedded/index';
 import { makeRng } from '../../src/sampling/rng';
@@ -103,7 +103,7 @@ function attempt(f: Family, scratch: Float64Array): boolean {
   const seed = f.pool[(rng() * f.pool.length) | 0];
   for (let i = 0; i < f.N; i++) scratch[i] = seed[i] + params.sigma * gaussian();
 
-  const nr = newtonFlatten(f.triang, scratch, { tolerance: params.newtonTol });
+  const nr = project(scratch, [flat(f.triang)], { tolerance: params.newtonTol });
   if (nr.status !== 'converged' || maxConeDeficit(f.triang, scratch) >= params.angleTol) return false;
   let tHat = reduceModulus(modulus(f.triang, scratch).tau);
   if (Math.abs(Math.abs(tHat[0]) - TARGET_RE) >= params.band) return false;
@@ -112,7 +112,7 @@ function attempt(f: Family, scratch: Float64Array): boolean {
   // normalize to unit area (preserves flat/embedded/τ), re-flatten, re-check
   const k = 1 / linearSize(f.triang, scratch);
   for (let i = 0; i < f.N; i++) scratch[i] *= k;
-  const polish = newtonFlatten(f.triang, scratch, { tolerance: params.newtonTol });
+  const polish = project(scratch, [flat(f.triang)], { tolerance: params.newtonTol });
   const cone = maxConeDeficit(f.triang, scratch);
   if (polish.status !== 'converged' || cone >= params.angleTol) return false;
   const raw = modulus(f.triang, scratch).tau;

@@ -12,7 +12,7 @@ import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import type { Fn, ScalarFn } from '../../src/functions/types.ts';
 import { scalarFn } from '../../src/functions/compose.ts';
 import { isEmbedded } from '../../src/conditions/embedded/index.ts';
-import { makeCellMargin } from '../../src/math/energies/cellMargin.ts';
+import { makeCellMargin } from '../../src/conditions/embedded/index.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 
