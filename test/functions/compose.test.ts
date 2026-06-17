@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { fdFn, affine, postcompose } from '../../src/functions/compose.ts';
+import {
+  fdFn, affine, postcompose, precompose, precomposeScalar, scalarFn,
+  type Embedding,
+} from '../../src/functions/compose.ts';
 import type { Fn } from '../../src/functions/types.ts';
 
 // Toy map f : ℝ³ → ℝ², f(c) = [c0², c1·c2]; analytic Df = [[2c0,0,0],[0,c2,c1]].
@@ -85,5 +88,92 @@ describe('postcompose', () => {
     const g = affine([2, 0, 0, 3], [1, -1]);          // inDim 2
     const h: Fn = fdFn('h3', 3, (_c, out) => { out[0] = 0; out[1] = 0; out[2] = 0; });
     expect(() => postcompose(g, h)).toThrow();
+  });
+});
+
+// A NONLINEAR embedding φ : ℝ² → ℝ², φ(x) = [x0², x0·x1]; Dφ = [[2x0, 0], [x1, x0]].
+const phiNL: Embedding = {
+  inDim: 2,
+  outDim: 2,
+  value(x, out) { out[0] = x[0] * x[0]; out[1] = x[0] * x[1]; },
+  jacobian(x, out) { out[0] = 2 * x[0]; out[1] = 0; out[2] = x[1]; out[3] = x[0]; },
+};
+
+describe('precompose', () => {
+  it('chain rule on a LINEAR embedding: value f(φ(x)) and Jacobian Df·Dφ', () => {
+    // φ : ℝ² → ℝ³, φ(x) = [x0, 2x1, x0+x1]  (affine, constant Dφ = A).
+    const phi = affine([1, 0, 0, 2, 1, 1], [0, 0, 0]);
+    const fphi = precompose(f, phi);                  // f : ℝ³→ℝ², so f∘φ : ℝ²→ℝ²
+    expect(fphi.dim).toBe(2);
+    const x = new Float64Array([1.3, -0.7]);
+
+    // f∘φ(x) = [x0², (2x1)(x0+x1)]
+    const v = new Float64Array(2);
+    fphi.value(x, v);
+    expect(v[0]).toBeCloseTo(1.3 * 1.3, 9);
+    expect(v[1]).toBeCloseTo(2 * -0.7 * (1.3 - 0.7), 9);
+
+    // J = [[2x0, 0], [2x1, 2x0 + 4x1]]
+    const J = new Float64Array(2 * 2);
+    fphi.jacobian(x, J);
+    expect(J[0]).toBeCloseTo(2 * 1.3, 4);
+    expect(J[1]).toBeCloseTo(0, 4);
+    expect(J[2]).toBeCloseTo(2 * -0.7, 4);
+    expect(J[3]).toBeCloseTo(2 * 1.3 + 4 * -0.7, 4);
+  });
+
+  it('precompose with the identity embedding is the original map', () => {
+    const id = affine([1, 0, 0, 0, 1, 0, 0, 0, 1], [0, 0, 0]); // ℝ³→ℝ³ identity
+    const fid = precompose(f, id);
+    const c = new Float64Array([1.3, -0.7, 2.1]);
+
+    const v0 = new Float64Array(2), v1 = new Float64Array(2);
+    f.value(c, v0); fid.value(c, v1);
+    expect([...v1]).toEqual([...v0]);
+
+    const J0 = new Float64Array(6), J1 = new Float64Array(6);
+    f.jacobian(c, J0); fid.jacobian(c, J1);
+    for (let i = 0; i < 6; i++) expect(J1[i]).toBeCloseTo(J0[i], 6);
+  });
+
+  it('Jacobian on a NONLINEAR embedding matches finite differences of its own value', () => {
+    // g : ℝ² → ℝ², g(c) = [c0², c1²]; precompose with the nonlinear φ.
+    const g: Fn = fdFn('g', 2, (c, out) => { out[0] = c[0] * c[0]; out[1] = c[1] * c[1]; });
+    const gphi = precompose(g, phiNL);
+    const x = new Float64Array([1.1, -0.6]);
+
+    const J = new Float64Array(2 * 2);
+    gphi.jacobian(x, J);
+
+    // central difference of gphi.value
+    const h = 1e-6, vp = new Float64Array(2), vm = new Float64Array(2), xx = Float64Array.from(x);
+    for (let col = 0; col < 2; col++) {
+      xx[col] = x[col] + h; gphi.value(xx, vp);
+      xx[col] = x[col] - h; gphi.value(xx, vm);
+      xx[col] = x[col];
+      for (let r = 0; r < 2; r++) expect(J[r * 2 + col]).toBeCloseTo((vp[r] - vm[r]) / (2 * h), 5);
+    }
+  });
+});
+
+describe('precomposeScalar', () => {
+  it('pulls a scalar through a nonlinear φ: ∇(f∘φ) = Dφᵀ·∇f', () => {
+    // f : ℝ² → ℝ, f(c) = c0 + c1²; ∇f = [1, 2c1].
+    const fs = scalarFn(
+      'fs',
+      (c) => c[0] + c[1] * c[1],
+      (c, out) => { out[0] = 1; out[1] = 2 * c[1]; },
+    );
+    const fsphi = precomposeScalar(fs, phiNL);
+    const x = new Float64Array([1.3, -0.7]);
+
+    // f∘φ(x) = x0² + (x0 x1)²
+    expect(fsphi.compute(x)).toBeCloseTo(1.3 * 1.3 + (1.3 * -0.7) ** 2, 9);
+
+    // grad = [2x0 + 2x0 x1², 2x0² x1]
+    const g = new Float64Array(2);
+    fsphi.grad(x, g);
+    expect(g[0]).toBeCloseTo(2 * 1.3 + 2 * 1.3 * 0.49, 6);
+    expect(g[1]).toBeCloseTo(2 * 1.69 * -0.7, 6);
   });
 });

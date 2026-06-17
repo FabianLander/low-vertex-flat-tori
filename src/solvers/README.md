@@ -4,7 +4,7 @@ The methods that move a point: `project` (min-norm Gauss–Newton onto ⋂{gᵢ=
 `flow` (Riemannian gradient descent along the manifold, into a region), and `march`
 (continuation tracking a family ∩ region). They operate on abstract contracts and
 know **nothing** about a `Triangulation` — problem data lives in the implementations
-(`functions/`, `configuration/`, `submanifolds/`, `regions/`), each depending on this
+(`functions/`, `configuration/`, `conditions/`), each depending on this
 module for its contract; `solvers/` depends on no implementation.
 
 - `types.ts` — the contracts the solvers consume: `Chart`, `Region`, and

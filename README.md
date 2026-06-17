@@ -70,23 +70,25 @@ src/triangulations/  the specific triangulations we study, as DATA — scales to
   (depends on topology)
 
 THE SEARCH SYSTEM — a modular, problem-agnostic kit for constrained search (see docs/math).
-The extrinsic stack, in dependency order geometry → functions → {configuration, submanifolds,
-regions} → solvers → search:
+The extrinsic stack, in dependency order geometry → functions → {configuration, conditions} →
+solvers → search:
   src/geometry/        torus-blind ℝ²/ℝ³ kernels: point/segment/triangle distances, the tri–tri chord
-  src/functions/       the differentiable maps C→ℝᵏ (`Fn`): coneDeficit, tau, minMargin, energies/.
-                       ONE concept — a constraint is an `Fn` driven to 0, an energy a scalar `Fn` descended
+  src/functions/       the generic toolkit ONLY: the `Fn`/`ScalarFn` contract (types.ts) and the
+                       compose algebra (fdFn/postcompose/affine). ONE concept — a constraint is an
+                       `Fn` driven to 0, an energy a scalar `Fn` descended. No torus instances here.
   src/configuration/   the search space C=ℝ³ⱽ & its structure: charts (identity, pinCoords, symmetry),
                        gauge (canonical pose), perturb, rng, the Doyle–Schwartz seed family
-  src/submanifolds/    closed conditions {g=0}: flat, collinear, modulus (fixed point / wall)
-  src/regions/         open conditions: embedded (the topological gate + its enter/stay energies)
+  src/conditions/      the concrete maps + their uses, one module per condition. Closed {g=0}: flat
+                       (coneDeficit), collinear, modulus (tau + fixedModulus / modulusWall, frozen
+                       chart). Open: embedded/ (gate isEmbedded · margin minMargin · repulsion energies)
   src/solvers/         the engine, on the held Jacobian: project (corrector), tangentProject,
                        flow (Riemannian descent), march (continuation); types.ts holds the contracts
   src/search/          composition & measurement: certify (raw τ AND reduced τ̂), seeds, drivers
 
 src/math/            legacy substrate still being drained into the stack above:
-  newton.ts (dense solve + newtonFlatten), embedded.ts (isEmbedded), embedding.ts (PaperTorus),
-  reference.ts (Rich's fixture), semiSolution.ts, embeddedFlow.ts (dormant),
-  energies/ (cellMargin · cellBarrier · weightedSum — parked, awaiting a clean rebuild)
+  embedding.ts (PaperTorus — the render/IO bundle), reference.ts (Rich's fixture),
+  newton.ts + semiSolution.ts (legacy solvers, only the archived scripts/tests use them),
+  embeddedFlow.ts (dormant), energies/ (cellMargin · cellBarrier · weightedSum — parked duplicates)
 
 src/mesh|render|viewer|io   three.js geometry, the path-traced Studio, the preview viewer, CSV ⇄ PaperTorus
 demos/ renders/      browser entry points (interactive demos; path-traced figures)
@@ -97,7 +99,7 @@ data/                CSV result sets (one torus per row, 24 floats)
 The dependency rule: **`src/topology` and `src/triangulations` never import three.js or touch the
 DOM**, and `topology` depends on nothing — so every intrinsic algorithm runs headless under `tsx`.
 The arrows are one-way: `triangulations → topology`; the search stack `geometry → functions →
-{configuration, submanifolds, regions} → solvers → search` builds on top (and `solvers/` depends on
+{configuration, conditions} → solvers → search` builds on top (and `solvers/` depends on
 no condition — it takes the abstract contracts); rendering sits on top of all of it.
 
 ## Searches

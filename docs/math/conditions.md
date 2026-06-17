@@ -61,10 +61,11 @@ scalar `Fn` (`functions/`, a `ScalarFn`: `compute` + `grad`) you push downhill, 
   boundary (fattening).
 
 The proven discovery repulsions are **Fabi's** `chordLengthSquared` / `cutOffArea` (penalize *actual*
-overlaps, zero on the embedded set — they drive a crossing torus onto it; `functions/energies/`). The
-near-miss `cellMargin` / `cellBarrier` (fatten an already-embedded one) are **parked in `math/energies/`**
-awaiting a clean rebuild onto a shared `cellGaps` primitive. `minMargin` is the embedding diagnostic
-(`functions/minMargin`), not an energy.
+overlaps, zero on the embedded set — they drive a crossing torus onto it) and the near-miss
+`cellMargin` (fatten an already-embedded one); all three live in `conditions/embedded/energies.ts`.
+The `cellBarrier` log-barrier (and duplicate `cellMargin` / `weightedSum`) remain **parked in
+`math/energies/`** awaiting a clean rebuild onto a shared `cellGaps` primitive. `minMargin` is the
+embedding diagnostic (`conditions/embedded/margin.ts`), not an energy.
 
 Energies are *descended* by `flow`; the region's `contains` is the *gate* `flow`/`march` enforce.
 Note descending these energies lowers a sum of pair penalties — it does **not** monotonically

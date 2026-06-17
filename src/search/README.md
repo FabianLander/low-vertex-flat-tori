@@ -33,6 +33,6 @@ god-object** — a search is just a seed source, an `attempt` recipe, and the
 
 The three runnable searches are thin `scripts/` wrappers over this folder:
 `npm run discover`, `npm run wall`, `npm run semi-solutions`. The core operations
-(`project`/`flow`/`march`) live in `solvers/`; the conditions in
-`submanifolds/`/`regions/`; the maps in `functions/`; charts/seeds in
+(`project`/`flow`/`march`) live in `solvers/`; the conditions (closed `{g=0}` and
+open `Region`) in `conditions/`; the map toolkit in `functions/`; charts/seeds in
 `configuration/`. The old discovery scripts are archived in `scripts/legacy/`.

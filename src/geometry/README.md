@@ -4,8 +4,8 @@ Torus-blind geometric primitives. No `Triangulation`, no configuration-space
 knowledge — every routine takes raw coordinates (or a `positions` buffer + vertex
 offsets), so the triangle→vertex lookup lives in the layer above.
 
-The **kernels the search pipeline needs** (consumed by `math/energies/*`, later
-`functions/`):
+The **kernels the search pipeline needs** (consumed by `conditions/embedded/*` —
+`gate`, `margin`, `energies`; and the parked `math/energies/*`):
 
 - `distance.ts` — allocation-free squared-distance kernels between points,
   segments, and filled triangles (Ericson closest-point routines).

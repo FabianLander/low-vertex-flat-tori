@@ -3,11 +3,11 @@
  *
  * A solver (`project`/`flow`/`march`) is written against these interfaces and
  * knows nothing about a `Triangulation`. Problem data lives in the
- * IMPLEMENTATIONS, each in its own kind-folder: the differentiable maps in
- * `functions/`, charts in `configuration/`, the closed conditions in
- * `submanifolds/`, the open conditions in `regions/`. Every implementation depends
- * on this module (and `functions/`) for its contract; `solvers/` depends on no
- * implementation. That inversion is what makes the solvers reusable.
+ * IMPLEMENTATIONS: the differentiable-map toolkit in `functions/`, charts in
+ * `configuration/`, and the concrete conditions in `conditions/` (closed `{g=0}`
+ * conditions returned as a `Held`/`Fn`, open conditions as a `Region`). Every
+ * implementation depends on this module (and `functions/`) for its contract;
+ * `solvers/` depends on no implementation. That inversion makes the solvers reusable.
  *
  * Pure: no three.js, no DOM.
  */

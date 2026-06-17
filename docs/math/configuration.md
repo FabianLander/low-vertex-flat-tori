@@ -1,5 +1,10 @@
 # Configuration space & charts — where the search lives
 
+> **Being superseded.** The configuration-space refactor replaces the `Chart` picture below with a
+> `ConfigSpace = (T, φ)` carrying `pull` / `push` / `coords` — see
+> [configuration-space.md](configuration-space.md) for the target design. This document describes the
+> present, chart-based code until that lands.
+
 > A **configuration** is a realization of the triangulation in ℝ³: a point in `C = ℝ³ⱽ`. The search
 > moves around `C` (modulo a gauge), often restricted to a parameterized subspace given by a **chart**.
 > This is the entry to the *extrinsic* half — `src/configuration/`.

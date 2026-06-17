@@ -22,7 +22,7 @@ open set.
 | --- | --- | --- | --- |
 | kernels | — | torus-blind ℝ²/ℝ³ primitives (distances, the intersection chord + predicates) | `geometry/` |
 | functions | [conditions.md](conditions.md) | the differentiable-map **toolkit** — the `Fn`/`ScalarFn` contract + the compose algebra (machinery, no instances) | `functions/` |
-| configuration | [configuration.md](configuration.md) | the search space `C = ℝ³ⱽ`, the gauge, and charts ι: X → C (subspaces) | `configuration/` |
+| configuration | [configuration-space.md](configuration-space.md) | the `ConfigSpace = (T, φ)` spine — `pull`/`push`/`coords`, the metric, interior vs boundary (supersedes the chart-based [configuration.md](configuration.md)) | `configuration/`, `functions/` |
 | conditions | [conditions.md](conditions.md) | what we ask of a config — each module its own measurement + usage; closed `{g=0}` and open (`Region`) kinds, by return type | `conditions/` |
 | operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian — and `certify` | `solvers/`, `search/certify.ts` |
 | searches | [searches.md](searches.md) | what each search *does* in C — the flat manifold, the modulus foliation, the embedded region; solving *for* a modulus vs *marching* to it | `search/` |

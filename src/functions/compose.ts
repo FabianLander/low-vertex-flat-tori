@@ -27,6 +27,17 @@ export interface SmoothMap {
   jacobian(x: ArrayLike<number>, out: Float64Array): void;
 }
 
+/**
+ * An `Embedding` is a `SmoothMap` φ : ℝⁿ → ℝᵐ used as the inner reparameterization
+ * that DEFINES a configuration space — the φ in `ConfigSpace = (T, φ)`. Structurally
+ * identical to `SmoothMap` (value + Jacobian); the alias carries one expectation a
+ * general smooth map need not satisfy: φ is an IMMERSION (`Dφ` has full column rank,
+ * `inDim ≤ outDim`), which is exactly the condition for the pullback metric `DφᵀDφ`
+ * to be nondegenerate. The numerics never assume the immersion property — it is the
+ * contract under which the *metric* is meaningful. See docs/math/configuration-space.md.
+ */
+export type Embedding = SmoothMap;
+
 const DEFAULT_H = 1e-7;
 
 /**
@@ -174,4 +185,78 @@ export function postcompose(g: SmoothMap, f: Fn, label = `${g.outDim}d∘${f.lab
       }
     },
   };
+}
+
+/**
+ * Pre-compose an `Fn` `f` with an inner `Embedding` φ → the `Fn` `f∘φ` on φ's domain:
+ * value `f(φ(x))`, Jacobian `Df(φ(x))·Dφ(x)` (chain rule). This is the PULLBACK
+ * `φ*f` — the dual of `postcompose` (there the `Fn` is the *inner* map; here it is the
+ * *outer*). It is exactly `ConfigSpace.pull(f)`: turn an ambient measurement
+ * `f : ℝ^{outDim} → ℝᵏ` into a genuine `Fn` on the restricted space `ℝ^{inDim}`.
+ *
+ * `f`'s domain dimension is implicit (an `Fn` reads a config of whatever length it is
+ * handed), so φ.outDim MUST equal the length `f` expects — there is no static field to
+ * check it against; mismatch surfaces as an out-of-range Jacobian write. Result dim =
+ * f.dim, domain dim = φ.inDim.
+ */
+export function precompose(f: Fn, phi: Embedding, label = `${f.label}∘${phi.inDim}d`): Fn {
+  const k = f.dim, m = phi.outDim, n = phi.inDim;
+  const p = new Float64Array(m);          // φ(x)
+  const fJac = new Float64Array(k * m);   // Df at φ(x)
+  let phiJac: Float64Array | null = null;
+  return {
+    label,
+    dim: k,
+    value(x, out) {
+      phi.value(x, p);
+      f.value(p, out);
+    },
+    jacobian(x, out) {
+      if (!phiJac || phiJac.length !== m * n) phiJac = new Float64Array(m * n);
+      phi.value(x, p);
+      f.jacobian(p, fJac);
+      phi.jacobian(x, phiJac);
+      // out[r·n + col] = Σ_s fJac[r·m + s] · phiJac[s·n + col]
+      out.fill(0);
+      for (let r = 0; r < k; r++) {
+        const oRow = r * n, fRow = r * m;
+        for (let s = 0; s < m; s++) {
+          const frs = fJac[fRow + s];
+          if (frs === 0) continue;
+          const pRow = s * n;
+          for (let col = 0; col < n; col++) out[oRow + col] += frs * phiJac[pRow + col];
+        }
+      }
+    },
+  };
+}
+
+/**
+ * `precompose` for a scalar — `ScalarFn` in, `ScalarFn` out, so the energy keeps its
+ * ergonomic `compute`/`grad`. The pulled gradient is `∇(f∘φ) = Dφᵀ·∇f(φ(x))` (length
+ * φ.inDim). Same contract as `precompose` on φ.outDim.
+ */
+export function precomposeScalar(f: ScalarFn, phi: Embedding, label = `${f.label}∘${phi.inDim}d`): ScalarFn {
+  const m = phi.outDim, n = phi.inDim;
+  const p = new Float64Array(m);          // φ(x)
+  const gradM = new Float64Array(m);      // ∇f at φ(x)
+  let phiJac: Float64Array | null = null;
+  return scalarFn(
+    label,
+    (x) => { phi.value(x, p); return f.compute(p); },
+    (x, out) => {
+      if (!phiJac || phiJac.length !== m * n) phiJac = new Float64Array(m * n);
+      phi.value(x, p);
+      f.grad(p, gradM);
+      phi.jacobian(x, phiJac);
+      // out[col] = Σ_s gradM[s] · phiJac[s·n + col]   (= Dφᵀ ∇f)
+      out.fill(0);
+      for (let s = 0; s < m; s++) {
+        const gs = gradM[s];
+        if (gs === 0) continue;
+        const pRow = s * n;
+        for (let col = 0; col < n; col++) out[col] += gs * phiJac[pRow + col];
+      }
+    },
+  );
 }

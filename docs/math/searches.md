@@ -96,6 +96,7 @@ to a new shape and discover where it stops being possible."*
 
 `march` consumes a `Family` (`solvers/march.ts`): `param(c)` reads the marched modulus coordinate off
 the config (`develop.ts`), and `held(c, s)` rebuilds `[flat, modulusWall(torus, c, s)]` **at the
-current point** — that rebuild is the per-step re-freeze. Everything else is reused: `functions/tau`
-(the modulus map), `submanifolds/modulusWall` (the frozen constraint), `solvers/project` (the
-corrector that does the moving), `regions/embedded` (the gate), `solvers/march` (the loop).
+current point** — that rebuild is the per-step re-freeze. Everything else is reused: `conditions/modulus`'s
+`tau` (the modulus map) and `modulusWall` (the frozen constraint), `solvers/project`
+(the corrector that does the moving), `conditions/embedded`'s `embedded` (the gate), `solvers/march`
+(the loop).

@@ -19,6 +19,6 @@ rendering/IO concern — deliberately NOT a configuration type here.)
 - `doyleSchwartz.ts` — the Doyle–Schwartz seed family: an explicit flat #7 torus of
   any modulus τ = x+iy, the starting point for the semi-solution search.
 
-The semi-solution *search* (`semiSolutionFlatten`, `scanSemiSolutions`) is not here —
-that's solver-use + a driver (to be rebuilt as `project([flat, collinear, collinear])`
-and moved to `search/`).
+The semi-solution *search* is not here — it's solver-use + a driver, and now lives in
+`search/semiSolution.ts` as `project(pinCoords(baseZ), [flat, collinear, collinear])`
+over the Doyle–Schwartz tent seeds.
