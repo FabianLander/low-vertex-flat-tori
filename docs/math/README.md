@@ -4,7 +4,7 @@ How the code maps onto the mathematics. Each document describes one layer first 
 then **how it is computed and stored in code**. The top-level [`README.md`](../../README.md) is the
 overview; this folder is the depth.
 
-The intrinsic flat torus, built up in order:
+The **intrinsic** flat torus, built up in order:
 
 | layer | document | what it is | code |
 | --- | --- | --- | --- |
@@ -13,6 +13,16 @@ The intrinsic flat torus, built up in order:
 | developing chart | [fundamental-domain.md](fundamental-domain.md) | how to cut it open and unroll it — the minimal cut + unroll order | `topology/fundamentalDomain.ts` |
 | marking | [marking.md](marking.md) | a basis of `H₁(T²,ℤ)` — the two τ-generators | `topology/marking.ts` |
 | measurement | [developing.md](developing.md) | the developing map: unfold → holonomy → τ ∈ ℍ (Teichmüller), and the `SL(2,ℤ)` quotient to moduli | `topology/develop.ts` |
+
+The **extrinsic** half — realizing a flat torus in ℝ³ and *searching* for flat embedded ones. This
+is the **search system**: find points on a high-codimension submanifold that also lie inside a tiny
+open set.
+
+| layer | document | what it is | code |
+| --- | --- | --- | --- |
+| configuration | [configuration.md](configuration.md) | the search space `C = ℝ³ⱽ`, the gauge, and charts ι: X → C (subspaces) | `configuration/` |
+| conditions | [conditions.md](conditions.md) | what we ask of a config — closed **submanifolds** `{g=0}` and open **regions** | `submanifolds/`, `regions/`, `math/energies/` |
+| operations | [solvers.md](solvers.md) | project / flow / march — all from the constraint Jacobian — and `certify` | `solvers/`, `search/certify.ts` |
 
 Two structural lines run through all of it:
 

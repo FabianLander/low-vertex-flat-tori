@@ -256,7 +256,7 @@ export function newtonFlatten(
   return { status: 'max-iters', iters: maxIters, residualNorm: curNorm };
 }
 
-function infNorm(v: ArrayLike<number>): number {
+export function infNorm(v: ArrayLike<number>): number {
   let m = 0;
   for (let i = 0; i < v.length; i++) {
     const a = Math.abs(v[i]);
@@ -270,7 +270,7 @@ function infNorm(v: ArrayLike<number>): number {
  * `aug` is row-major, k rows × (k+1) cols (last column = RHS). Writes the
  * solution into `out`. Returns false if a pivot is unrecoverably small.
  */
-function solveDenseInPlace(aug: Float64Array, out: Float64Array, k: number): boolean {
+export function solveDenseInPlace(aug: Float64Array, out: Float64Array, k: number): boolean {
   const stride = k + 1;
   for (let col = 0; col < k; col++) {
     let best = col;
