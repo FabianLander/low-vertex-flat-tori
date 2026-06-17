@@ -23,7 +23,7 @@
  */
 
 import { byId } from '../../src/tori';
-import type { Torus } from '../../src/tori';
+import type { Triangulation } from '../../src/tori';
 import { modulus, reduceModulus } from '../../src/math/develop';
 import { newtonFlatten } from '../../src/math/newton';
 import { maxConeDeficit } from '../../src/math/angles';
@@ -43,7 +43,7 @@ const MAX_FINDS = 60_000;       // per-family cap (memory / responsiveness)
 const MAX_POOL = 20_000;        // cap feedback-grown seed pools
 
 type Family = {
-  key: string; type: number; color: string; torus: Torus; N: number;
+  key: string; type: number; color: string; torus: Triangulation; N: number;
   pool: Float64Array[];                 // seed positions (grows via feedback)
   seedTau: { re: number; im: number }[];// where the original champions develop (markers)
   // parallel find arrays

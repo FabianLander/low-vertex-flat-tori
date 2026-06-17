@@ -20,7 +20,7 @@
  * instead — same shape but uniform weight per pair.
  */
 
-import type { Torus } from '../../tori/defineTorus';
+import type { Triangulation } from '../../tori/triangulation';
 import { triTriChord } from '../intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';
@@ -43,7 +43,7 @@ const EPS = 1e-12;
  * doesn't affect the result.
  */
 function smallerPieceRatio(
-  torus: Torus,
+  torus: Triangulation,
   positions: ArrayLike<number>,
   triIdx: number,
   npx: number, npy: number, npz: number,
@@ -87,7 +87,7 @@ function smallerPieceRatio(
   return Math.min(prod, 1 - prod);
 }
 
-function pairEnergy(torus: Torus, positions: ArrayLike<number>, tA: number, tB: number): number {
+function pairEnergy(torus: Triangulation, positions: ArrayLike<number>, tA: number, tB: number): number {
   const c = triTriChord(torus, positions, tA, tB);
   if (!c) return 0;
 
@@ -121,7 +121,7 @@ function pairEnergy(torus: Torus, positions: ArrayLike<number>, tA: number, tB: 
   return c.length * c.length * (ratioA + ratioB);
 }
 
-export function makeCutOffArea(torus: Torus): RepulsionEnergy {
+export function makeCutOffArea(torus: Triangulation): RepulsionEnergy {
   function compute(positions: ArrayLike<number>): number {
     let E = 0;
     for (const [tA, tB] of torus.disjointTrianglePairs) E += pairEnergy(torus, positions, tA, tB);

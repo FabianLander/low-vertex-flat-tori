@@ -10,9 +10,8 @@
  * per-type file gallery-t<N>.csv is interpreted against byId(N), and the HUD
  * reports the type alongside τ̂, the flatness residual, and the embedding
  * margin — all recomputed LIVE from the row, so the screen certifies exactly
- * the geometry being drawn. (No developed net: that needs the equilateral
- * latticeLayout, which only exists for the degree-6-regular type 7 — but the
- * modulus τ̂ and the grid UVs come from the holonomy basis, which is generic.)
+ * the geometry being drawn. (No developed net here — but the modulus τ̂ and the
+ * grid UVs come from the holonomy basis, which is generic across all types.)
  *
  * Curate with scripts/curate-wall-gallery.mjs (fattest example per Im bucket,
  * per type). Controls: ← → / on-screen ‹ › step · orbit/pan/zoom · drag the

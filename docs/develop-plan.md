@@ -1,5 +1,8 @@
 # Plan: develop flat tori into the plane & compute their modulus τ
 
+> **Status: implemented** (kept as a historical design record) — see `src/math/develop.ts`,
+> `demos/develop`, and `demos/moduli`.
+
 ## Goal
 
 For each flat embedded 8-vertex torus (a row in `data/explore-from-seeds/`), compute its

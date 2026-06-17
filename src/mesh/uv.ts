@@ -19,11 +19,11 @@
  * seamless, since 1/repeat divides the period). Per-corner, length = F*3*2.
  */
 
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 import { developNet, modulus, type DevelopedNet } from '../math/develop';
 
 export function latticeUV(
-  torus: Torus,
+  torus: Triangulation,
   positions: ArrayLike<number>,
   opts: { repeat?: number; net?: DevelopedNet } = {},
 ): Float32Array {

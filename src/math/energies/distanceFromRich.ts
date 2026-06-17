@@ -10,14 +10,14 @@
  * embeddedness energy.
  */
 
-import type { Torus } from '../../tori/defineTorus';
+import type { Triangulation } from '../../tori/triangulation';
 import type { RepulsionEnergy } from './types';
 
 /**
  * Squared Euclidean distance from a torus's reference embedding in R^{3V}.
  * Requires `torus.referenceCoords` (only Rich's #7 has one today).
  */
-export function makeDistanceFromRich(torus: Torus): RepulsionEnergy {
+export function makeDistanceFromRich(torus: Triangulation): RepulsionEnergy {
   if (!torus.referenceCoords) {
     throw new Error(`distance² energy needs a reference embedding; torus #${torus.id} has none`);
   }

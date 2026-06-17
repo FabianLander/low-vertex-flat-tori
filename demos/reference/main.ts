@@ -39,7 +39,7 @@ const fill = new THREE.DirectionalLight(0xc0d0ff, 0.25);
 fill.position.set(-2, -1, -3);
 scene.add(fill);
 
-// ---- Torus + view ----
+// ---- Triangulation + view ----
 const torus = RICH_REFERENCE;
 const view = new TorusView(RICH, { vertexRadius: 0.05 });
 view.sync(torus);

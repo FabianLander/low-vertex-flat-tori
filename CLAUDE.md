@@ -140,8 +140,7 @@ triangulation type** — it's just points; interpret it by pairing with a chosen
 
 ## Notes
 
-- `README.md` is partly **stale** (it predates the multi-type refactor: it still mentions a
-  `src/math/topology.ts` singleton, "every vertex degree 6", and `src/viewer` as the only render
-  layer). Trust the code over the README for the tori/render structure.
-- `docs/` keeps a "paper-sheet" realization reformulation that was **explored and set aside** — the
-  flatten-first discovery pipeline above is the committed approach, not that.
+- A "paper-sheet" realization reformulation was **explored and set aside** — the flatten-first
+  discovery pipeline above is the committed approach, not that. (Its `docs/` writeup has been removed.)
+- `docs/` holds design plans (`develop-plan.md` — implemented; `search-system-plan.md` — proposed)
+  and reference docs/figures (`drawing-tori.md`, `figures/`).

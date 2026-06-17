@@ -10,7 +10,7 @@
 
 import { RICH } from '../tori';
 import { PaperTorus } from './embedding';
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 
 if (!RICH.referenceCoords) {
   throw new Error('RICH torus is missing its reference embedding coordinates');
@@ -23,7 +23,7 @@ export const RICH_REFERENCE: PaperTorus = PaperTorus.fromVec3s(RICH, RICH.refere
  * paired vertex against R_z(π) of its partner. After this call, the embedding
  * is exactly Z/2-invariant. Requires `torus.symmetryPairing`.
  */
-export function applyZ2(torus: Torus, t: PaperTorus): void {
+export function applyZ2(torus: Triangulation, t: PaperTorus): void {
   if (!torus.symmetryPairing) {
     throw new Error(`applyZ2: torus #${torus.id} has no symmetry pairing`);
   }

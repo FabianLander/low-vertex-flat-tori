@@ -1,5 +1,5 @@
 /**
- * Moduli-trace — place the cartoon-torus curve (docs/torus.svg) inside the REAL
+ * Moduli-trace — place the cartoon-torus curve (docs/figures/torus.svg) inside the REAL
  * moduli point cloud and pull out the tori whose τ trace the donut.
  *
  * Each row of data/explore-from-seeds/seed-*.csv is a torus in ℝ²⁴; its modulus
@@ -51,7 +51,7 @@ for (const c of cloud) {
 }
 mx /= cloud.length; my /= cloud.length;
 
-// ---- the cartoon torus, in its own (unit) coords (from docs/torus.svg) ----
+// ---- the cartoon torus, in its own (unit) coords (from docs/figures/torus.svg) ----
 const S = 0.02;
 const Wc = (x: number, y: number): Vec2 => [(x - 250) * S, -(y - 165) * S];
 const bezier = (p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2) => (t: number): Vec2 => {

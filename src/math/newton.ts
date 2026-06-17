@@ -52,7 +52,7 @@
  */
 
 import { coneAngleDeficits, coneAngleJacobian } from './angles';
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 
 export type NewtonStatus = 'converged' | 'diverged' | 'max-iters';
 
@@ -122,7 +122,7 @@ export type NewtonResult = {
 };
 
 export function newtonFlatten(
-  torus: Torus,
+  torus: Triangulation,
   positions: Float64Array,
   opts: NewtonOptions = {},
 ): NewtonResult {

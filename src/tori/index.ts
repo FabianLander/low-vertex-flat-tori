@@ -6,10 +6,10 @@
  * migration. `ALL_TORI` is ordered by id (1..7).
  */
 
-export type { Torus, TorusSpec, Tri, Edge, Vec3, Attach } from './defineTorus';
-export { defineTorus, edgeKey, edgeEnds, autoDevelopOrder, homologyGenerators } from './defineTorus';
+export type { Triangulation, TriangulationSpec, Tri, Edge, Vec3, Attach } from './triangulation';
+export { defineTriangulation, edgeKey, edgeEnds, autoDevelopOrder, homologyGenerators } from './triangulation';
 
-import type { Torus } from './defineTorus';
+import type { Triangulation } from './triangulation';
 import { torus1 } from './torus1';
 import { torus2 } from './torus2';
 import { torus3 } from './torus3';
@@ -20,12 +20,12 @@ import { torus7 } from './torus7';
 
 export { torus1, torus2, torus3, torus4, torus5, torus6, torus7 };
 
-export const ALL_TORI: readonly Torus[] = [torus1, torus2, torus3, torus4, torus5, torus6, torus7];
+export const ALL_TORI: readonly Triangulation[] = [torus1, torus2, torus3, torus4, torus5, torus6, torus7];
 
 /** Rich's degree-6-regular torus — the historical default. */
-export const RICH: Torus = torus7;
+export const RICH: Triangulation = torus7;
 
-export function byId(id: number): Torus {
+export function byId(id: number): Triangulation {
   const t = ALL_TORI.find((x) => x.id === id);
   if (!t) throw new Error(`no torus with id ${id}`);
   return t;

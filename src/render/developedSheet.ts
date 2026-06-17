@@ -5,10 +5,7 @@
  * the same map mesh/uv uses) so the identical graph-paper texture tiles across it.
  * Thin tube "fold lines" run along every triangle edge.
  *
- * Key detail: we unfold with the LATTICE-CONSISTENT attachment
- * (latticeLayout.developAttach), not the default combinatorial spanning tree.
- * That fans the triangles around a vertex into a compact, near-convex whole (the
- * fundamental-domain hexagon) instead of a jagged tree — and we derive the UVs
+ * We unfold with the torus's computed marking (developNet), and derive the UVs
  * from that SAME net so texture and geometry always agree.
  *
  * Returns a THREE.Group (flat faces in z=0 + fold-line tubes), centered on the
@@ -20,7 +17,6 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { PaperTorus } from '../math/embedding';
 import type { V2 } from '../math/develop';
 import { developNet } from '../math/develop';
-import { latticeLayout } from '../math/latticeLayout';
 import { latticeUV } from '../mesh/uv';
 
 export interface DevelopedSheetOptions {
@@ -36,9 +32,8 @@ const UP = new THREE.Vector3(0, 1, 0);
 
 export function developedSheet(paper: PaperTorus, opts: DevelopedSheetOptions): THREE.Group {
   const torus = paper.torus;
-  // unfold with the lattice-consistent gluing → compact, near-convex net
-  const attach = latticeLayout(torus).developAttach(torus.developOrder);
-  const net = developNet(torus, paper.positions, attach);
+  // unfold with the torus's computed marking (developOrder → attach)
+  const net = developNet(torus, paper.positions);
   const F = torus.triangles.length;
 
   // ---- flat face mesh: net corners at z=0, with the torus's lattice UVs (M⁻¹·P,

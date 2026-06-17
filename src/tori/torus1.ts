@@ -1,21 +1,11 @@
 /**
- * Torus #1 — combinatorial type 1 of the 8-vertex flat torus (TORUS_8V[0]).
+ * Triangulation #1 — combinatorial type 1 of the 8-vertex flat torus (TORUS_8V[0]).
  *
- * developOrder + generatorLoops are AUTO-DERIVED placeholders (BFS dual tree /
- * tree–cotree H₁ basis). They are valid but not "nice" — replace them with
- * hand-authored values after inspecting the Tutte diagram:
- *     npm run dev tutte-gallery        (then ↑/↓ to torus 1)
+ * The marking is attached by defineTriangulation from the saved cache (markings.ts),
+ * or a layout-free fallback if none is saved yet. See npm run compute-markings.
  */
 
 import { TORUS_8V } from '../../tori';
-import { defineTorus, autoDevelopOrder, homologyGenerators } from './defineTorus';
+import { defineTriangulation } from './triangulation';
 
-const triangles = TORUS_8V[0];
-
-export const torus1 = defineTorus({
-  id: 1,
-  name: 'type1',
-  triangles,
-  developOrder: autoDevelopOrder(triangles), // AUTO — hand-author for a nicer net
-  generatorLoops: homologyGenerators(triangles), // AUTO — hand-author the marking
-});
+export const torus1 = defineTriangulation({ id: 1, name: 'type1', triangles: TORUS_8V[0] });

@@ -45,7 +45,7 @@ import { maxConeDeficit } from './angles';
 import { modulus } from './develop';
 import { isEmbedded } from './embedded';
 import { newtonFlatten, type NewtonConstraint } from './newton';
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -215,7 +215,7 @@ export type ScanOpts = {
  * Mutates `positions` in place.
  */
 export function semiSolutionFlatten(
-  torus: Torus,
+  torus: Triangulation,
   positions: Float64Array,
   opts: SemiNewtonOpts = {},
 ): SemiNewtonResult {
@@ -257,7 +257,7 @@ export function semiSolutionFlatten(
  * To find semi-solutions with Re(τ) = 0 or Re(τ) = ½, filter the returned
  * array by r.tau?.[0].
  */
-export function scanSemiSolutions(torus: Torus, opts: ScanOpts): SemiSolution[] {
+export function scanSemiSolutions(torus: Triangulation, opts: ScanOpts): SemiSolution[] {
   const results: SemiSolution[] = [];
 
   for (const { x, y } of opts.seeds) {

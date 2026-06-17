@@ -15,12 +15,12 @@
  *
  * Pipeline:
  *   1. intrinsic primitives: edge lengths ℓ_ij, corner angles α[t][k].
- *   2. developNet: unfold the triangles in `torus.developOrder` along the
- *      spanning tree `torus.attach`. Each triangle is laid out CCW by
+ *   2. developNet: unfold the triangles in `torus.fundamentalDomain.developOrder` along the
+ *      spanning tree `torus.fundamentalDomain.attach`. Each triangle is laid out CCW by
  *      circle–circle intersection against its already-placed parent edge.
  *   3. the dual edges NOT in the tree are CUT edges; each appears twice on the
  *      net boundary, related by a translation τₑ (its holonomy). They generate Λ.
- *   4. modulus: the two `torus.generatorLoops` form the MARKING; their holonomy
+ *   4. modulus: the two `torus.marking.generatorLoops` form the MARKING; their holonomy
  *      gives (v₁, v₂) and τ = v₂/v₁.
  *
  * Marking consistency: whether two loops form a unit-index basis is purely
@@ -30,9 +30,8 @@
  * Pure module: no three.js, no DOM.
  */
 
-import type { Torus, Attach } from '../tori/defineTorus';
-import { edgeKey, edgeEnds } from '../tori/defineTorus';
-import { totalArea } from './energies/cellMargin';
+import type { Triangulation } from '../tori/triangulation';
+import { edgeKey, edgeEnds } from '../tori/triangulation';
 
 export type V2 = readonly [number, number];
 
@@ -46,30 +45,22 @@ function len(p: ArrayLike<number>, i: number, j: number): number {
   return Math.hypot(p[oj] - p[oi], p[oj + 1] - p[oi + 1], p[oj + 2] - p[oi + 2]);
 }
 
-/**
- * Interior angles of every triangle at each of its three corners.
- * Returns angle[t][k] for triangle t, local corner k (matching torus.triangles[t]).
- * The third angle is taken as π − α − β so each triangle closes exactly,
- * avoiding float drift from three independent acos calls.
- */
-export function cornerAngles(torus: Torus, p: ArrayLike<number>): number[][] {
-  const out: number[][] = [];
+/** Total surface area Σ ½‖(b−a)×(c−a)‖ over the F triangles (the intrinsic area;
+ *  = covolume of Λ when the generators are a unit-index basis). */
+export function totalArea(torus: Triangulation, p: ArrayLike<number>): number {
+  let area = 0;
   for (const [a, b, c] of torus.triangles) {
-    const lab = len(p, a, b), lbc = len(p, b, c), lca = len(p, c, a);
-    // law of cosines at corners a and b; c gets the remainder.
-    const angA = Math.acos(clamp((lab * lab + lca * lca - lbc * lbc) / (2 * lab * lca)));
-    const angB = Math.acos(clamp((lab * lab + lbc * lbc - lca * lca) / (2 * lab * lbc)));
-    out.push([angA, angB, Math.PI - angA - angB]);
+    const oa = 3 * a, ob = 3 * b, oc = 3 * c;
+    const e1x = p[ob] - p[oa], e1y = p[ob + 1] - p[oa + 1], e1z = p[ob + 2] - p[oa + 2];
+    const e2x = p[oc] - p[oa], e2y = p[oc + 1] - p[oa + 1], e2z = p[oc + 2] - p[oa + 2];
+    const cx = e1y * e2z - e1z * e2y, cy = e1z * e2x - e1x * e2z, cz = e1x * e2y - e1y * e2x;
+    area += 0.5 * Math.sqrt(cx * cx + cy * cy + cz * cz);
   }
-  return out;
-}
-
-function clamp(x: number): number {
-  return x < -1 ? -1 : x > 1 ? 1 : x;
+  return area;
 }
 
 /** Local index (0,1,2) of global vertex g within triangle t. */
-function localIndex(torus: Torus, t: number, g: number): number {
+function localIndex(torus: Triangulation, t: number, g: number): number {
   const tri = torus.triangles[t];
   if (tri[0] === g) return 0;
   if (tri[1] === g) return 1;
@@ -92,9 +83,6 @@ export type CutEdge = {
   /** Rotational defect of the gluing (angle between the two edge images).
    *  ≈ 0 confirms the holonomy is a pure translation (flatness). */
   readonly rotDefect: number;
-  /** True for a contractible "fold" (trivial holonomy: the two developed
-   *  copies coincide). The two non-fold cut edges are the H₁ generators. */
-  readonly isFold: boolean;
 };
 
 /** One unfolding step: triangle `t` attached across edge `edge` to `parent`
@@ -138,20 +126,14 @@ function placeThird(Pi: V2, Pj: V2, rI: number, rJ: number): [V2, V2] {
 }
 
 /**
- * Unfold all triangles into the plane, following torus.developOrder and the
- * given attachment tree. `attach` defaults to the torus's combinatorial spanning
- * tree; pass a layout-consistent attach (e.g. `latticeLayout(torus).developAttach`
- * or `harmonicLayout` equivalent) to make the developed net glue triangles the
- * same way the abstract net does — required for the develop animation to match
- * the abstract picture. τ/holonomy are independent of this choice.
+ * Unfold all triangles into the plane along the marking: place the root, then
+ * glue each later triangle (in `marking.developOrder`) onto its parent across the
+ * shared edge (`marking.attach`). The non-tree shared edges become the boundary
+ * identifications (`cutEdges`), each carrying its holonomy translation.
  */
-export function developNet(
-  torus: Torus,
-  p: ArrayLike<number>,
-  attach: readonly Attach[] = torus.attach,
-): DevelopedNet {
+export function developNet(torus: Triangulation, p: ArrayLike<number>): DevelopedNet {
+  const { developOrder: order, attach } = torus.fundamentalDomain;
   const F = torus.triangles.length;
-  const order = torus.developOrder;
   const corners: V2[][] = new Array(F);
   const placedAt = new Array<number>(F).fill(-1);
   const treeEdges: number[] = [];
@@ -204,18 +186,9 @@ export function developNet(
     const e1x = P1v[0] - P1u[0], e1y = P1v[1] - P1u[1];
     const e2x = P2v[0] - P2u[0], e2y = P2v[1] - P2u[1];
     const rotDefect = Math.abs(Math.atan2(e1x * e2y - e1y * e2x, e1x * e2x + e1y * e2y));
-    cutEdges.push({ edge: [u, v], tris: [t1, t2], translation, rotDefect, isFold: false });
+    cutEdges.push({ edge: [u, v], tris: [t1, t2], translation, rotDefect });
   }
   cutEdges.sort((a, b) => edgeKey(a.edge[0], a.edge[1]) - edgeKey(b.edge[0], b.edge[1]));
-
-  // Classify folds: contractible cut edges have ~zero holonomy. Threshold
-  // relative to the largest holonomy on this torus, so it is scale-free.
-  let maxT = 0;
-  for (const c of cutEdges) maxT = Math.max(maxT, Math.hypot(c.translation[0], c.translation[1]));
-  const foldTol = 1e-6 * (maxT || 1);
-  for (const c of cutEdges) {
-    (c as { isFold: boolean }).isFold = Math.hypot(c.translation[0], c.translation[1]) < foldTol;
-  }
 
   return { corners, treeEdges, cutEdges, steps };
 }
@@ -253,7 +226,7 @@ function complexDiv(v2: V2, v1: V2): V2 {
  * sum those edge vectors around the loop. The sum over a closed loop is the net
  * displacement between the start and end lifts, i.e. the holonomy translation.
  */
-function loopHolonomy(torus: Torus, net: DevelopedNet, loop: readonly number[]): V2 {
+function loopHolonomy(torus: Triangulation, net: DevelopedNet, loop: readonly number[]): V2 {
   let x = 0, y = 0;
   for (let k = 0; k + 1 < loop.length; k++) {
     const a = loop[k], b = loop[k + 1];
@@ -266,39 +239,14 @@ function loopHolonomy(torus: Torus, net: DevelopedNet, loop: readonly number[]):
   return [x, y];
 }
 
-/**
- * Developed polyline of one generator loop, laid head-to-tail from the
- * developed edge vectors (same vectors loopHolonomy sums). Continuous; its net
- * displacement is the loop's holonomy. For drawing the marking on the net.
- */
-function loopPolyline(torus: Torus, net: DevelopedNet, loop: readonly number[]): V2[] {
-  const t0 = torus.edgeToTris.get(edgeKey(loop[0], loop[1]))![0];
-  let cur: V2 = net.corners[t0][localIndex(torus, t0, loop[0])];
-  const pts: V2[] = [cur];
-  for (let k = 0; k + 1 < loop.length; k++) {
-    const a = loop[k], b = loop[k + 1];
-    const t = torus.edgeToTris.get(edgeKey(a, b))![0];
-    const Pa = net.corners[t][localIndex(torus, t, a)];
-    const Pb = net.corners[t][localIndex(torus, t, b)];
-    cur = [cur[0] + (Pb[0] - Pa[0]), cur[1] + (Pb[1] - Pa[1])];
-    pts.push(cur);
-  }
-  return pts;
-}
-
-/** Developed polyline (plane points) of each generator loop on a given net. */
-export function generatorPaths(torus: Torus, net: DevelopedNet): V2[][] {
-  return torus.generatorLoops.map((loop) => loopPolyline(torus, net, loop));
-}
-
 /** Compute the modulus τ from the holonomy of the two generator loops. */
-export function modulus(torus: Torus, p: ArrayLike<number>): Modulus {
+export function modulus(torus: Triangulation, p: ArrayLike<number>): Modulus {
   const net = developNet(torus, p);
   const area = totalArea(torus, p);
   let rotDefect = 0;
   for (const c of net.cutEdges) rotDefect = Math.max(rotDefect, c.rotDefect);
-  let v1 = loopHolonomy(torus, net, torus.generatorLoops[0]);
-  let v2 = loopHolonomy(torus, net, torus.generatorLoops[1]);
+  let v1 = loopHolonomy(torus, net, torus.marking.generatorLoops[0]);
+  let v2 = loopHolonomy(torus, net, torus.marking.generatorLoops[1]);
   if (cross(v1, v2) < 0) [v1, v2] = [v2, v1]; // orient so τ ∈ ℍ (consistent across dataset)
   return {
     v1, v2,

@@ -83,11 +83,11 @@ describe('all 7 combinatorial 8-vertex tori', () => {
       });
 
       it('developOrder is a permutation of 0..15 forming a spanning tree', () => {
-        expect([...torus.developOrder].sort((a, b) => a - b)).toEqual(
+        expect([...torus.fundamentalDomain.developOrder].sort((a, b) => a - b)).toEqual(
           Array.from({ length: 16 }, (_, i) => i),
         );
         // root has parent -1; every other triangle has a valid placed parent
-        const roots = torus.attach.filter((a) => a.parent < 0);
+        const roots = torus.fundamentalDomain.attach.filter((a) => a.parent < 0);
         expect(roots).toHaveLength(1);
       });
 
@@ -112,8 +112,8 @@ describe('all 7 combinatorial 8-vertex tori', () => {
         const B = spanGF2(faceVecs);
         expect(B).toHaveLength(15);
 
-        const c1 = loopVec(torus.generatorLoops[0]);
-        const c2 = loopVec(torus.generatorLoops[1]);
+        const c1 = loopVec(torus.marking.generatorLoops[0]);
+        const c2 = loopVec(torus.marking.generatorLoops[1]);
         // each loop is a 1-cycle (∂ = 0): its vector lies in the cycle space —
         // necessary check is that it's a closed walk (already asserted above).
         // Independence in H₁(;ℤ/2): neither class, nor their sum, is a boundary.

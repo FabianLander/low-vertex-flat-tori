@@ -1,26 +1,34 @@
 /**
- * Torus descriptor + `defineTorus` builder.
+ * Triangulation descriptor + `defineTriangulation` builder.
  *
- * A `Torus` bundles ONE triangulation of the torus with everything derivable
+ * A `Triangulation` bundles ONE triangulation of the torus with everything derivable
  * from it (vertex count, edges, oriented vertex links, dual adjacency, degree
  * sequence, the unfolding attachment tree) plus the small amount of data that
  * is genuinely a choice (the developing order and the two homology generators)
  * — and even those are auto-derived if you don't supply them. So you can grab
- * any new triangulation and `defineTorus({ triangles })` to get a fully working
+ * any new triangulation and `defineTriangulation({ triangles })` to get a fully working
  * torus; nothing here is hard-wired to a particular vertex/edge/face count.
  *
  * This replaces the old global singleton in `topology.ts`: instead of one
- * module-level `TRIANGLES`, every torus is a value you pass around. The seven
- * 8-vertex combinatorial types live in `tori.ts` (`TORUS_8V`); each
- * `src/tori/torusN.ts` pairs one of them with its develop order + generators.
+ * module-level `TRIANGLES`, every triangulation is a value you pass around. The
+ * seven 8-vertex combinatorial types live in `tori.ts` (`TORUS_8V`); each
+ * `src/tori/torusN.ts` wraps one of them, and its marking is attached from the
+ * cache (`markings.ts`).
  *
  * Pure data/combinatorics — no three.js, no DOM, no metric (3D coords).
+ *
+ * Each triangulation carries two decorations — a `FundamentalDomain` (how to
+ * unfold it) and a `Marking` (its H₁ basis) — taken from the saved cache
+ * (`markings.ts`, computed by `canonicalDecoration`) or a layout-free fallback;
+ * see `buildDecoration`.
  *
  * NB: degree is NEVER assumed — among the 8-vertex types only Rich's (#7) is
  * degree-6-regular; the rest mix degree 5/7. Every count is derived/validated
  * from the triangle list (Euler characteristic V−E+F = 0 for the torus), so a
  * triangulation of any size drops in cleanly.
  */
+
+import { MARKINGS } from './markings';
 
 export type Tri = readonly [number, number, number];
 export type Edge = readonly [number, number];
@@ -68,31 +76,45 @@ export type CellPairs = {
 /** Specification of a torus: just the triangulation, plus optional choices. The
  *  triangle list is the only required field — everything else is derived (or
  *  auto-derived, for the develop order / generators) when omitted, so a brand
- *  new triangulation needs only `defineTorus({ triangles })`. */
-export type TorusSpec = {
+ *  new triangulation needs only `defineTriangulation({ triangles })`. */
+export type TriangulationSpec = {
   /** Stable id for the registry; defaults to 0 for ad-hoc/one-off tori. */
   readonly id?: number;
   /** Display name; defaults to `torus-<F>f`. */
   readonly name?: string;
   readonly triangles: readonly Tri[];
-  /** Unfolding order: a permutation of 0..F−1, root first, forming a valid dual
-   *  spanning tree (each non-root triangle edge-adjacent to an earlier one).
-   *  Omit to auto-derive a BFS spanning tree (`autoDevelopOrder`). */
-  readonly developOrder?: readonly number[];
-  /** Two oriented vertex edge-loops generating H₁(T²); e.g. [[0,3,6,0],[0,2,1,0]].
-   *  Omit to auto-derive a tree–cotree basis (`homologyGenerators`). */
-  readonly generatorLoops?: readonly (readonly number[])[];
   /** A reference 3D embedding, if one exists (only #7 today). */
   readonly referenceCoords?: readonly Vec3[];
   /** Symmetry vertex pairing of the reference embedding (#7 Z/2). */
   readonly symmetryPairing?: readonly Edge[];
-  /** Period basis of the regular triangular-lattice layout — only valid for the
-   *  degree-6-regular torus (#7); enables the equilateral pretty-renderer. */
-  readonly lattice?: { readonly periodBasis: readonly [number, number][] };
+};
+
+/**
+ * The DEVELOPING CHART: how to cut this triangulation open and unfold it into the
+ * plane. A presentation choice — it does NOT affect the modulus τ; we take the
+ * most compact one (minimal cut).
+ */
+export type FundamentalDomain = {
+  /** edgeKeys of the minimal cut — the domain boundary. */
+  readonly cut: readonly number[];
+  /** Unfolding order: a permutation of 0..F−1, root first, traversing the glued
+   *  (non-cut) complement — each non-root triangle non-cut-adjacent to an earlier one. */
+  readonly developOrder: readonly number[];
+  /** The gluing tree (parent + shared edge per triangle), along non-cut edges. */
+  readonly attach: readonly Attach[];
+};
+
+/**
+ * The MARKING: a basis of H₁(T²,ℤ), as two oriented vertex edge-loops. This is the
+ * Teichmüller marking — the holonomy of these loops under the developing map gives
+ * τ; forgetting it (the SL(2,ℤ) quotient) drops to moduli.
+ */
+export type Marking = {
+  readonly generatorLoops: readonly (readonly number[])[];
 };
 
 /** Fully derived torus: the spec plus every combinatorial table. */
-export type Torus = {
+export type Triangulation = {
   readonly id: number;
   readonly name: string;
   readonly vertexCount: number;
@@ -104,9 +126,10 @@ export type Torus = {
   readonly degreeSequence: readonly number[];
   /** edgeKey(u,v) → the two triangles sharing that edge, ascending. */
   readonly edgeToTris: ReadonlyMap<number, readonly [number, number]>;
-  readonly developOrder: readonly number[];
-  readonly attach: readonly Attach[];
-  readonly generatorLoops: readonly (readonly number[])[];
+  /** How to unfold it — the developing chart (cut + order + gluing tree). */
+  readonly fundamentalDomain: FundamentalDomain;
+  /** The H₁ basis decorating it — gives τ. */
+  readonly marking: Marking;
   /** The C(16,2) triangle pairs sharing 0 vertices (full tri–tri embedding test). */
   readonly disjointTrianglePairs: readonly [number, number][];
   /** Triangle pairs sharing exactly 1 vertex (reduce to 2 segment–tri tests). */
@@ -115,7 +138,6 @@ export type Torus = {
   readonly cellPairs: CellPairs;
   readonly referenceCoords?: readonly Vec3[];
   readonly symmetryPairing?: readonly Edge[];
-  readonly lattice?: { readonly periodBasis: readonly [number, number][] };
 };
 
 /** Symmetric integer key for an undirected edge {u,v}. */
@@ -213,7 +235,11 @@ function deriveAttach(
   triangles: readonly Tri[],
   developOrder: readonly number[],
   edgeToTris: Map<number, readonly [number, number]>,
+  cut?: readonly number[],
 ): Attach[] {
+  // When the minimal cut is known, those edges are the domain BOUNDARY — never
+  // glue across them, so the developed net is exactly the compact minimal domain.
+  const cutSet = cut && cut.length ? new Set(cut) : null;
   const placedAt = new Array<number>(triangles.length).fill(-1);
   const out = new Array<Attach>(triangles.length);
   const root = developOrder[0];
@@ -225,6 +251,7 @@ function deriveAttach(
     let parent = -1, best = Infinity, su = -1, sv = -1;
     for (let s = 0; s < 3; s++) {
       const u = tri[s], v = tri[(s + 1) % 3];
+      if (cutSet && cutSet.has(edgeKey(u, v))) continue; // boundary edge — not a gluing
       const [tA, tB] = edgeToTris.get(edgeKey(u, v))!;
       const nbr = tA === t ? tB : tA;
       if (placedAt[nbr] >= 0 && placedAt[nbr] < best) {
@@ -234,11 +261,36 @@ function deriveAttach(
         sv = v;
       }
     }
-    if (parent < 0) throw new Error(`developOrder: triangle ${t} has no already-placed edge-neighbor (not a spanning tree)`);
+    if (parent < 0) throw new Error(`developOrder: triangle ${t} has no already-placed non-cut edge-neighbor (not a spanning tree of the glued complement)`);
     out[t] = { parent, u: su, v: sv };
     placedAt[t] = i;
   }
   return out;
+}
+
+/**
+ * Decorate a triangulation with its fundamental domain + marking: the saved
+ * canonical decoration (`markings.ts`) if there is one for this id, else a
+ * layout-free fallback — a BFS develop order and a tree–cotree H₁ basis with no
+ * minimal cut. `attach` is always re-derived here.
+ */
+function buildDecoration(
+  id: number,
+  triangles: readonly Tri[],
+  edgeToTris: Map<number, readonly [number, number]>,
+  name: string,
+): { fundamentalDomain: FundamentalDomain; marking: Marking } {
+  const saved = MARKINGS[id];
+  const cut = saved?.cut ?? [];
+  const developOrder = saved?.developOrder ?? autoDevelopOrder(triangles);
+  const generatorLoops = saved?.generatorLoops ?? homologyGenerators(triangles);
+  checkDevelopOrder(developOrder, triangles.length, name);
+  checkGeneratorLoops(generatorLoops, edgeToTris, name);
+  const attach = deriveAttach(triangles, developOrder, edgeToTris, cut);
+  return {
+    fundamentalDomain: { cut, developOrder, attach },
+    marking: { generatorLoops },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -402,7 +454,7 @@ export function homologyGenerators(triangles: readonly Tri[]): number[][] {
 }
 
 // ---------------------------------------------------------------------------
-// Validation guards on the hand-authored data
+// Validation guards on the marking (developOrder / generator loops)
 // ---------------------------------------------------------------------------
 
 function checkDevelopOrder(developOrder: readonly number[], faceCount: number, name: string): void {
@@ -434,7 +486,7 @@ function checkGeneratorLoops(
 // Builder
 // ---------------------------------------------------------------------------
 
-export function defineTorus(spec: TorusSpec): Torus {
+export function defineTriangulation(spec: TriangulationSpec): Triangulation {
   const { triangles } = spec;
   const id = spec.id ?? 0;
   const name = spec.name ?? `torus-${triangles.length}f`;
@@ -454,14 +506,9 @@ export function defineTorus(spec: TorusSpec): Torus {
   const edgeToTris = deriveEdgeToTris(triangles);
   const degreeSequence = vertexLinks.map((l) => l.length).slice().sort((a, b) => a - b);
 
-  // Develop order + generators are genuine choices, but valid ones are derivable;
-  // auto-derive when the spec leaves them out (see autoDevelopOrder / homologyGenerators).
-  const developOrder = spec.developOrder ?? autoDevelopOrder(triangles);
-  checkDevelopOrder(developOrder, F, name);
-  const attach = deriveAttach(triangles, developOrder, edgeToTris);
-
-  const generatorLoops = spec.generatorLoops ?? homologyGenerators(triangles);
-  checkGeneratorLoops(generatorLoops, edgeToTris, name);
+  // Decorate with the fundamental domain + marking: the saved canonical decoration
+  // (markings.ts) if we have one, else a layout-free fallback. attach is re-derived.
+  const { fundamentalDomain, marking } = buildDecoration(id, triangles, edgeToTris, name);
 
   const { disjoint, sharedVertex } = classifyTrianglePairs(triangles);
   const cellPairs = deriveCellPairs(triangles, vertexCount, edges, disjoint);
@@ -475,14 +522,12 @@ export function defineTorus(spec: TorusSpec): Torus {
     vertexLinks,
     degreeSequence,
     edgeToTris,
-    developOrder,
-    attach,
-    generatorLoops,
+    fundamentalDomain,
+    marking,
     disjointTrianglePairs: disjoint,
     sharedVertexTrianglePairs: sharedVertex,
     cellPairs,
     referenceCoords: spec.referenceCoords,
     symmetryPairing: spec.symmetryPairing,
-    lattice: spec.lattice,
   };
 }

@@ -23,7 +23,7 @@
  * to keep the predicate robust on generic embeddings.
  */
 
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 
 export type EmbeddingViolation = {
   /** 'tri-tri' = disjoint pair's interiors intersect.
@@ -33,11 +33,11 @@ export type EmbeddingViolation = {
   readonly t2: number;
 };
 
-export function isEmbedded(torus: Torus, positions: ArrayLike<number>): boolean {
+export function isEmbedded(torus: Triangulation, positions: ArrayLike<number>): boolean {
   return firstViolation(torus, positions) === null;
 }
 
-export function firstViolation(torus: Torus, positions: ArrayLike<number>): EmbeddingViolation | null {
+export function firstViolation(torus: Triangulation, positions: ArrayLike<number>): EmbeddingViolation | null {
   const { triangles } = torus;
   for (const [t1, t2] of torus.disjointTrianglePairs) {
     if (triangleTriangleIntersect(triangles, positions, t1, t2)) {
@@ -57,7 +57,7 @@ export function firstViolation(torus: Torus, positions: ArrayLike<number>): Embe
   return null;
 }
 
-export function allViolations(torus: Torus, positions: ArrayLike<number>): EmbeddingViolation[] {
+export function allViolations(torus: Triangulation, positions: ArrayLike<number>): EmbeddingViolation[] {
   const { triangles } = torus;
   const out: EmbeddingViolation[] = [];
   for (const [t1, t2] of torus.disjointTrianglePairs) {
@@ -81,7 +81,7 @@ export function allViolations(torus: Torus, positions: ArrayLike<number>): Embed
  * offending faces red.
  */
 export function violationFaceScalars(
-  torus: Torus,
+  torus: Triangulation,
   positions: ArrayLike<number>,
   out?: Float32Array,
 ): Float32Array {
@@ -96,7 +96,7 @@ export function violationFaceScalars(
 
 /** Triangle-triangle interior intersection via 6 segment-triangle tests. */
 function triangleTriangleIntersect(
-  triangles: Torus['triangles'],
+  triangles: Triangulation['triangles'],
   positions: ArrayLike<number>,
   t1: number,
   t2: number,

@@ -17,12 +17,12 @@
  * Cost: ≈ 96 triTriChord calls per compute(). FD gradient is 48× that.
  */
 
-import type { Torus } from '../../tori/defineTorus';
+import type { Triangulation } from '../../tori/triangulation';
 import { triTriChord } from '../intersectionChord';
 import { fdGradient } from './finiteDiffGradient';
 import type { RepulsionEnergy } from './types';
 
-export function makeChordLengthSquared(torus: Torus): RepulsionEnergy {
+export function makeChordLengthSquared(torus: Triangulation): RepulsionEnergy {
   function compute(positions: ArrayLike<number>): number {
     let E = 0;
     for (const [tA, tB] of torus.disjointTrianglePairs) {

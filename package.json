@@ -11,6 +11,7 @@
     "sample-flat": "tsx scripts/sample-flat.mjs",
     "sample-flat-nonrich": "node scripts/sample-flat-nonrich.mjs",
     "sample-immersed": "tsx scripts/sample-immersed.mjs",
+    "compute-markings": "tsx scripts/compute-markings.mjs",
     "near-rect": "tsx scripts/search-near-rect.mjs",
     "push-re": "tsx scripts/push-re.mjs",
     "collect-rect": "tsx scripts/collect-rect.mjs",

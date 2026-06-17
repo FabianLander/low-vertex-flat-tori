@@ -1,10 +1,10 @@
 /**
- * PaperTorus — V vertex positions in R³ bound to a specific `Torus`
+ * PaperTorus — V vertex positions in R³ bound to a specific `Triangulation`
  * combinatorics. Thin wrapper around a Float64Array of length 3V so it can back
  * a three.js BufferAttribute directly.
  */
 
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 import { coneAngleAt, maxConeDeficit as maxDef } from './angles';
 
 const TWO_PI = Math.PI * 2;
@@ -12,10 +12,10 @@ const TWO_PI = Math.PI * 2;
 export type Vec3 = [number, number, number];
 
 export class PaperTorus {
-  readonly torus: Torus;
+  readonly torus: Triangulation;
   readonly positions: Float64Array;
 
-  constructor(torus: Torus, positions?: Float64Array | readonly number[]) {
+  constructor(torus: Triangulation, positions?: Float64Array | readonly number[]) {
     this.torus = torus;
     const n = torus.vertexCount * 3;
     this.positions = new Float64Array(n);
@@ -27,7 +27,7 @@ export class PaperTorus {
     }
   }
 
-  static fromVec3s(torus: Torus, verts: readonly (readonly [number, number, number])[]): PaperTorus {
+  static fromVec3s(torus: Triangulation, verts: readonly (readonly [number, number, number])[]): PaperTorus {
     if (verts.length !== torus.vertexCount) {
       throw new Error(`expected ${torus.vertexCount} vertices, got ${verts.length}`);
     }

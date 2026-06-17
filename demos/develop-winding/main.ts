@@ -12,7 +12,8 @@
  */
 
 import { ALL_TORI } from '../../src/tori/index';
-import { harmonicLayout, windingNet, type WindingNet, type XY } from '../../src/math/harmonicLayout';
+import { harmonicLayout, type XY } from '../../src/math/harmonicLayout';
+import { windingNet, type WindingNet } from '../../src/math/fundamentalDomain';
 
 const STEP_MS = 380;
 const HOLD_MS = 1100;

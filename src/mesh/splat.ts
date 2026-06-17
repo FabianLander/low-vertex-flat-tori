@@ -10,11 +10,11 @@
  * Both viewer/TorusView and mesh/faces consume this, so the splat lives once.
  */
 
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 
 /** Face corner positions, length = triangles.length * 9. */
 export function splatFacePositions(
-  torus: Torus,
+  torus: Triangulation,
   positions: ArrayLike<number>,
   out?: Float32Array,
 ): Float32Array {

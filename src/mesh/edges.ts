@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { edgeKey } from '../tori/defineTorus';
+import { edgeKey } from '../tori/triangulation';
 import type { PaperTorus } from '../math/embedding';
 import { outwardSign, edgeOutward } from './orient';
 

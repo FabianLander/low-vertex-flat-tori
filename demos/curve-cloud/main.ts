@@ -28,7 +28,7 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-// ---- the cartoon torus from docs/torus.svg, in world coords ----
+// ---- the cartoon torus from docs/figures/torus.svg, in world coords ----
 // SVG is 500×330 with the shape around (250,165); map to world (centered, y-up).
 const S = 0.02;
 const W = (x: number, y: number): Vec2 => [(x - 250) * S, -(y - 165) * S];

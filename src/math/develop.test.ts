@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius, developNet } from './develop';
-import { totalArea } from './energies/cellMargin';
-import { latticeLayout } from './latticeLayout';
+import { totalArea } from './develop';
 import { RICH_REFERENCE } from './reference';
 import { RICH } from '../tori';
 
@@ -12,27 +11,6 @@ describe('develop → modulus τ', () => {
     expect(m.covolume).toBeCloseTo(m.area, 6);          // generators form a unit-index basis
     expect(m.covolume).toBeCloseTo(totalArea(RICH, RICH_REFERENCE.positions), 6);
     expect(m.tau[1]).toBeGreaterThan(0);                // τ ∈ ℍ
-  });
-
-  it('lattice developAttach unfolds the metric net with the abstract net\'s gluing', () => {
-    // Regression: the developed net must glue triangles the same way the abstract
-    // lattice picture does (else the develop animation desyncs from the left
-    // panel). Every tree edge must be COINCIDENT in the hexagonal domain.
-    const L = latticeLayout(RICH);
-    const attach = L.developAttach(RICH.developOrder);
-    expect(attach[9].parent).toBe(6); // the canonical case: T9 sits beside T6, not T14
-
-    const tiles = L.hexDomain();
-    const byId = new Map(tiles.map((t) => [t.id, t]));
-    const latOf = (t: number, g: number) => byId.get(t)!.lat[RICH.triangles[t].indexOf(g)];
-    const net = developNet(RICH, RICH_REFERENCE.positions, attach);
-    for (const { t, parent, edge } of net.steps) {
-      if (parent < 0) continue;
-      const [u, v] = edge;
-      // shared edge endpoints land on the same lattice point in both triangles
-      expect(latOf(t, u)).toEqual(latOf(parent, u));
-      expect(latOf(t, v)).toEqual(latOf(parent, v));
-    }
   });
 
   it('developed net has 16 triangles, 15 tree edges, 9 cut edges', () => {

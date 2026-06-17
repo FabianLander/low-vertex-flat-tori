@@ -10,11 +10,11 @@
  * coloring. One implementation, two callers.
  */
 
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 
 const TWO_PI = Math.PI * 2;
 
-export function coneAngleAt(torus: Torus, positions: ArrayLike<number>, i: number): number {
+export function coneAngleAt(torus: Triangulation, positions: ArrayLike<number>, i: number): number {
   const link = torus.vertexLinks[i];
   const oi = 3 * i;
   const xi = positions[oi];
@@ -44,7 +44,7 @@ export function coneAngleAt(torus: Torus, positions: ArrayLike<number>, i: numbe
 }
 
 export function coneAngles(
-  torus: Torus,
+  torus: Triangulation,
   positions: ArrayLike<number>,
   out?: Float64Array,
 ): Float64Array {
@@ -58,7 +58,7 @@ export function coneAngles(
  * embedding is flat. This is the Newton solver's R(x).
  */
 export function coneAngleDeficits(
-  torus: Torus,
+  torus: Triangulation,
   positions: ArrayLike<number>,
   out?: Float64Array,
 ): Float64Array {
@@ -67,7 +67,7 @@ export function coneAngleDeficits(
   return r;
 }
 
-export function maxConeDeficit(torus: Torus, positions: ArrayLike<number>): number {
+export function maxConeDeficit(torus: Triangulation, positions: ArrayLike<number>): number {
   let m = 0;
   for (let i = 0; i < torus.vertexCount; i++) {
     const d = Math.abs(TWO_PI - coneAngleAt(torus, positions, i));
@@ -97,7 +97,7 @@ export function maxConeDeficit(torus: Torus, positions: ArrayLike<number>): numb
  * corner and the `j` of the next; both contributions accumulate into its slot.
  */
 export function coneAngleJacobian(
-  torus: Torus,
+  torus: Triangulation,
   positions: ArrayLike<number>,
   out: Float64Array,
 ): void {

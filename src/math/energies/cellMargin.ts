@@ -31,7 +31,8 @@
  * switches in the distance routines are fine for central differences).
  */
 
-import type { Torus } from '../../tori/defineTorus';
+import type { Triangulation } from '../../tori/triangulation';
+import { totalArea } from '../develop';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2, triangleTriangleDist2,
 } from '../distance';
@@ -41,23 +42,8 @@ import type { RepulsionEnergy } from './types';
 export const DEFAULT_EPSILON = 0.1; // margin target, in units of √(total area)
 export const DEFAULT_WEIGHT = 1;    // per-pair penalty height c
 
-/** Total surface area Σ ½‖(b−a)×(c−a)‖ over the 16 triangles. */
-export function totalArea(torus: Torus, p: ArrayLike<number>): number {
-  let area = 0;
-  for (const [a, b, c] of torus.triangles) {
-    const oa = 3 * a, ob = 3 * b, oc = 3 * c;
-    const e1x = p[ob] - p[oa], e1y = p[ob + 1] - p[oa + 1], e1z = p[ob + 2] - p[oa + 2];
-    const e2x = p[oc] - p[oa], e2y = p[oc + 1] - p[oa + 1], e2z = p[oc + 2] - p[oa + 2];
-    const cx = e1y * e2z - e1z * e2y;
-    const cy = e1z * e2x - e1x * e2z;
-    const cz = e1x * e2y - e1y * e2x;
-    area += 0.5 * Math.sqrt(cx * cx + cy * cy + cz * cz);
-  }
-  return area;
-}
-
 /** Linear size of the torus: √(total area). The normalizing length L. */
-export function linearSize(torus: Torus, p: ArrayLike<number>): number {
+export function linearSize(torus: Triangulation, p: ArrayLike<number>): number {
   return Math.sqrt(totalArea(torus, p));
 }
 
@@ -68,7 +54,7 @@ function vv(p: ArrayLike<number>, i: number, j: number): number {
   return Math.sqrt(pointPointDist2(p[oi], p[oi + 1], p[oi + 2], p[oj], p[oj + 1], p[oj + 2]));
 }
 
-function ve(torus: Torus, p: ArrayLike<number>, v: number, e: number): number {
+function ve(torus: Triangulation, p: ArrayLike<number>, v: number, e: number): number {
   const ov = 3 * v;
   const [a, b] = torus.edges[e];
   const oa = 3 * a, ob = 3 * b;
@@ -78,7 +64,7 @@ function ve(torus: Torus, p: ArrayLike<number>, v: number, e: number): number {
   ));
 }
 
-function vf(torus: Torus, p: ArrayLike<number>, v: number, f: number): number {
+function vf(torus: Triangulation, p: ArrayLike<number>, v: number, f: number): number {
   const ov = 3 * v;
   const [a, b, c] = torus.triangles[f];
   const oa = 3 * a, ob = 3 * b, oc = 3 * c;
@@ -89,7 +75,7 @@ function vf(torus: Torus, p: ArrayLike<number>, v: number, f: number): number {
 }
 
 /** Edge–edge is two measurements: midpoint of each edge to the other segment. */
-function ee(torus: Torus, p: ArrayLike<number>, e1: number, e2: number): [number, number] {
+function ee(torus: Triangulation, p: ArrayLike<number>, e1: number, e2: number): [number, number] {
   const [a1, b1] = torus.edges[e1];
   const [a2, b2] = torus.edges[e2];
   const oa1 = 3 * a1, ob1 = 3 * b1, oa2 = 3 * a2, ob2 = 3 * b2;
@@ -100,7 +86,7 @@ function ee(torus: Torus, p: ArrayLike<number>, e1: number, e2: number): [number
   return [d1, d2];
 }
 
-function ef(torus: Torus, p: ArrayLike<number>, e: number, f: number): number {
+function ef(torus: Triangulation, p: ArrayLike<number>, e: number, f: number): number {
   const [a, b] = torus.edges[e];
   const oa = 3 * a, ob = 3 * b;
   const mx = 0.5 * (p[oa] + p[ob]), my = 0.5 * (p[oa + 1] + p[ob + 1]), mz = 0.5 * (p[oa + 2] + p[ob + 2]);
@@ -112,7 +98,7 @@ function ef(torus: Torus, p: ArrayLike<number>, e: number, f: number): number {
   ));
 }
 
-function ff(torus: Torus, p: ArrayLike<number>, fa: number, fb: number): number {
+function ff(torus: Triangulation, p: ArrayLike<number>, fa: number, fb: number): number {
   const [a0, a1, a2] = torus.triangles[fa];
   const [b0, b1, b2] = torus.triangles[fb];
   const A0 = 3 * a0, A1 = 3 * a1, A2 = 3 * a2;
@@ -128,7 +114,7 @@ export interface CellMarginOptions {
   weight?: number;
 }
 
-export function makeCellMargin(torus: Torus, opts: CellMarginOptions = {}): RepulsionEnergy {
+export function makeCellMargin(torus: Triangulation, opts: CellMarginOptions = {}): RepulsionEnergy {
   const eps = opts.epsilon ?? DEFAULT_EPSILON;
   const weight = opts.weight ?? DEFAULT_WEIGHT;
   const invEps = 1 / eps;
@@ -174,7 +160,7 @@ export type MarginReport = {
  * Diagnostic: the minimum normalized gap and which pair achieves it.
  * Independent of ε/weight — pure geometry. A margin ≥ ε means E = 0.
  */
-export function minMargin(torus: Torus, p: ArrayLike<number>): MarginReport {
+export function minMargin(torus: Triangulation, p: ArrayLike<number>): MarginReport {
   const invL = 1 / linearSize(torus, p);
   const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = torus.cellPairs;
   let best: MarginReport = { margin: Infinity, type: 'vv', cells: [-1, -1] };

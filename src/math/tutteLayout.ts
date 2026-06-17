@@ -2,12 +2,12 @@
  * Universal abstract drawing of any 8-vertex torus triangulation, developed
  * into the plane as a single cut fundamental polygon.
  *
- * Unlike `latticeLayout` (equilateral, degree-6 only), this works for ALL seven
- * combinatorial types — including the six with degree-5/7 vertices.
+ * Works for ALL seven combinatorial types — including the six with degree-5/7
+ * vertices.
  *
  * Method (a degenerate Tutte / convex-polygon embedding):
  *   1. Cut the torus to a disk along the complement of the develop spanning tree
- *      (`torus.attach`). The 15 tree edges are glued (interior); the 9 cut edges
+ *      (`torus.fundamentalDomain.attach`). The 15 tree edges are glued (interior); the 9 cut edges
  *      each appear twice on the boundary.
  *   2. The cut disk's vertices are the corner-classes (triangle corners union-ed
  *      across glued tree edges). For an 8-vertex torus Euler gives V_disk =
@@ -23,8 +23,8 @@
  * Pure: no DOM, no three.js. Output is plane coordinates only.
  */
 
-import type { Torus } from '../tori/defineTorus';
-import { edgeKey, edgeEnds } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
+import { edgeKey, edgeEnds } from '../tori/triangulation';
 
 export type XY = [number, number];
 
@@ -52,8 +52,9 @@ const localIndex = (tri: readonly number[], g: number): number => {
 };
 
 /** Develop a torus into a cut fundamental polygon (see module doc). */
-export function tutteLayout(torus: Torus): TutteLayout {
-  const { triangles, attach, edgeToTris } = torus;
+export function tutteLayout(torus: Triangulation): TutteLayout {
+  const { triangles, edgeToTris } = torus;
+  const { attach } = torus.fundamentalDomain;
   const F = triangles.length;
 
   // tree edges (glued) vs cut edges (boundary)
@@ -172,10 +173,10 @@ export function tileSignedArea2(c: readonly XY[]): number {
  * per generator (segments may break across the cut — that is the loop crossing
  * the fundamental-domain boundary).
  */
-export function generatorSegments(torus: Torus, layout: TutteLayout): [XY, XY][][] {
+export function generatorSegments(torus: Triangulation, layout: TutteLayout): [XY, XY][][] {
   const { triangles, edgeToTris } = torus;
   const at = (t: number, g: number): XY => layout.tiles[t].corners[localIndex(triangles[t], g)];
-  return torus.generatorLoops.map((loop) => {
+  return torus.marking.generatorLoops.map((loop) => {
     const segs: [XY, XY][] = [];
     for (let k = 0; k + 1 < loop.length; k++) {
       const a = loop[k], b = loop[k + 1];

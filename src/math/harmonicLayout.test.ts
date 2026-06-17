@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_TORI, RICH } from '../tori/index';
-import { harmonicLayout, tileSignedArea2, windingNet } from './harmonicLayout';
+import { harmonicLayout, tileSignedArea2 } from './harmonicLayout';
+import { windingNet } from './fundamentalDomain';
 
 describe('harmonic winding develop net (abstract net, all tori)', () => {
   for (const torus of ALL_TORI) {

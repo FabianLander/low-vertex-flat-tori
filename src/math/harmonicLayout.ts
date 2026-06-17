@@ -1,9 +1,8 @@
 /**
  * Harmonic (Tutte) embedding of any 8-vertex torus triangulation into a flat
  * torus ℝ²/Λ — the "lattice patch" picture. Works for ALL seven combinatorial
- * types, including the six with degree-5/7 vertices (unlike `latticeLayout`,
- * which is equilateral and degree-6 only). For the regular torus (#7) the result
- * IS the equilateral triangular lattice.
+ * types, including the six with degree-5/7 vertices. For the regular torus (#7)
+ * the result IS the equilateral triangular lattice.
  *
  * Construction (Gortler–Gotsman–Thurston style):
  *   1. Tree–cotree decomposition ⟹ a primal spanning tree T and exactly two
@@ -24,8 +23,8 @@
  * Pure: no DOM, no three.js.
  */
 
-import type { Torus } from '../tori/defineTorus';
-import { edgeKey, edgeEnds } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
+import { edgeKey } from '../tori/triangulation';
 
 export type XY = [number, number];
 
@@ -65,7 +64,7 @@ function solve(A: number[][], b: number[]): number[] {
 const sgn = (u: number, v: number) => (u < v ? 1 : -1); // cochain stored for min→max
 
 /** Tree–cotree: primal spanning tree edges + the two H₁ generator edges. */
-function treeCotree(torus: Torus): { inT: Set<number>; gens: number[] } {
+function treeCotree(torus: Triangulation): { inT: Set<number>; gens: number[] } {
   const { edges, triangles, edgeToTris, vertexCount } = torus;
   const adj: number[][] = Array.from({ length: vertexCount }, () => []);
   for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }
@@ -90,7 +89,7 @@ function treeCotree(torus: Torus): { inT: Set<number>; gens: number[] } {
 }
 
 /** Integer cocycle vanishing on T with the given values on the two generators. */
-function cocycle(torus: Torus, inT: Set<number>, gens: number[], gVals: [number, number]): Map<number, number> {
+function cocycle(torus: Triangulation, inT: Set<number>, gens: number[], gVals: [number, number]): Map<number, number> {
   const { edges, triangles } = torus;
   const unk: number[] = [];
   const idx = new Map<number, number>();
@@ -143,7 +142,7 @@ function invSqrt2x2(a: number, b: number, d: number): [number, number, number, n
 }
 
 /** Develop a torus into a flat-torus harmonic embedding (see module doc). */
-export function harmonicLayout(torus: Torus): HarmonicLayout {
+export function harmonicLayout(torus: Triangulation): HarmonicLayout {
   const { edges, triangles, vertexCount } = torus;
   const { inT, gens } = treeCotree(torus);
   const al = cocycle(torus, inT, gens, [1, 0]);
@@ -238,125 +237,4 @@ export function periodicTiles(
     }
   }
   return out;
-}
-
-const centroid = (c: readonly XY[]): XY => [(c[0][0] + c[1][0] + c[2][0]) / 3, (c[0][1] + c[1][1] + c[2][1]) / 3];
-
-/**
- * A connected fundamental domain: each triangle's period copy nearest `center`
- * (the Dirichlet-cell construction, analogous to `latticeLayout.hexDomain`).
- * For a lattice tiling these 16 copies fit together coincident-edge to
- * coincident-edge, forming one non-overlapping patch.
- */
-export function fundamentalDomain(layout: HarmonicLayout, center?: XY): HarmonicTile[] {
-  const { tiles, V1, V2 } = layout;
-  let cx = 0, cy = 0;
-  for (const t of tiles) { const g = centroid(t.corners); cx += g[0]; cy += g[1]; }
-  const ctr: XY = center ?? [cx / tiles.length, cy / tiles.length];
-  const out: HarmonicTile[] = [];
-  for (const tile of tiles) {
-    let best: HarmonicTile | null = null, bestD = Infinity;
-    for (let n = -4; n <= 4; n++) for (let m = -4; m <= 4; m++) {
-      const ox = n * V1[0] + m * V2[0], oy = n * V1[1] + m * V2[1];
-      const c = tile.corners.map(([x, y]): XY => [x + ox, y + oy]);
-      const g = centroid(c);
-      const d = (g[0] - ctr[0]) ** 2 + (g[1] - ctr[1]) ** 2;
-      if (d < bestD) { bestD = d; best = { id: tile.id, corners: c }; }
-    }
-    out.push(best!);
-  }
-  return out;
-}
-
-export type DevelopStep = { readonly t: number; readonly parent: number; readonly edge: readonly [number, number] };
-
-/**
- * The harmonic abstract net developed in a continuous WINDING order: the 16
- * triangles of one fundamental domain, ordered to spiral outward from the
- * central triangle (by graph-distance, then polar angle), each gluing onto an
- * already-placed coincident neighbor. This is the abstract-net analogue of the
- * metric develop net, valid for every torus.
- */
-export type WindingNet = {
-  readonly tiles: HarmonicTile[];     // the fundamental domain (indexed by triangle id)
-  readonly order: number[];           // triangle ids, root first (the winding reveal order)
-  readonly steps: DevelopStep[];      // placement steps aligned with `order`
-  readonly center: XY;
-};
-
-export function windingNet(torus: Torus, layout: HarmonicLayout, center?: XY): WindingNet {
-  const dom = fundamentalDomain(layout, center);
-  const { triangles, edgeToTris } = torus;
-  const F = triangles.length;
-  const byId = new Map(dom.map((t) => [t.id, t]));
-  const cornerOf = (t: number, g: number): XY => byId.get(t)!.corners[triangles[t].indexOf(g)];
-  const EPS = 1e-6;
-  const close = (a: XY, b: XY) => Math.hypot(a[0] - b[0], a[1] - b[1]) < EPS;
-
-  // coincident-edge adjacency within the fundamental domain
-  const adj: { nbr: number; u: number; v: number }[][] = Array.from({ length: F }, () => []);
-  for (const [k, [t1, t2]] of edgeToTris) {
-    const [u, v] = edgeEnds(k);
-    if (close(cornerOf(t1, u), cornerOf(t2, u)) && close(cornerOf(t1, v), cornerOf(t2, v))) {
-      adj[t1].push({ nbr: t2, u, v });
-      adj[t2].push({ nbr: t1, u, v });
-    }
-  }
-
-  const cen = (t: number) => centroid(byId.get(t)!.corners);
-  let dcx = 0, dcy = 0;
-  for (let t = 0; t < F; t++) { const g = cen(t); dcx += g[0]; dcy += g[1]; }
-  dcx /= F; dcy /= F;
-  const domCenter: XY = [dcx, dcy];
-
-  // central triangle = nearest the domain centroid
-  let root = 0, rootD = Infinity;
-  for (let t = 0; t < F; t++) { const g = cen(t); const d = (g[0] - dcx) ** 2 + (g[1] - dcy) ** 2; if (d < rootD) { rootD = d; root = t; } }
-
-  // graph distance from root over coincident adjacency (the connectivity check)
-  const dist = new Array<number>(F).fill(Infinity);
-  dist[root] = 0;
-  const q = [root];
-  for (let h = 0; h < q.length; h++) for (const { nbr } of adj[q[h]]) if (dist[nbr] === Infinity) { dist[nbr] = dist[q[h]] + 1; q.push(nbr); }
-  if (dist.some((d) => d === Infinity)) {
-    throw new Error(`windingNet: fundamental domain is not coincident-connected for torus #${torus.id}`);
-  }
-
-  // Continuous winding walk: greedily extend from the just-placed triangle when
-  // possible (a connected snake), otherwise hop to the angularly-next frontier
-  // triangle going CCW around the center — so the net spirals outward without
-  // teleporting. Every pick is on the frontier (adjacent to a placed triangle),
-  // so it stays a valid spanning-tree order.
-  const ang = (t: number) => { const g = cen(t); return Math.atan2(g[1] - dcy, g[0] - dcx); };
-  const placed = new Array<boolean>(F).fill(false);
-  placed[root] = true;
-  const order = [root];
-  let last = root, lastAng = ang(root);
-  while (order.length < F) {
-    const frontier: number[] = [];
-    for (let t = 0; t < F; t++) if (!placed[t] && adj[t].some((e) => placed[e.nbr])) frontier.push(t);
-    const fromLast = frontier.filter((t) => adj[t].some((e) => e.nbr === last));
-    const pool = fromLast.length ? fromLast : frontier; // prefer continuing the walk
-    let pick = pool[0], bestStep = Infinity;
-    for (const t of pool) {
-      let d = ang(t) - lastAng;
-      while (d <= 1e-9) d += 2 * Math.PI; // strictly ahead, CCW
-      if (d < bestStep) { bestStep = d; pick = t; }
-    }
-    placed[pick] = true; order.push(pick); last = pick; lastAng = ang(pick);
-  }
-
-  const placedAt = new Array<number>(F).fill(-1);
-  order.forEach((t, i) => { placedAt[t] = i; });
-  const steps: DevelopStep[] = order.map((t, i) => {
-    if (i === 0) return { t, parent: -1, edge: [-1, -1] as const };
-    // attach to the MOST-RECENTLY placed coincident neighbor (local, continuous growth)
-    let parent = -1, best = -1, eu = -1, ev = -1;
-    for (const { nbr, u, v } of adj[t]) {
-      if (placedAt[nbr] >= 0 && placedAt[nbr] < i && placedAt[nbr] > best) { best = placedAt[nbr]; parent = nbr; eu = u; ev = v; }
-    }
-    return { t, parent, edge: [eu, ev] as const };
-  });
-
-  return { tiles: dom, order, steps, center: domCenter };
 }

@@ -27,7 +27,7 @@
  * This module is self-contained and does not modify cellMargin.ts.
  */
 
-import type { Torus } from '../../tori/defineTorus';
+import type { Triangulation } from '../../tori/triangulation';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   triangleTriangleDist2, segmentTriangleDist2,
@@ -48,7 +48,7 @@ function dVV(p: ArrayLike<number>, i: number, j: number): number {
   return Math.sqrt(pointPointDist2(p[oi], p[oi + 1], p[oi + 2], p[oj], p[oj + 1], p[oj + 2]));
 }
 
-function dVE(torus: Torus, p: ArrayLike<number>, v: number, e: number): number {
+function dVE(torus: Triangulation, p: ArrayLike<number>, v: number, e: number): number {
   const ov = 3 * v;
   const [a, b] = torus.edges[e];
   const oa = 3 * a, ob = 3 * b;
@@ -58,7 +58,7 @@ function dVE(torus: Torus, p: ArrayLike<number>, v: number, e: number): number {
   ));
 }
 
-function dVF(torus: Torus, p: ArrayLike<number>, v: number, f: number): number {
+function dVF(torus: Triangulation, p: ArrayLike<number>, v: number, f: number): number {
   const ov = 3 * v;
   const [a, b, c] = torus.triangles[f];
   const oa = 3 * a, ob = 3 * b, oc = 3 * c;
@@ -76,7 +76,7 @@ function midpointSegDist(
   return Math.sqrt(pointSegmentDist2(mx, my, mz, p[oa], p[oa + 1], p[oa + 2], p[ob], p[ob + 1], p[ob + 2]));
 }
 
-function dEF(torus: Torus, p: ArrayLike<number>, e: number, f: number): number {
+function dEF(torus: Triangulation, p: ArrayLike<number>, e: number, f: number): number {
   const [a, b] = torus.edges[e];
   const oa = 3 * a, ob = 3 * b;
   const mx = 0.5 * (p[oa] + p[ob]), my = 0.5 * (p[oa + 1] + p[ob + 1]), mz = 0.5 * (p[oa + 2] + p[ob + 2]);
@@ -88,7 +88,7 @@ function dEF(torus: Torus, p: ArrayLike<number>, e: number, f: number): number {
   ));
 }
 
-function dFF(torus: Torus, p: ArrayLike<number>, fa: number, fb: number): number {
+function dFF(torus: Triangulation, p: ArrayLike<number>, fa: number, fb: number): number {
   const [a0, a1, a2] = torus.triangles[fa];
   const [b0, b1, b2] = torus.triangles[fb];
   const A0 = 3 * a0, A1 = 3 * a1, A2 = 3 * a2;
@@ -113,7 +113,7 @@ export interface CellBarrierOptions {
   strength?: number;
 }
 
-export function makeCellBarrier(torus: Torus, opts: CellBarrierOptions = {}): RepulsionEnergy {
+export function makeCellBarrier(torus: Triangulation, opts: CellBarrierOptions = {}): RepulsionEnergy {
   const delta = opts.delta ?? DEFAULT_DELTA;
   const strength = opts.strength ?? DEFAULT_STRENGTH;
   const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = torus.cellPairs;

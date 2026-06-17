@@ -12,7 +12,7 @@
  */
 
 import * as THREE from 'three';
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 import { PaperTorus } from '../math/embedding';
 import {
   DEFAULT_VERTEX_COLOR,
@@ -26,7 +26,7 @@ export interface TorusViewOptions {
 }
 
 export class TorusView extends THREE.Group {
-  private readonly torus: Torus;
+  private readonly torus: Triangulation;
   private readonly faceCount: number;       // = torus.triangles.length
   private readonly edgeCount: number;        // = torus.edges.length
   private readonly vertexCount: number;
@@ -45,7 +45,7 @@ export class TorusView extends THREE.Group {
 
   private readonly _dummy = new THREE.Object3D();
 
-  constructor(torus: Torus, opts: TorusViewOptions = {}) {
+  constructor(torus: Triangulation, opts: TorusViewOptions = {}) {
     super();
 
     this.torus = torus;

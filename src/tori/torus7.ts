@@ -1,5 +1,5 @@
 /**
- * Torus #7 — Rich Schwartz's 8-vertex flat torus. The ONLY degree-6-regular
+ * Triangulation #7 — Rich Schwartz's 8-vertex flat torus. The ONLY degree-6-regular
  * type (every vertex link is a hexagon), so it is the only one carrying the
  * equilateral triangular-lattice structure.
  *
@@ -9,12 +9,11 @@
  *
  * Sources:
  *   triangulation  rich/VertexMinimalPaper/8Vertex/Visual/TriangulationCombinatorics.java
- *   developOrder + generatorLoops  hand-authored (was src/math/develop.ts)
+ *   developOrder + generatorLoops  COMPUTED (canonicalDecoration, saved in markings.ts) — like every other type
  *   referenceCoords  rich/VertexMinimalPaper/8Vertex/mathematica_plotter
- *   periodBasis  src/math/latticeLayout.ts (L = ⟨(1,2),(3,-2)⟩)
  */
 
-import { defineTorus, type Tri, type Vec3 } from './defineTorus';
+import { defineTriangulation, type Tri, type Vec3 } from './triangulation';
 
 const TRIANGLES: readonly Tri[] = [
   [3, 5, 6], [3, 2, 5], [3, 6, 4], [3, 0, 2], [3, 4, 1], [3, 1, 0],
@@ -35,18 +34,10 @@ const RICH_COORDS: readonly Vec3[] = [
   [-0.64, 0.20, 1.0],
 ];
 
-export const torus7 = defineTorus({
+export const torus7 = defineTriangulation({
   id: 7,
   name: 'type7 (Rich)',
   triangles: TRIANGLES,
-  // Root T3; first six (3,14,15,13,7,1) fan around vertex 2 and close to 2π.
-  developOrder: [3, 14, 15, 13, 7, 1, 0, 6, 9, 8, 10, 2, 4, 5, 11, 12],
-  // γ₁ = 0→3→6→0  (lattice ≈ (1,2)),  γ₂ = 0→2→1→0  (lattice ≈ (3,-2)).
-  generatorLoops: [
-    [0, 3, 6, 0],
-    [0, 2, 1, 0],
-  ],
   referenceCoords: RICH_COORDS,
   symmetryPairing: [[0, 7], [1, 6], [2, 5], [3, 4]],
-  lattice: { periodBasis: [[1, 2], [3, -2]] },
 });

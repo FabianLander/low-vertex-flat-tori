@@ -16,7 +16,7 @@
 
 import { newtonFlatten, type NewtonOptions, type NewtonStatus } from './newton';
 import type { RepulsionEnergy } from './energies/types';
-import type { Torus } from '../tori/defineTorus';
+import type { Triangulation } from '../tori/triangulation';
 
 export type FlowStatus = 'converged' | 'stalled' | 'max-iters' | 'diverged' | 'blocked' | 'rejected';
 
@@ -81,7 +81,7 @@ export type FlowResult = {
 };
 
 export function embeddedFlow(
-  torus: Torus,
+  torus: Triangulation,
   positions: Float64Array,
   energy: RepulsionEnergy,
   opts: FlowOptions = {},
