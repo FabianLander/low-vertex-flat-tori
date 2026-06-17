@@ -1,7 +1,7 @@
 /**
  * Normalize a torus dataset into the canonical pose and DROP the trivial
  * coordinates: each 24-float row → the 17 free coords [x2,y2, v3,v4,v5,v6,v7]
- * (see src/math/normalize.ts for the convention). The 7 dropped numbers are
+ * (see src/configuration/gauge.ts for the convention). The 7 dropped numbers are
  * fixed by the convention (v0=origin, v1=(1,0,0), v2.z=0) and reconstructed on
  * demand with fromReduced().
  *
@@ -19,7 +19,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 import { RICH } from '../src/triangulations/index.ts';
-import { toReduced, REDUCED_DIM } from '../src/math/normalize.ts';
+import { toReduced, REDUCED_DIM } from '../src/configuration/gauge.ts';
 
 const DIM = RICH.vertexCount * 3; // 24
 

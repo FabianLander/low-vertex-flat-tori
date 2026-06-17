@@ -5,7 +5,7 @@ import { makeCellMargin } from './cellMargin';
 import { minMargin, linearSize } from '../../functions/minMargin';
 import { totalArea } from '../../topology/develop';
 import { RICH_REFERENCE } from '../reference';
-import { mulberry32 } from '../perturb';
+import { mulberry32 } from '../../configuration/rng';
 import { RICH } from '../../triangulations';
 
 const CHORD_LENGTH_SQUARED = makeChordLengthSquared(RICH);

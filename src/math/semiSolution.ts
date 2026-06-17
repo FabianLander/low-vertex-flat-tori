@@ -45,14 +45,12 @@ import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { modulus } from '../topology/develop';
 import { isEmbedded } from './embedded';
 import { newtonFlatten, type NewtonConstraint } from './newton';
+import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
 import type { Triangulation } from '../topology/triangulation';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-/** Flat positions array length: 8 vertices × 3 coordinates. */
-const N = 24;
 
 /**
  * z-coordinate indices of the six planar vertices P1..P6.
@@ -60,50 +58,8 @@ const N = 24;
  */
 const FROZEN_Z = [5, 8, 11, 14, 17, 20] as const;
 
-// ---------------------------------------------------------------------------
-// Doyle-Schwartz golden pup tent
-// ---------------------------------------------------------------------------
-
-/**
- * Vertex positions of the Doyle-Schwartz parametric family for modulus z = x+iy.
- *
- * Formulas from Doyle-Schwartz [DS25] section 2.2 (eq. 2; cross-checked against
- * the Mathematica file in off_limits_code/chapter3_calcs).  The returned array
- * has 24 entries in [x0,y0,z0, x1,y1,z1, …, x7,y7,z7] order.
- *
- * Properties of the result:
- *   - P1..P6 lie in z = 0 (conditions 1).
- *   - P0 and P7 are at height y√(8x) ≥ 0 (condition 2; degenerate at x = 0).
- *   - {P1,P2,P3} and {P4,P5,P6} are each collinear (in the XY-plane).
- *   - The ρ-symmetry holds: P7 = ρ(P0) where ρ(u,v,w) = (−u,−v,w).
- *   - All cone angles equal 2π (condition 3): this is an isometric immersion
- *     of the flat torus of modulus x+iy (condition 4 for any x,y in the DS
- *     fundamental domain).
- *
- * The fundamental domain is: x ≥ 0, x ≤ ½, (x−1)² + y² ≥ 1.
- */
-export function doyleSchwartzPositions(x: number, y: number): Float64Array {
-  const p = new Float64Array(N);
-  const x2 = x * x, y2 = y * y;
-  const ztop = Math.sqrt(8 * x) * y;
-  // P0
-  p[0]  = x - 2 * x2;       p[1]  = y - 2 * x * y;  p[2]  = ztop;
-  // P1
-  p[3]  = x - x2 - y2;      p[4]  = -y;              p[5]  = 0;
-  // P2
-  p[6]  = 2 * x - x2 - y2;  p[7]  = 0;               p[8]  = 0;
-  // P3
-  p[9]  = 3 * x - x2 - y2;  p[10] = y;               p[11] = 0;
-  // P4
-  p[12] = -3 * x + x2 + y2; p[13] = -y;              p[14] = 0;
-  // P5
-  p[15] = -2 * x + x2 + y2; p[16] = 0;               p[17] = 0;
-  // P6
-  p[18] = -x + x2 + y2;     p[19] = y;               p[20] = 0;
-  // P7
-  p[21] = 2 * x2 - x;       p[22] = 2 * x * y - y;  p[23] = ztop;
-  return p;
-}
+// `doyleSchwartzPositions` (the DS seed family) now lives in
+// `configuration/doyleSchwartz.ts` — a configuration is bare positions.
 
 // ---------------------------------------------------------------------------
 // Collinearity constraints

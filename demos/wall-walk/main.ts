@@ -29,7 +29,7 @@ import { newtonFlatten } from '../../src/math/newton';
 import { maxConeDeficit } from '../../src/functions/coneDeficit';
 import { isEmbedded } from '../../src/math/embedded';
 import { minMargin, linearSize } from '../../src/functions/minMargin';
-import { makeRng } from '../../src/math/perturb';
+import { makeRng } from '../../src/configuration/rng';
 
 import pushT7Raw from './data/push-t7-best.csv?raw';
 import pushT3Raw from './data/push-t3-best.csv?raw';

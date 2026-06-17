@@ -50,8 +50,11 @@ symmetric) manifold, just metric-different. See [solvers.md](solvers.md).
 | `Chart` | `solvers/types.ts` | the contract: `realize`, `lift`, `pullbackRows`, `dim`, `ambient` |
 | `identity`, `pinCoords` | `configuration/chart.ts` | the trivial and coordinate-pinning charts |
 | `symmetry`, `RICH_SYMMETRY` | `configuration/symmetry.ts` | the involution+pairing chart; Rich's ρ |
-| `PaperTorus` | `math/embedding.ts` | a configuration as a `Triangulation` + `Float64Array` positions |
-| `normalize` / `toReduced` | `math/normalize.ts` | the canonical pose (storage/dedup only, not the search path) |
+| `normalize` / `toReduced` | `configuration/gauge.ts` | the canonical pose (storage/dedup only, not the search path) |
+| `perturb`, `mulberry32`/`makeRng` | `configuration/perturb.ts`, `configuration/rng.ts` | Gaussian perturbation; seeded PRNGs |
+| `doyleSchwartzPositions` | `configuration/doyleSchwartz.ts` | the DS seed family (a flat #7 torus of modulus τ) |
 
-The `Chart` contract lives with the solvers (it is what they consume); the implementations live in
-`configuration/`. Everything is pure — no three.js, no DOM.
+A **configuration is a bare `Float64Array`** of positions — every layer threads that, with the torus
+bound into the `Fn`/`Chart` closures. `PaperTorus` (`math/embedding.ts`) is a `{torus, positions}`
+*render/IO bundle*, not a configuration type. The `Chart` contract lives with the solvers (it is what
+they consume); the implementations live in `configuration/`. Everything is pure — no three.js, no DOM.

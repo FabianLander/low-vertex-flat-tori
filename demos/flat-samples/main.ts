@@ -3,7 +3,7 @@
  *
  * Top row:    the 8 tori as given (gauge-centered only, for framing).
  * Bottom row: the same 8 after normalize() — the canonical similarity pose
- *             v0→(0,0,0), v1→(1,0,0), v2→xy-plane (see src/math/normalize.ts).
+ *             v0→(0,0,0), v1→(1,0,0), v2→xy-plane (see src/configuration/gauge.ts).
  *
  * The three ANCHOR vertices that define the convention are marked:
  *   v0 = white (origin), v1 = red (the +x axis), v2 = green (the +y / xy-plane).
@@ -20,7 +20,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 import { PaperTorus } from '../../src/math/embedding';
 import { RICH } from '../../src/triangulations';
-import { normalize } from '../../src/math/normalize';
+import { normalize } from '../../src/configuration/gauge';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { TorusView } from '../../src/viewer/TorusView';
 

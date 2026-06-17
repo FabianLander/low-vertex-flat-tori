@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { coneAngles, coneAngleDeficits, maxConeDeficit, coneDeficit } from './coneDeficit.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';
-import { mulberry32 } from '../math/perturb.ts';
+import { mulberry32 } from '../configuration/rng.ts';
 import { RICH } from '../triangulations/index.ts';
 
 const TWO_PI = Math.PI * 2;

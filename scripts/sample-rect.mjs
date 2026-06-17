@@ -52,7 +52,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
-import { makeRng } from '../src/math/perturb.ts';
+import { makeRng } from '../src/configuration/rng.ts';
 import { byId } from '../src/triangulations/index.ts';
 import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius } from '../src/topology/develop.ts';
 import { newtonFlatten } from '../src/math/newton.ts';

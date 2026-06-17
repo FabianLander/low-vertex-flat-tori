@@ -1,15 +1,13 @@
 /**
- * Random perturbations of an embedding and a seeded RNG.
+ * Seeded pseudo-random number generators for sampling and perturbing
+ * configurations. Pure number-in/number-out — no torus, no positions.
  */
-
-import { PaperTorus } from './embedding';
 
 /**
  * Mulberry32: small, fast, deterministic PRNG. Returns uniform [0,1).
- * Period is only 2³² outputs (≈ 4.3e9) — at 24 draws/attempt that is ~1.8e8
- * distinct attempts before the stream repeats exactly. Fine for tests and
- * short runs; for billions-scale searches use xoshiro128pp (the default via
- * makeRng). Kept for back-compat and reproducing old runs.
+ * Period is only 2³² outputs (≈ 4.3e9) — fine for tests and short runs; for
+ * billions-scale searches use `xoshiro128pp` (the default via `makeRng`). Kept
+ * for back-compat and reproducing old runs.
  */
 export function mulberry32(seed: number): () => number {
   let s = seed >>> 0;
@@ -22,8 +20,8 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-/** SplitMix32 — expands a 32-bit seed into well-mixed 32-bit words. Used to
- *  fill a larger PRNG state from a single seed (standard practice). */
+/** SplitMix32 — expands a 32-bit seed into well-mixed 32-bit words (used to fill
+ *  a larger PRNG state from a single seed). */
 function splitmix32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -36,14 +34,10 @@ function splitmix32(seed: number): () => number {
 }
 
 /**
- * xoshiro128++ (Blackman & Vigna): 128-bit state, proven period 2¹²⁸ − 1,
- * pure 32-bit ops, excellent statistical quality. Returns uniform [0,1).
- *
- * Effectively inexhaustible for this project — even 10¹⁵ attempts × 24 draws
- * ≈ 2.4e16 outputs is negligible against 2¹²⁸ ≈ 3.4e38. Distinct seeds give
- * well-separated streams (state filled via SplitMix32), so parallel workers
- * with different seeds explore independent regions. This is the default RNG
- * for the search scripts.
+ * xoshiro128++ (Blackman & Vigna): 128-bit state, period 2¹²⁸ − 1, pure 32-bit
+ * ops, excellent statistical quality — effectively inexhaustible here. Distinct
+ * seeds give well-separated streams (state filled via SplitMix32), so parallel
+ * workers with different seeds explore independent regions. The default RNG.
  */
 export function xoshiro128pp(seed: number): () => number {
   const sm = splitmix32(seed);
@@ -80,23 +74,10 @@ export function makeRng(name: string | undefined, seed: number): () => number {
   }
 }
 
-/** Box-Muller standard normal from a uniform [0,1) source. */
-function gaussian(rng: () => number): number {
+/** Box–Muller standard normal from a uniform [0,1) source. */
+export function gaussian(rng: () => number): number {
   let u = rng();
   if (u < 1e-12) u = 1e-12;
   const v = rng();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-}
-
-/** New PaperTorus = base + N(0, magnitude) noise on every coordinate. */
-export function perturb(
-  base: PaperTorus,
-  magnitude: number,
-  rng: () => number,
-): PaperTorus {
-  const out = base.clone();
-  for (let i = 0; i < out.positions.length; i++) {
-    out.positions[i] += magnitude * gaussian(rng);
-  }
-  return out;
 }

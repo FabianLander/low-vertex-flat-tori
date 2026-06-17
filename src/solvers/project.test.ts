@@ -18,12 +18,14 @@ import { identity, pinCoords } from '../configuration/chart.ts';
 import { flat } from '../submanifolds/flat.ts';
 import { collinear } from '../submanifolds/collinear.ts';
 import { newtonFlatten } from '../math/newton.ts';
-import { doyleSchwartzPositions, semiSolutionFlatten } from '../math/semiSolution.ts';
+import { semiSolutionFlatten } from '../math/semiSolution.ts';
+import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
 import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { modulus } from '../topology/develop.ts';
 import { byId } from '../triangulations/index.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';
-import { perturb, mulberry32 } from '../math/perturb.ts';
+import { perturb } from '../configuration/perturb.ts';
+import { mulberry32 } from '../configuration/rng.ts';
 
 const torus = byId(7);
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];
@@ -56,7 +58,7 @@ const SEEDS = [
 describe('project — base case: identity chart + [flat] ≡ newtonFlatten', () => {
   it('reproduces newtonFlatten on a perturbed Rich seed', () => {
     // σ≈0.05 noise so Newton actually iterates (not a no-op near the manifold).
-    const seed = perturb(RICH_REFERENCE, 0.05, mulberry32(12345)).positions;
+    const seed = perturb(RICH_REFERENCE.positions, 0.05, mulberry32(12345));
 
     const posA = seed.slice();
     const rA = newtonFlatten(torus, posA);

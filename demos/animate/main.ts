@@ -4,7 +4,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RICH } from '../../src/triangulations';
 import { PaperTorus } from '../../src/math/embedding';
 import { RICH_REFERENCE } from '../../src/math/reference';
-import { perturb, mulberry32 } from '../../src/math/perturb';
+import { perturb } from '../../src/configuration/perturb';
+import { mulberry32 } from '../../src/configuration/rng';
 import { TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE } from '../../src/viewer/palette';
 
@@ -46,7 +47,7 @@ const lerpDuration = 1.4; // seconds per leg
 const dwell = 0.4;        // seconds at each end before next leg
 
 function pickTarget(): PaperTorus {
-  return perturb(RICH_REFERENCE, 0.06, rng);
+  return new PaperTorus(RICH, perturb(RICH_REFERENCE.positions, 0.06, rng));
 }
 
 function lerpEmbedding(t: number): void {

@@ -22,10 +22,8 @@
  */
 
 import { torus7 as torus } from '../src/topology/torus7.ts';
-import {
-  doyleSchwartzPositions,
-  scanSemiSolutions,
-} from '../src/math/semiSolution.ts';
+import { scanSemiSolutions } from '../src/math/semiSolution.ts';
+import { doyleSchwartzPositions } from '../src/configuration/doyleSchwartz.ts';
 import { modulus, reduceModulus } from '../src/topology/develop.ts';
 
 // ---------------------------------------------------------------------------

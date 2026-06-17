@@ -4,7 +4,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RICH } from '../../src/triangulations';
 import { PaperTorus } from '../../src/math/embedding';
 import { RICH_REFERENCE } from '../../src/math/reference';
-import { perturb, mulberry32 } from '../../src/math/perturb';
+import { perturb } from '../../src/configuration/perturb';
+import { mulberry32 } from '../../src/configuration/rng';
 import { TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE } from '../../src/viewer/palette';
 
@@ -71,7 +72,7 @@ function renderGrid(embeddings: readonly PaperTorus[]): TorusView[] {
 const rng = mulberry32(1);
 const embeddings: PaperTorus[] = [];
 for (let i = 0; i < N; i++) {
-  embeddings.push(perturb(RICH_REFERENCE, 0.08, rng));
+  embeddings.push(new PaperTorus(RICH, perturb(RICH_REFERENCE.positions, 0.08, rng)));
 }
 renderGrid(embeddings);
 

@@ -11,7 +11,7 @@ import { flat } from '../submanifolds/flat.ts';
 import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { byId } from '../triangulations/index.ts';
 import { RICH_REFERENCE } from '../math/reference.ts';
-import { mulberry32 } from '../math/perturb.ts';
+import { mulberry32 } from './rng.ts';
 
 const torus = byId(7);
 const { reflection: refl, pairing } = RICH_SYMMETRY;

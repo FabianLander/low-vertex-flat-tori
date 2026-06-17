@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { doyleSchwartzPositions, semiSolutionFlatten, scanSemiSolutions } from './semiSolution';
+import { semiSolutionFlatten, scanSemiSolutions } from './semiSolution';
+import { doyleSchwartzPositions } from '../configuration/doyleSchwartz';
 import { maxConeDeficit } from '../functions/coneDeficit.ts';
 import { modulus } from '../topology/develop';
 import { byId } from '../triangulations';
