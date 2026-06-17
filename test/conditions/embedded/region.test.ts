@@ -8,7 +8,6 @@
 import { describe, it, expect } from 'vitest';
 import { embedded, isEmbedded, makeCellMargin, makeCutOffArea } from '../../../src/conditions/embedded/index.ts';
 import { flow } from '../../../src/solvers/flow.ts';
-import { identity } from '../../../src/configuration/chart.ts';
 import { flat, maxConeDeficit } from '../../../src/conditions/flat.ts';
 import { byId } from '../../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../../src/math/reference.ts';
@@ -25,7 +24,7 @@ describe('embedded Region', () => {
 
     // Aggressive un-gated fattening crosses a pair → reproducibly non-embedded.
     const bad = RICH_REFERENCE.positions.slice();
-    flow(identity(24), bad, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
+    flow(bad, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     expect(region.contains(bad)).toBe(isEmbedded(torus, bad)); // gate tracks the truth
     expect(region.contains(bad)).toBe(false);
   });
@@ -39,7 +38,7 @@ describe('embedded Region', () => {
 describe('gated flow — the gate keeps the search inside Ω where un-gated descent escapes', () => {
   it('un-gated descent of the repulsion energy leaves Ω', () => {
     const pos = RICH_REFERENCE.positions.slice();
-    flow(identity(24), pos, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
+    flow(pos, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     expect(isEmbedded(torus, pos)).toBe(false);
   });
 
@@ -48,7 +47,7 @@ describe('gated flow — the gate keeps the search inside Ω where un-gated desc
     const energy = makeCellMargin(torus, { epsilon: 0.3 });
     const pos = RICH_REFERENCE.positions.slice();
     const eBefore = energy.compute(pos);
-    const r = flow(identity(24), pos, [flat(torus)], energy, { region, maxIters: 200 });
+    const r = flow(pos, [flat(torus)], energy, { gate: (c) => region.contains(c), maxIters: 200 });
 
     expect(['converged', 'stalled', 'max-iters', 'blocked']).toContain(r.status);
     expect(maxConeDeficit(torus, pos)).toBeLessThan(1e-9); // stayed on M (flat)

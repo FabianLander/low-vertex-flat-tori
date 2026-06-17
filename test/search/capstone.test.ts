@@ -12,10 +12,9 @@ import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
 import { flow } from '../../src/solvers/flow.ts';
 import { march, type Family } from '../../src/solvers/march.ts';
-import { identity } from '../../src/configuration/chart.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulusWall } from '../../src/conditions/modulus.ts';
-import { embedded, makeCellMargin, isEmbedded } from '../../src/conditions/embedded/index.ts';
+import { makeCellMargin, isEmbedded } from '../../src/conditions/embedded/index.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/math/reference.ts';
@@ -25,11 +24,11 @@ const reTauHat = (p: ArrayLike<number>) => Math.abs(reduceModulus(modulus(torus,
 
 describe('capstone — flat ∧ on-wall ∧ embedded, from project · march · flow', () => {
   it('lands a flat embedded torus on a modulus wall and fattens it there', () => {
-    const region = embedded(torus);
+    const gate = (c: ArrayLike<number>) => isEmbedded(torus, c);
     const x = RICH_REFERENCE.positions.slice();
 
     // 1. project onto the flat manifold M = {flat}.
-    expect(project(identity(24), x, [flat(torus)]).status).toBe('converged');
+    expect(project(x, [flat(torus)]).status).toBe('converged');
     const start = reTauHat(x);
 
     // 2. march the wall |Re τ̂| = s toward a target, staying in the embedded region.
@@ -38,7 +37,7 @@ describe('capstone — flat ∧ on-wall ∧ embedded, from project · march · f
       param: reTauHat,
       held: (c, s) => [flat(torus), modulusWall(torus, c, s)],
     };
-    const m = march(identity(24), x, wallFamily, target, { region, maxSteps: 400 });
+    const m = march(x, wallFamily, target, { gate, maxSteps: 400 });
     expect(['reached', 'blocked', 'max-iters']).toContain(m.status); // any stop is a valid result
     const wall = reTauHat(x); // the wall value actually reached
 
@@ -51,7 +50,7 @@ describe('capstone — flat ∧ on-wall ∧ embedded, from project · march · f
     // 3. flow to fatten ALONG the wall: descend the barrier while HOLDING
     //    [flat, modulusWall(wall)] and gated to stay embedded.
     const held = [flat(torus), modulusWall(torus, x, wall)];
-    const f = flow(identity(24), x, held, makeCellMargin(torus), { region, maxIters: 100, stepSize: 0.002 });
+    const f = flow(x, held, makeCellMargin(torus), { gate, maxIters: 100, stepSize: 0.002 });
     expect(['converged', 'stalled', 'max-iters', 'blocked']).toContain(f.status);
 
     // The composed result is still a flat, embedded torus on the same wall.

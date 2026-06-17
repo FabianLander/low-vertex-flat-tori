@@ -21,7 +21,7 @@
 import type { Triangulation } from '../topology/triangulation.ts';
 import type { ScalarFn } from '../functions/types.ts';
 import type { Family } from '../solvers/march.ts';
-import { identity } from '../configuration/chart.ts';
+import { fullSpace, type ConfigSpace } from '../configuration/space.ts';
 import { flat } from '../conditions/flat.ts';
 import { modulusWall } from '../conditions/modulus.ts';
 import { embedded } from '../conditions/embedded/index.ts';
@@ -29,17 +29,24 @@ import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
 import { march } from '../solvers/march.ts';
 import { modulus, reduceModulus } from '../topology/develop.ts';
+import { pullHeld, regionGate } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 /**
- * The 1-parameter family marching |Re τ̂| to a wall value: `param` reads the
- * current |Re τ̂| off the config; `held` rebuilds `[flat, modulusWall(s)]` AT the
- * current point (the per-step re-freeze of the SL(2,ℤ) chart).
+ * The 1-parameter family marching |Re τ̂| to a wall value, on the working space of
+ * `space`: `param` reads the current |Re τ̂| off the pushed config; `held` rebuilds
+ * `[flat, modulusWall(s)]` AT the current point — frozen at `push(x)` and pulled back
+ * into ℝⁿ (the per-step re-freeze of the SL(2,ℤ) chart).
  */
-export function wallFamily(triang: Triangulation): Family {
+export function wallFamily(space: ConfigSpace): Family {
+  const triang = space.triang;
+  const pbuf = new Float64Array(space.ambient);
   return {
-    param: (c) => Math.abs(reduceModulus(modulus(triang, c).tau)[0]),
-    held: (c, s) => [flat(triang), modulusWall(triang, c, s)],
+    param: (x) => { space.push(x, pbuf); return Math.abs(reduceModulus(modulus(triang, pbuf).tau)[0]); },
+    held: (x, s) => {
+      space.push(x, pbuf);
+      return pullHeld(space, [flat(triang), modulusWall(triang, pbuf, s)]);
+    },
   };
 }
 
@@ -78,13 +85,15 @@ export function marchToWallAttempt(
   triang: Triangulation,
   opts: MarchModulusOptions,
 ): (seed: Float64Array) => MarchOutcome | null {
-  const chart = identity(triang.vertexCount * 3);
-  const held0 = [flat(triang)];
-  const region = embedded(triang);
-  const family = wallFamily(triang);
+  const space = fullSpace(triang);        // seed ∈ ℝⁿ is the ambient config (φ = id)
+  const held0 = pullHeld(space, [flat(triang)]);
+  const gate = regionGate(space, embedded(triang));
+  const family = wallFamily(space);
+  const energy = space.pullScalar(opts.energy);
+  const fattenEnergy = opts.fattenEnergy ? space.pullScalar(opts.fattenEnergy) : undefined;
   const angleTol = opts.angleTol ?? 1e-10;
   const flowOpts = {
-    region,
+    gate,
     stepSize: opts.stepSize ?? 0.001,
     maxIters: opts.maxFlowIters ?? 500,
     energyTol: 1e-12,
@@ -92,16 +101,16 @@ export function marchToWallAttempt(
   };
   return (seed) => {
     // 1. Reach a flat embedded starting torus (the march needs a point in F ∩ Ω).
-    if (project(chart, seed, held0).status !== 'converged') return null;
-    flow(chart, seed, held0, opts.energy, flowOpts);
+    if (project(seed, held0).status !== 'converged') return null;
+    flow(seed, held0, energy, flowOpts);
     // 1b. Optionally fatten the margin so the march has room to move (Fabi's energy
     //     is zero on the embedded set; the cell-margin energy is alive there).
-    if (opts.fattenEnergy) flow(chart, seed, held0, opts.fattenEnergy, flowOpts);
+    if (fattenEnergy) flow(seed, held0, fattenEnergy, flowOpts);
     const start = certify(triang, seed);
     if (!(start.coneDeficit < angleTol && start.embedded)) return null;
 
     // 2. March |Re τ̂| onto the wall, re-freezing + gating embedded each step.
-    const r = march(chart, seed, family, opts.c, { region });
+    const r = march(seed, family, opts.c, { gate });
     return { cert: certify(triang, seed), status: r.status, reached: r.param };
   };
 }

@@ -14,7 +14,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
-import { identity, pinCoords } from '../../src/configuration/chart.ts';
+import { pinCoords } from '../../src/configuration/space.ts';
+import { pullHeld } from '../../src/search/pull.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { collinear } from '../../src/conditions/collinear.ts';
 import { newtonFlatten } from '../../src/math/newton.ts';
@@ -63,7 +64,7 @@ describe('project — base case: identity chart + [flat] ≡ newtonFlatten', () 
     const rA = newtonFlatten(torus, posA);
 
     const posB = seed.slice();
-    const rB = project(identity(24), posB, [flat(torus)]);
+    const rB = project(posB, [flat(torus)]);
 
     expect(rA.status).toBe('converged');
     expect(rB.status).toBe('converged');
@@ -80,9 +81,8 @@ describe('project — base case: identity chart + [flat] ≡ newtonFlatten', () 
 });
 
 describe('project — acceptance: pinCoords + [flat, collinear×2] ≡ semiSolutionFlatten', () => {
-  const flatC = flat(torus);
-  const constraints = [flatC, collinear(1, 2, 3), collinear(4, 5, 6)];
-  const chart = pinCoords(FROZEN_Z, 24);
+  const space = pinCoords(torus, FROZEN_Z);
+  const constraints = pullHeld(space, [flat(torus), collinear(1, 2, 3), collinear(4, 5, 6)]);
 
   it('reproduces semiSolutionFlatten on ρ-broken DS seeds', () => {
     for (const { x, y } of SEEDS) {
@@ -98,11 +98,11 @@ describe('project — acceptance: pinCoords + [flat, collinear×2] ≡ semiSolut
       const rA = semiSolutionFlatten(torus, posA, { maxIters: 80 });
 
       const posB = mk();
-      const xX = new Float64Array(chart.dim);
-      chart.lift(posB, xX);
-      const rB = project(chart, xX, constraints, { maxIters: 80 });
+      const xX = new Float64Array(space.dim);
+      space.coords(posB, xX);
+      const rB = project(xX, constraints, { maxIters: 80 });
       const posBfull = new Float64Array(24);
-      chart.realize(xX, posBfull);
+      space.push(xX, posBfull);
 
       expect(rA.status).toBe('converged');
       expect(rB.status).toBe('converged');
@@ -136,11 +136,11 @@ describe('project — acceptance: pinCoords + [flat, collinear×2] ≡ semiSolut
     semiSolutionFlatten(torus, posA, { maxIters: 80 }); // zeroes z on entry
 
     const posB = mk();
-    const xX = new Float64Array(chart.dim);
-    chart.lift(posB, xX);   // ignores the dirty frozen coord
-    project(chart, xX, constraints, { maxIters: 80 });
+    const xX = new Float64Array(space.dim);
+    space.coords(posB, xX);   // ignores the dirty frozen coord
+    project(xX, constraints, { maxIters: 80 });
     const posBfull = new Float64Array(24);
-    chart.realize(xX, posBfull);
+    space.push(xX, posBfull);
 
     for (const c of FROZEN_Z) expect(posBfull[c]).toBe(0);
     expect(maxAbsDiff(posA, posBfull)).toBeLessThan(1e-6);  // FD-newton vs analytic-project, ~1e-8 apart

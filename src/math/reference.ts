@@ -5,7 +5,7 @@
  */
 
 import { RICH } from '../triangulations';
-import { PaperTorus } from './embedding';
+import { paperTorusFromVec3s, type PaperTorus } from '../configuration/paperTorus.ts';
 import type { Vec3 } from '../topology/triangulation';
 
 // Rich's canonical ℝ³ coordinates (decimal).
@@ -20,4 +20,4 @@ const RICH_COORDS: readonly Vec3[] = [
   [-0.64, 0.20, 1.0],
 ];
 
-export const RICH_REFERENCE: PaperTorus = PaperTorus.fromVec3s(RICH, RICH_COORDS);
+export const RICH_REFERENCE: PaperTorus = paperTorusFromVec3s(RICH, RICH_COORDS);

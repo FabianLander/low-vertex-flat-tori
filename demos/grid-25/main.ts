@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { RICH } from '../../src/triangulations';
-import { PaperTorus } from '../../src/math/embedding';
+import { makePaperTorus, type PaperTorus } from '../../src/configuration/paperTorus.ts';
+import { coneAngleDeficits } from '../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { perturb } from '../../src/configuration/perturb';
 import { mulberry32 } from '../../src/configuration/rng';
@@ -54,9 +55,8 @@ function renderGrid(embeddings: readonly PaperTorus[]): TorusView[] {
     const t = embeddings[i];
     const view = new TorusView(RICH, { vertexRadius: 0.05 });
     view.sync(t);
-    for (let v = 0; v < RICH.vertexCount; v++) {
-      deficits[v] = Math.abs(t.coneAngleDeficit(v));
-    }
+    const defs = coneAngleDeficits(RICH, t.positions);
+    for (let v = 0; v < RICH.vertexCount; v++) deficits[v] = Math.abs(defs[v]);
     view.setVertexScalars(deficits, DEFICIT_PALETTE);
     const r = Math.floor(i / GRID);
     const c = i % GRID;
@@ -72,7 +72,7 @@ function renderGrid(embeddings: readonly PaperTorus[]): TorusView[] {
 const rng = mulberry32(1);
 const embeddings: PaperTorus[] = [];
 for (let i = 0; i < N; i++) {
-  embeddings.push(new PaperTorus(RICH, perturb(RICH_REFERENCE.positions, 0.08, rng)));
+  embeddings.push(makePaperTorus(RICH, perturb(RICH_REFERENCE.positions, 0.08, rng)));
 }
 renderGrid(embeddings);
 

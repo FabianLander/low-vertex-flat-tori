@@ -27,7 +27,7 @@ import { modulus, reduceModulus } from '../../src/topology/develop';
 import { maxConeDeficit } from '../../src/conditions/flat';
 import { minMargin } from '../../src/conditions/embedded/index';
 import { parseEmbeddings } from '../../src/io/embeddings';
-import type { PaperTorus } from '../../src/math/embedding';
+import type { PaperTorus } from '../../src/configuration/paperTorus.ts';
 import { styledTorus } from '../../src/render/styledTorus';
 import { paperMaterials } from '../../src/render/paper';
 import { skyEnvironment } from '../../src/render/stage';

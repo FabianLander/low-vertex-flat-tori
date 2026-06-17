@@ -7,7 +7,6 @@ import { certify } from '../../src/search/certify.ts';
 import { makeCellMargin, isEmbedded, minMargin } from '../../src/conditions/embedded/index.ts';
 import { project } from '../../src/solvers/project.ts';
 import { flow } from '../../src/solvers/flow.ts';
-import { identity } from '../../src/configuration/chart.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
@@ -18,7 +17,7 @@ const torus = byId(7);
 describe('certify', () => {
   it('agrees with the underlying primitives on a flat embedded torus', () => {
     const p = RICH_REFERENCE.positions.slice();
-    project(identity(24), p, [flat(torus)]);
+    project(p, [flat(torus)]);
     const cert = certify(torus, p);
 
     expect(cert.coneDeficit).toBe(maxConeDeficit(torus, p));
@@ -32,7 +31,7 @@ describe('certify', () => {
 
   it('records the RAW τ and the REDUCED τ̂ as distinct, consistent fields', () => {
     const p = RICH_REFERENCE.positions.slice();
-    project(identity(24), p, [flat(torus)]);
+    project(p, [flat(torus)]);
     const cert = certify(torus, p);
 
     // Raw τ is exactly the develop holonomy ratio (Teichmüller).
@@ -52,7 +51,7 @@ describe('certify', () => {
   it('reports embedded:false honestly when descent escapes Ω', () => {
     const p = RICH_REFERENCE.positions.slice();
     // Un-gated repulsion descent leaves the embedded set (see flow/region tests).
-    flow(identity(24), p, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
+    flow(p, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     const cert = certify(torus, p);
     expect(cert.embedded).toBe(false);
     expect(cert.coneDeficit).toBeLessThan(1e-9); // still flat (held), just not embedded

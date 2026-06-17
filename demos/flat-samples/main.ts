@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
-import { PaperTorus } from '../../src/math/embedding';
+import { makePaperTorus } from '../../src/configuration/paperTorus.ts';
 import { RICH } from '../../src/triangulations';
 import { normalize } from '../../src/configuration/gauge';
 import { RICH_REFERENCE } from '../../src/math/reference';
@@ -112,7 +112,7 @@ const tags: Tagged[] = [];
 
 function addTorus(p24: Float64Array, x: number, y: number, colHex: number): void {
   const view = new TorusView(RICH, { vertexRadius: 0.05 });
-  view.sync(new PaperTorus(RICH, p24));
+  view.sync(makePaperTorus(RICH, p24));
   const col = new THREE.Color(colHex);
   view.setFaceScalars(new Array(FACE_COUNT).fill(0), { color: () => col.clone() });
   view.setVertexScalars(anchorScalars, anchorPalette);

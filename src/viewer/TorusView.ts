@@ -13,7 +13,7 @@
 
 import * as THREE from 'three';
 import type { Triangulation } from '../topology/triangulation';
-import { PaperTorus } from '../math/embedding';
+import type { PaperTorus } from '../configuration/paperTorus.ts';
 import {
   DEFAULT_VERTEX_COLOR,
   DEFAULT_FACE_COLOR,

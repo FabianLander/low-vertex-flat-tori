@@ -7,7 +7,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
-import { identity } from '../../src/configuration/chart.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { fixedModulus, modulusWall } from '../../src/conditions/modulus.ts';
 import { modulus, reduceModulus, type V2 } from '../../src/topology/develop.ts';
@@ -19,7 +18,7 @@ const torus = byId(7);
 // A flat seed and its reduced modulus.
 function flatSeed(): { pos: Float64Array; tauHat: V2 } {
   const pos = RICH_REFERENCE.positions.slice();
-  project(identity(24), pos, [flat(torus)]);
+  project(pos, [flat(torus)]);
   return { pos, tauHat: reduceModulus(modulus(torus, pos).tau) };
 }
 
@@ -28,7 +27,7 @@ describe('modulus submanifolds', () => {
     const { pos: seed, tauHat } = flatSeed();
     const c = Math.abs(tauHat[0]) + 0.02; // a small, in-chamber move
     const p = seed.slice();
-    const r = project(identity(24), p, [flat(torus), modulusWall(torus, seed, c)]);
+    const r = project(p, [flat(torus), modulusWall(torus, seed, c)]);
 
     expect(r.status).toBe('converged');
     expect(maxConeDeficit(torus, p)).toBeLessThan(1e-9);
@@ -40,7 +39,7 @@ describe('modulus submanifolds', () => {
     const { pos: seed, tauHat } = flatSeed();
     const target: V2 = [tauHat[0] + 0.01, tauHat[1] + 0.01];
     const p = seed.slice();
-    const r = project(identity(24), p, [flat(torus), fixedModulus(torus, seed, target)]);
+    const r = project(p, [flat(torus), fixedModulus(torus, seed, target)]);
 
     expect(r.status).toBe('converged');
     expect(maxConeDeficit(torus, p)).toBeLessThan(1e-9);

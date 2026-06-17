@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { RICH } from '../../src/triangulations';
-import { PaperTorus } from '../../src/math/embedding';
+import { makePaperTorus, clonePaperTorus, type PaperTorus } from '../../src/configuration/paperTorus.ts';
+import { coneAngleDeficits } from '../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { perturb } from '../../src/configuration/perturb';
 import { mulberry32 } from '../../src/configuration/rng';
@@ -39,7 +40,7 @@ scene.add(key);
 
 // ---- State ----
 const rng = mulberry32(42);
-const current = RICH_REFERENCE.clone();
+const current = clonePaperTorus(RICH_REFERENCE);
 let target = pickTarget();
 const startPositions = current.positions.slice();
 let phase = 0;
@@ -47,7 +48,7 @@ const lerpDuration = 1.4; // seconds per leg
 const dwell = 0.4;        // seconds at each end before next leg
 
 function pickTarget(): PaperTorus {
-  return new PaperTorus(RICH, perturb(RICH_REFERENCE.positions, 0.06, rng));
+  return makePaperTorus(RICH, perturb(RICH_REFERENCE.positions, 0.06, rng));
 }
 
 function lerpEmbedding(t: number): void {
@@ -68,9 +69,8 @@ scene.add(view);
 
 const deficitBuf = new Float32Array(RICH.vertexCount);
 function refreshColors(): void {
-  for (let i = 0; i < RICH.vertexCount; i++) {
-    deficitBuf[i] = Math.abs(current.coneAngleDeficit(i));
-  }
+  const defs = coneAngleDeficits(RICH, current.positions);
+  for (let i = 0; i < RICH.vertexCount; i++) deficitBuf[i] = Math.abs(defs[i]);
   view.setVertexScalars(deficitBuf, DEFICIT_PALETTE);
 }
 

@@ -14,7 +14,7 @@
 
 import type { Triangulation } from '../topology/triangulation.ts';
 import type { Fn } from '../functions/types.ts';
-import type { Held } from '../solvers/types.ts';
+import type { Held } from './types.ts';
 
 const TWO_PI = Math.PI * 2;
 

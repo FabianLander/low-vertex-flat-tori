@@ -19,11 +19,12 @@
 
 import type { Triangulation } from '../topology/triangulation.ts';
 import type { ScalarFn } from '../functions/types.ts';
-import type { Constraint } from '../solvers/types.ts';
-import { identity } from '../configuration/chart.ts';
+import type { Constraint } from '../conditions/types.ts';
+import { fullSpace } from '../configuration/space.ts';
 import { embedded } from '../conditions/embedded/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
+import { pullHeld, regionGate } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 export interface FlowSearchOptions {
@@ -46,20 +47,22 @@ export function flattenFlowEmbed(
   accept: (cert: Certificate) => boolean,
   opts: FlowSearchOptions,
 ): (seed: Float64Array) => Certificate | null {
-  const chart = identity(triang.vertexCount * 3);
-  const region = embedded(triang);
+  const space = fullSpace(triang);        // x ∈ ℝⁿ is the ambient config (φ = id)
+  const gate = regionGate(space, embedded(triang));
+  const energy = space.pullScalar(opts.energy);
+  const fattenEnergy = opts.fattenEnergy ? space.pullScalar(opts.fattenEnergy) : undefined;
   const flowOpts = {
-    region,
+    gate,
     stepSize: opts.stepSize ?? 0.001,
     maxIters: opts.maxFlowIters ?? 500,
     energyTol: 1e-12,
     gradientTol: 1e-12,
   };
   return (x) => {
-    const held = buildHeld(x);            // [flat] or [flat, modulusWall(seed, c)]
-    if (project(chart, x, held).status !== 'converged') return null;
-    flow(chart, x, held, opts.energy, flowOpts);                   // reach embedded
-    if (opts.fattenEnergy) flow(chart, x, held, opts.fattenEnergy, flowOpts); // fatten the margin
+    const held = pullHeld(space, buildHeld(x));   // [flat] or [flat, modulusWall(seed, c)], pulled
+    if (project(x, held).status !== 'converged') return null;
+    flow(x, held, energy, flowOpts);                   // reach embedded
+    if (fattenEnergy) flow(x, held, fattenEnergy, flowOpts); // fatten the margin
     const cert = certify(triang, x);
     return accept(cert) ? cert : null;
   };

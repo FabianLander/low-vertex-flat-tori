@@ -1,40 +1,43 @@
 /**
  * march — continuation along a 1-parameter family of submanifolds M_s, staying
- * inside an open region Ω. The tool to REACH (or track) a target that one
- * projection can't hit because Ω is tiny and M_s is far: walk there in adaptive
- * substeps, re-projecting and re-gating each step.
+ * inside an open region. The tool to REACH (or track) a target that one projection
+ * can't hit because the region is tiny and M_s is far: walk there in adaptive
+ * substeps, re-projecting and re-gating each step. Run directly in the working space
+ * ℝⁿ — the `Family` and the `Gate` are both ℝⁿ-facing (the family pushes to ℝ³ⱽ
+ * internally when it needs an ambient quantity, e.g. the modulus).
  *
- * It is pure corrector-continuation (no bespoke numerics): at parameter value s,
- * the corrector is `project` onto the family's held submanifolds rebuilt at the
- * current point (so frozen charts — e.g. the modulus chart — re-freeze each step).
+ * Pure corrector-continuation (no bespoke numerics): at parameter value s, the
+ * corrector is `project` onto the family's held submanifolds rebuilt at the current
+ * point (so frozen charts — e.g. the modulus chart — re-freeze each step).
  *   - advance s toward the target by `step`;
- *   - `project` onto M_s; if it converges AND stays in Ω, accept and grow `step`;
+ *   - `project` onto M_s; if it converges AND passes the gate, accept and grow `step`;
  *   - else restore, halve `step`; after too many consecutive halvings the path is
- *     pinched off → return `'blocked'` (a RESULT — where Ω closes — not a failure).
+ *     pinched off → return `'blocked'` (a RESULT — where the region closes — not a failure).
  *
- * Mutates `x` (chart coords) in place. Pure: no three.js, no DOM. Reuses the
- * `project` corrector verbatim — same J-hub.
+ * Mutates `x` in place. Pure: no three.js, no DOM. Reuses `project` verbatim.
  */
 
 import { project, type ProjectOptions } from './project.ts';
-import type { Chart, Constraint, Region } from './types.ts';
+import type { Constraint } from '../conditions/types.ts';
+import type { Gate } from './types.ts';
 
 /**
- * A 1-parameter family of submanifolds. `param` reads the current parameter value
- * off a config (e.g. |Re τ̂|); `held` builds the submanifolds pinning the family to
- * value `s`, with any frozen charts captured at the passed config `c` (so each
- * substep re-freezes locally — that's what keeps the modulus chart valid).
+ * A 1-parameter family of submanifolds, ℝⁿ-facing. `param` reads the current
+ * parameter value off the working point (e.g. |Re τ̂|, pushing to ℝ³ⱽ internally);
+ * `held` builds the submanifolds pinning the family to value `s`, AT the current
+ * point `x`, returning constraints already in ℝⁿ (any frozen charts captured at the
+ * pushed config, so each substep re-freezes locally).
  */
 export interface Family {
-  param(c: ArrayLike<number>): number;
-  held(c: ArrayLike<number>, s: number): readonly Constraint[];
+  param(x: ArrayLike<number>): number;
+  held(x: ArrayLike<number>, s: number): readonly Constraint[];
 }
 
 export type MarchStatus = 'reached' | 'blocked' | 'max-iters';
 
 export interface MarchOptions {
-  /** Open region to stay inside each substep. */
-  region?: Region;
+  /** Open-region gate to stay inside each substep. */
+  gate?: Gate;
   /** Consecutive halvings before declaring the path blocked. Default 24. */
   maxHalvings?: number;
   /** Hard cap on substeps. Default 1000. */
@@ -44,8 +47,7 @@ export interface MarchOptions {
   /** Reached when |target − param| ≤ this. Default 1e-9. */
   tol?: number;
   /** If a successful step advances the parameter by less than this while still
-   *  short of the target, the path is pinched → `'blocked'`. Catches the smooth
-   *  pinch where feasible steps shrink to zero. Default 1e-7. */
+   *  short of the target, the path is pinched → `'blocked'`. Default 1e-7. */
   stallStep?: number;
   /** Damping for the project correctors. Default 1e-12. */
   damping?: number;
@@ -61,26 +63,22 @@ export interface MarchResult {
 }
 
 export function march(
-  chart: Chart,
   x: Float64Array,
   family: Family,
   target: number,
   opts: MarchOptions = {},
 ): MarchResult {
-  const n = chart.ambient;
   const maxHalvings = opts.maxHalvings ?? 24;
   const maxSteps = opts.maxSteps ?? 1000;
   const minStep = opts.minStep ?? 1e-4;
   const reachTol = opts.tol ?? 1e-9;
   const stallStep = opts.stallStep ?? 1e-7;
-  const region = opts.region;
+  const gate = opts.gate;
   const projectOpts = opts.projectOpts ?? { damping: opts.damping ?? 1e-12 };
 
-  const c = new Float64Array(n);
-  const saved = new Float64Array(chart.dim);
+  const saved = new Float64Array(x.length);
 
-  chart.realize(x, c);
-  let cur = family.param(c);
+  let cur = family.param(x);
   let step = Math.max(Math.abs(target - cur) / 8, minStep);
   let halvings = 0;
 
@@ -91,14 +89,12 @@ export function march(
     const next = Math.abs(remaining) <= step * 1.5 ? target : cur + Math.sign(remaining) * step;
 
     saved.set(x);
-    chart.realize(x, c);
-    const held = family.held(c, next);          // re-freeze the family at the current point
-    let ok = project(chart, x, held, projectOpts).status === 'converged';
-    if (ok && region) { chart.realize(x, c); ok = region.contains(c); }
+    const held = family.held(x, next);          // re-freeze the family at the current point
+    let ok = project(x, held, projectOpts).status === 'converged';
+    if (ok && gate) ok = gate(x);
 
     if (ok) {
-      chart.realize(x, c);
-      const newCur = family.param(c);            // measured (accounts for chart drift)
+      const newCur = family.param(x);            // measured (accounts for chart drift)
       const advanced = Math.abs(newCur - cur);
       cur = newCur;
       // Pinched: a feasible step now moves the parameter negligibly, yet we're not

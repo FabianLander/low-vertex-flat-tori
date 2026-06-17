@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { marchToWallAttempt, wallFamily } from '../../src/search/marchModulus.ts';
+import { fullSpace } from '../../src/configuration/space.ts';
 import { doyleSchwartzPositions } from '../../src/configuration/doyleSchwartz.ts';
 import { makeCutOffArea } from '../../src/conditions/embedded/index.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
@@ -7,7 +8,7 @@ import { RICH } from '../../src/triangulations/index.ts';
 
 describe('marchModulus — transport a torus onto a modulus wall', () => {
   it('the wall family reads |Re τ̂| and holds flat ∧ the wall', () => {
-    const fam = wallFamily(RICH);
+    const fam = wallFamily(fullSpace(RICH));
     const p = doyleSchwartzPositions(0.2, 1.1);
     expect(fam.param(p)).toBeCloseTo(Math.abs(reduceModulus(modulus(RICH, p).tau)[0]), 9);
     const held = fam.held(p, 0.1);

@@ -20,12 +20,13 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import { pinCoords } from '../configuration/chart.ts';
+import { pinCoords } from '../configuration/space.ts';
 import { flat } from '../conditions/flat.ts';
 import { collinear } from '../conditions/collinear.ts';
 import { doyleSchwartzPositions } from '../configuration/doyleSchwartz.ts';
 import { gaussian } from '../configuration/rng.ts';
 import { project } from '../solvers/project.ts';
+import { pullHeld } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 /** z-coordinate indices of the six base vertices P1..P6 (vertex i → 3i+2). */
@@ -49,15 +50,14 @@ export function semiSolutionAttempt(
   triang: Triangulation,
   opts: SemiSolutionOptions = {},
 ): (seed: Float64Array) => Certificate | null {
-  const n = triang.vertexCount * 3;
-  const chart = pinCoords(DS_BASE_Z, n);
-  const held = [flat(triang), collinear(1, 2, 3), collinear(4, 5, 6)];
+  const space = pinCoords(triang, DS_BASE_Z);
+  const held = pullHeld(space, [flat(triang), collinear(1, 2, 3), collinear(4, 5, 6)]);
   const angleTol = opts.angleTol ?? 1e-10;
-  const x = new Float64Array(chart.dim);
+  const x = new Float64Array(space.dim);
   return (seed) => {
-    chart.lift(seed, x);                                   // 24 → 18 free coords
-    if (project(chart, x, held).status !== 'converged') return null;
-    chart.realize(x, seed);                                // 18 → 24, into the seed buffer
+    space.coords(seed, x);                                 // 24 → 18 free coords
+    if (project(x, held).status !== 'converged') return null;
+    space.push(x, seed);                                   // 18 → 24, into the seed buffer
     const cert = certify(triang, seed);
     return cert.coneDeficit < angleTol ? cert : null;
   };

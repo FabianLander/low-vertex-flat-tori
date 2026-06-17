@@ -13,7 +13,7 @@
  */
 
 import * as THREE from 'three';
-import type { PaperTorus } from '../math/embedding';
+import type { PaperTorus } from '../configuration/paperTorus.ts';
 import { splatFacePositions } from './splat';
 import { latticeUV } from './uv';
 import { outwardSign, vertexOutward } from './orient';

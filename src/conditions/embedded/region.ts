@@ -10,7 +10,7 @@
  */
 
 import type { Triangulation } from '../../topology/triangulation.ts';
-import type { Region } from '../../solvers/types.ts';
+import type { Region } from '../types.ts';
 import { isEmbedded } from './gate.ts';
 import { minMargin } from './margin.ts';
 

@@ -10,7 +10,7 @@
  */
 
 import type { Triangulation } from '../topology/triangulation';
-import { PaperTorus } from '../math/embedding';
+import { makePaperTorus, type PaperTorus } from '../configuration/paperTorus.ts';
 
 /** One embedding from a coordinate row (extra trailing columns are ignored). */
 export function paperFromRow(triang: Triangulation, row: ArrayLike<number>): PaperTorus {
@@ -18,7 +18,7 @@ export function paperFromRow(triang: Triangulation, row: ArrayLike<number>): Pap
   if (row.length < n) throw new Error(`embedding row has ${row.length} columns, need ≥ ${n}`);
   const pos = new Float64Array(n);
   for (let i = 0; i < n; i++) pos[i] = row[i];
-  return new PaperTorus(triang, pos);
+  return makePaperTorus(triang, pos);
 }
 
 /** Parse a CSV of embeddings; rows without the full 3V coordinates are skipped. */

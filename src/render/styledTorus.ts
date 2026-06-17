@@ -13,7 +13,7 @@
  */
 
 import * as THREE from 'three';
-import type { PaperTorus } from '../math/embedding';
+import type { PaperTorus } from '../configuration/paperTorus.ts';
 import { TorusMesh } from '../mesh/TorusMesh';
 import { latticeGridTexture, type GridTextureOptions } from './grid';
 

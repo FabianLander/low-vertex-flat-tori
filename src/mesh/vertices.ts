@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { PaperTorus } from '../math/embedding';
+import type { PaperTorus } from '../configuration/paperTorus.ts';
 import { outwardSign, vertexOutward } from './orient';
 
 export interface VerticesOptions {

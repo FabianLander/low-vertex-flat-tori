@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { makeCellMargin, minMargin, embedded, isEmbedded } from '../../../src/conditions/embedded/index.ts';
+import { makeCellMargin, minMargin, isEmbedded } from '../../../src/conditions/embedded/index.ts';
 import { flow } from '../../../src/solvers/flow.ts';
-import { identity } from '../../../src/configuration/chart.ts';
 import { flat, maxConeDeficit } from '../../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../../src/math/reference.ts';
 import { RICH } from '../../../src/triangulations/index.ts';
@@ -17,8 +16,8 @@ describe('cellMargin — the fattening energy', () => {
   it('descending it fattens the margin while staying flat and embedded', () => {
     const x = Float64Array.from(RICH_REFERENCE.positions);
     const m0 = minMargin(RICH, x).margin;
-    flow(identity(24), x, [flat(RICH)], makeCellMargin(RICH, { epsilon: m0 * 2 }), {
-      region: embedded(RICH), stepSize: 0.002, maxIters: 80,
+    flow(x, [flat(RICH)], makeCellMargin(RICH, { epsilon: m0 * 2 }), {
+      gate: (c) => isEmbedded(RICH, c), stepSize: 0.002, maxIters: 80,
     });
     expect(minMargin(RICH, x).margin).toBeGreaterThan(m0); // fatter
     expect(maxConeDeficit(RICH, x)).toBeLessThan(1e-9);     // still flat

@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { edgeKey } from '../topology/triangulation';
-import type { PaperTorus } from '../math/embedding';
+import type { PaperTorus } from '../configuration/paperTorus.ts';
 import { outwardSign, edgeOutward } from './orient';
 
 const UP = new THREE.Vector3(0, 1, 0);

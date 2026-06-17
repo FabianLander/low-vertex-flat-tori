@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { RICH } from '../../src/triangulations';
+import { coneAngleAt, coneAngleDeficits } from '../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../src/math/reference';
 import { TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE, HIGHLIGHT_PALETTE, oneHot } from '../../src/viewer/palette';
@@ -45,9 +46,8 @@ const view = new TorusView(RICH, { vertexRadius: 0.05 });
 view.sync(triang);
 
 const absDeficits = new Float32Array(RICH.vertexCount);
-for (let i = 0; i < RICH.vertexCount; i++) {
-  absDeficits[i] = Math.abs(triang.coneAngleDeficit(i));
-}
+const refDeficits = coneAngleDeficits(RICH, triang.positions);
+for (let i = 0; i < RICH.vertexCount; i++) absDeficits[i] = Math.abs(refDeficits[i]);
 view.setVertexScalars(absDeficits, DEFICIT_PALETTE);
 
 scene.add(view);
@@ -87,7 +87,7 @@ panel.appendChild(list);
 const TOL = 1e-3;
 let maxAbs = 0;
 for (let i = 0; i < RICH.vertexCount; i++) {
-  const a = triang.coneAngle(i);
+  const a = coneAngleAt(RICH, triang.positions, i);
   const d = TWO_PI - a;
   if (Math.abs(d) > maxAbs) maxAbs = Math.abs(d);
 

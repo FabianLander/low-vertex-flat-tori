@@ -5,7 +5,7 @@
  * polygonOffset.
  */
 
-import type { PaperTorus } from '../math/embedding';
+import type { PaperTorus } from '../configuration/paperTorus.ts';
 
 /** Unit normal of triangle t, as (b−a)×(c−a) normalized (orientation as authored). */
 function faceNormal(paper: PaperTorus, t: number, out: [number, number, number]): void {

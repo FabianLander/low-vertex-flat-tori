@@ -8,7 +8,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { flow } from '../../src/solvers/flow.ts';
-import { identity } from '../../src/configuration/chart.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import type { Fn, ScalarFn } from '../../src/functions/types.ts';
 import { scalarFn } from '../../src/functions/compose.ts';
@@ -41,7 +40,7 @@ describe('flow — toy: linear energy on the unit sphere', () => {
     const target = [-a[0] / norm, -a[1] / norm, -a[2] / norm];
 
     const x = new Float64Array([0.5, 0.5, 0.5]); // off the sphere; flow lands first
-    const r = flow(identity(3), x, [sphere], linearEnergy(a), {
+    const r = flow(x, [sphere], linearEnergy(a), {
       stepSize: 0.05, maxIters: 5000, gradientTol: 1e-8,
       energyTol: -Infinity, // linear energy is unbounded below; stop on the tangent gradient, not E
     });
@@ -65,7 +64,7 @@ describe('flow — real: honest descent ALONG [flat]', () => {
 
     const eBefore = energy.compute(pos);
     expect(isEmbedded(torus, pos)).toBe(true); // start is embedded
-    const r = flow(identity(24), pos, [flat(torus)], energy, { maxIters: 50 });
+    const r = flow(pos, [flat(torus)], energy, { maxIters: 50 });
     const eAfter = energy.compute(pos);
 
     expect(['converged', 'stalled', 'max-iters']).toContain(r.status);
