@@ -15,7 +15,8 @@
  */
 
 import { ALL_TORI } from '../../src/triangulations';
-import { harmonicLayout, periodicTiles, type XY } from '../../src/topology/harmonicLayout';
+import { harmonicLayout, periodicTiles } from '../../src/topology/harmonicLayout';
+import type { Vec2 } from '../../src/geometry/vec2';
 import { exactMinCutDomain } from '../../src/topology/fundamentalDomain';
 
 const data = ALL_TORI.map((t) => {
@@ -35,8 +36,8 @@ const ctx = canvas.getContext('2d')!;
 
 // ---- view transform (world ↔ screen), equal aspect ----
 let scale = 1, cx = 0, cy = 0;
-const sx = (p: XY) => window.innerWidth / 2 + (p[0] - cx) * scale;
-const sy = (p: XY) => window.innerHeight / 2 - (p[1] - cy) * scale;
+const sx = (p: Vec2) => window.innerWidth / 2 + (p[0] - cx) * scale;
+const sy = (p: Vec2) => window.innerHeight / 2 - (p[1] - cy) * scale;
 const wx = (px: number) => cx + (px - window.innerWidth / 2) / scale;
 const wy = (py: number) => cy - (py - window.innerHeight / 2) / scale;
 
@@ -59,9 +60,9 @@ function resize(): void {
 window.addEventListener('resize', resize);
 
 const hue = (id: number, F: number) => (id / F) * 360;
-const cen = (c: XY[]): XY => [(c[0][0] + c[1][0] + c[2][0]) / 3, (c[0][1] + c[1][1] + c[2][1]) / 3];
+const cen = (c: Vec2[]): Vec2 => [(c[0][0] + c[1][0] + c[2][0]) / 3, (c[0][1] + c[1][1] + c[2][1]) / 3];
 
-function poly(c: XY[]): void {
+function poly(c: Vec2[]): void {
   ctx.beginPath();
   ctx.moveTo(sx(c[0]), sy(c[0]));
   ctx.lineTo(sx(c[1]), sy(c[1]));
@@ -69,8 +70,8 @@ function poly(c: XY[]): void {
   ctx.closePath();
 }
 
-function arrow(from: XY, v: XY, color: string, label: string): void {
-  const to: XY = [from[0] + v[0], from[1] + v[1]];
+function arrow(from: Vec2, v: Vec2, color: string, label: string): void {
+  const to: Vec2 = [from[0] + v[0], from[1] + v[1]];
   const ax = sx(from), ay = sy(from), bx = sx(to), by = sy(to);
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.2;
   ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
@@ -147,7 +148,7 @@ function draw(): void {
   if (showLattice) {
     let ax = 0, ay = 0;
     for (const t of dom) { const g = cen(t.corners); ax += g[0]; ay += g[1]; }
-    const anchor: XY = [ax / dom.length, ay / dom.length];
+    const anchor: Vec2 = [ax / dom.length, ay / dom.length];
     arrow(anchor, layout.V1, '#f0be5a', 'V₁');
     arrow(anchor, layout.V2, '#6fd1a0', 'V₂');
   }

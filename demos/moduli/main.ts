@@ -18,7 +18,8 @@
  */
 
 import { RICH } from '../../src/triangulations';
-import { modulus, type V2 } from '../../src/topology/develop';
+import { modulus } from '../../src/topology/develop';
+import type { Vec2 } from '../../src/geometry/vec2';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 
@@ -33,7 +34,7 @@ const seedFiles = import.meta.glob('../../data/explore-from-seeds/seed-*.csv', {
 // Distinct, dark-background-friendly categorical colors (one per class).
 const PALETTE = ['#ef4444', '#f59e0b', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'];
 
-type Klass = { name: string; color: string; pts: V2[]; visible: boolean };
+type Klass = { name: string; color: string; pts: Vec2[]; visible: boolean };
 
 function parseRows(text: string): Float64Array[] {
   const rows: Float64Array[] = [];
@@ -54,7 +55,7 @@ const classes: Klass[] = Object.keys(seedFiles)
   })
   .map((path, i) => {
     const name = path.match(/(seed-\d+)/)![1];
-    const pts: V2[] = [];
+    const pts: Vec2[] = [];
     for (const p of parseRows(seedFiles[path])) {
       const m = modulus(RICH, p);
       if (m.rotDefect > ROT_TOL) continue;
@@ -69,7 +70,7 @@ const totalPts = classes.reduce((s, c) => s + c.pts.length, 0);
 // These are the starting tori of the seven explorations (plus Rich's). Overlaid
 // on the clouds so you can see where each seed lands — and that each cloud is
 // the orbit wandering out from its seed.
-type Seed = { label: string; tau: V2; color: string; isRich: boolean };
+type Seed = { label: string; tau: Vec2; color: string; isRich: boolean };
 const seedSources: { src: ArrayLike<number>; label: string; color: string; isRich: boolean }[] = [
   { src: RICH_REFERENCE.positions, label: '0', color: '#ffffff', isRich: true },
 ];

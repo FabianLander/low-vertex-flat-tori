@@ -63,7 +63,7 @@ src/topology/        the intrinsic flat torus, as generic machinery — works on
   marking.ts           the canonical marking (canonicalDecoration): H₁ generators + cut + develop order
   fundamentalDomain.ts the developing chart — exact minimal cut + centered-spiral unroll order
   harmonicLayout.ts    flat-torus harmonic (Tutte) embedding — period-jump cocycle for generators
-  (depends on nothing else in src/)
+  (depends only on geometry/ — the ℝ²/ℝ³ metric floor)
 
 src/triangulations/  the specific triangulations we study, as DATA — scales to many:
   eightVertex.ts       the 7 V=8 lists (a census); add nineVertex.ts, … later
@@ -102,10 +102,11 @@ data/                CSV result sets (one torus per row, 24 floats)
 ```
 
 The dependency rule: **`src/topology` and `src/triangulations` never import three.js or touch the
-DOM**, and `topology` depends on nothing — so every intrinsic algorithm runs headless under `tsx`.
-Arrows are one-way folder→folder: `triangulations → topology`; the search stack `geometry → functions
+DOM**, and `topology` depends only on `geometry/` (the pure ℝ²/ℝ³ metric floor — the developing map's
+planar net uses `geometry/vec2`) — so every intrinsic algorithm runs headless under `tsx`. Arrows are
+one-way folder→folder: `geometry → topology → triangulations`; the search stack `geometry → functions
 → {configuration, coordinates, conditions} → solvers → sampling → search` builds on top; rendering
-sits on top of all of it. Machinery and its instances are flat siblings — `topology`↔`triangulations`,
+sits on top of all of it. `geometry/` is the single bottom both halves rest on. Machinery and its instances are flat siblings — `topology`↔`triangulations`,
 `functions`↔`conditions`, `configuration`↔`coordinates` — never nested (the arrow is dependency, not
 containment).
 

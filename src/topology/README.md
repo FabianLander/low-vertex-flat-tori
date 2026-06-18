@@ -7,9 +7,10 @@ here runs on ANY triangulation, headless. This is the **machinery**; the seven
 specific tori live as data in `triangulations/` (the same machinery↔instances
 split as `functions/`↔`conditions/` and `configuration/`↔`coordinates/`).
 
-**Depends on nothing else in `src/`** — the floor of the dependency graph. Pure:
-no three.js, no DOM, no 3D metric on the interior (coordinates enter only through
-the developing map, to read edge lengths).
+**Depends only on `geometry/`** — the pure ℝ²/ℝ³ metric floor (the developing map's
+planar net uses `geometry/vec2`) — and nothing else in `src/`. Pure: no three.js, no
+DOM, no 3D metric on the interior (coordinates enter only through the developing map,
+to read edge lengths).
 
 - `triangulation.ts` — the `Triangulation` type + `defineTriangulation(spec)`.
   Derives edges, oriented vertex links, dual adjacency, degree sequence, the

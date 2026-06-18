@@ -1,8 +1,10 @@
 /**
- * Minimal 2D vector helpers for the plane-geometry kernels (curve fitting and
- * point-cloud sampling). Self-contained — structurally compatible with the
- * `V2 = readonly [number, number]` used in `topology/develop.ts`, but kept
- * independent so the geometry layer carries no torus dependency.
+ * `Vec2` — a point/vector in ℝ² as a plain 2-tuple `[x, y]`, with the 2D vector
+ * ops. The one ℝ² coordinate type for the whole codebase: the developed net and
+ * harmonic layout in `topology/`, the modulus τ, certificates, the plane curves.
+ *
+ * Mirrors `vec3.ts`. Tuple ops allocate, so they're for cold code; hot kernels
+ * (`distance`, the intersection predicates) stay on raw scalar components.
  */
 
 export type Vec2 = [number, number];
@@ -18,6 +20,11 @@ export const dist2 = (a: Vec2, b: Vec2): number => {
   return dx * dx + dy * dy;
 };
 export const lerp = (a: Vec2, b: Vec2, t: number): Vec2 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+/** 2D scalar cross product a×b = aₓbᵧ − aᵧbₓ (signed; >0 ⟺ b is CCW from a). */
+export const cross = (a: Vec2, b: Vec2): number => a[0] * b[1] - a[1] * b[0];
+/** Twice the signed area of triangle (a,b,c) = (b−a)×(c−a); >0 ⟺ CCW. */
+export const signedArea2 = (a: Vec2, b: Vec2, c: Vec2): number =>
+  (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
 
 /**
  * Foot of the perpendicular from `p` to the segment [a,b], clamped to the

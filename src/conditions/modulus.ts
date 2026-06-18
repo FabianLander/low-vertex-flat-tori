@@ -23,7 +23,8 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import { modulus, reduceModulusWithMatrix, applyMobius, type Sl2z, type V2 } from '../topology/develop.ts';
+import { modulus, reduceModulusWithMatrix, applyMobius, type Sl2z } from '../topology/develop.ts';
+import type { Vec2 } from '../geometry/vec2.ts';
 import { fdFn, affine, postcompose, type SmoothMap } from '../functions/compose.ts';
 import type { Fn } from '../functions/types.ts';
 
@@ -73,7 +74,7 @@ function mobiusMap(m: Sl2z): SmoothMap {
 }
 
 /** Frozen modulus map c ↦ applyMobius(m, τ(c)) ∈ ℝ², smooth in the seed's chamber. */
-function frozenModulus(triang: Triangulation, seed: ArrayLike<number>): { fn: Fn; tauHat: V2 } {
+function frozenModulus(triang: Triangulation, seed: ArrayLike<number>): { fn: Fn; tauHat: Vec2 } {
   const { tau: tauHat, m } = reduceModulusWithMatrix(modulus(triang, seed).tau);
   return { fn: postcompose(mobiusMap(m), tau(triang), 'frozenModulus'), tauHat };
 }
@@ -82,7 +83,7 @@ function frozenModulus(triang: Triangulation, seed: ArrayLike<number>): { fn: Fn
  * The condition { τ̂ = τ̂₀ } — a single moduli point, as an `Fn` (dim 2). Chart
  * frozen at `seed`: g(c) = applyMobius(m, τ(c)) − τ̂₀.
  */
-export function fixedModulus(triang: Triangulation, seed: ArrayLike<number>, tauHat0: V2): Fn {
+export function fixedModulus(triang: Triangulation, seed: ArrayLike<number>, tauHat0: Vec2): Fn {
   const { fn } = frozenModulus(triang, seed);
   return postcompose(affine([1, 0, 0, 1], [-tauHat0[0], -tauHat0[1]]), fn, 'fixedModulus');
 }

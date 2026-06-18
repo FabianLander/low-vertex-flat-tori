@@ -32,8 +32,8 @@
 
 import type { Triangulation } from './triangulation.ts';
 import { edgeKey, edgeEnds } from './triangulation.ts';
-
-export type V2 = readonly [number, number];
+import { type Vec2, cross, signedArea2 } from '../geometry/vec2.ts';
+import { triangleArea } from '../geometry/triangle.ts';
 
 // ---------------------------------------------------------------------------
 // Intrinsic primitives
@@ -51,10 +51,11 @@ export function totalArea(triang: Triangulation, p: ArrayLike<number>): number {
   let area = 0;
   for (const [a, b, c] of triang.triangles) {
     const oa = 3 * a, ob = 3 * b, oc = 3 * c;
-    const e1x = p[ob] - p[oa], e1y = p[ob + 1] - p[oa + 1], e1z = p[ob + 2] - p[oa + 2];
-    const e2x = p[oc] - p[oa], e2y = p[oc + 1] - p[oa + 1], e2z = p[oc + 2] - p[oa + 2];
-    const cx = e1y * e2z - e1z * e2y, cy = e1z * e2x - e1x * e2z, cz = e1x * e2y - e1y * e2x;
-    area += 0.5 * Math.sqrt(cx * cx + cy * cy + cz * cz);
+    area += triangleArea(
+      p[oa], p[oa + 1], p[oa + 2],
+      p[ob], p[ob + 1], p[ob + 2],
+      p[oc], p[oc + 1], p[oc + 2],
+    );
   }
   return area;
 }
@@ -79,7 +80,7 @@ export type CutEdge = {
   readonly tris: readonly [number, number];
   /** Holonomy of this cut edge's fundamental loop: the translation taking the
    *  t2-development of the edge onto the t1-development. */
-  readonly translation: V2;
+  readonly translation: Vec2;
   /** Rotational defect of the gluing (angle between the two edge images).
    *  ≈ 0 confirms the holonomy is a pure translation (flatness). */
   readonly rotDefect: number;
@@ -96,7 +97,7 @@ export type DevelopStep = {
 export type DevelopedNet = {
   /** corners[t] = [P0, P1, P2], planar points of triangle t's corners
    *  (in torus.triangles[t] order). A glued vertex appears once per incident tri. */
-  readonly corners: V2[][];
+  readonly corners: Vec2[][];
   /** The glue (tree) edges used to unfold — coincident, not cut. */
   readonly treeEdges: number[];
   /** The cut edges, sorted by edgeKey for determinism. */
@@ -105,17 +106,12 @@ export type DevelopedNet = {
   readonly steps: DevelopStep[];
 };
 
-/** Signed (×2) area of the planar triangle P0→P1→P2; >0 means CCW. */
-function signedArea2(P0: V2, P1: V2, P2: V2): number {
-  return (P1[0] - P0[0]) * (P2[1] - P0[1]) - (P1[1] - P0[1]) * (P2[0] - P0[0]);
-}
-
 /**
  * Given two placed planar points Pi, Pj and the distances rI = |third−i|,
  * rJ = |third−j|, return both circle–circle intersection candidates for the
  * third point.
  */
-function placeThird(Pi: V2, Pj: V2, rI: number, rJ: number): [V2, V2] {
+function placeThird(Pi: Vec2, Pj: Vec2, rI: number, rJ: number): [Vec2, Vec2] {
   const dx = Pj[0] - Pi[0], dy = Pj[1] - Pi[1];
   const d = Math.hypot(dx, dy);
   const a = (rI * rI - rJ * rJ + d * d) / (2 * d);
@@ -134,7 +130,7 @@ function placeThird(Pi: V2, Pj: V2, rI: number, rJ: number): [V2, V2] {
 export function developNet(triang: Triangulation, p: ArrayLike<number>): DevelopedNet {
   const { developOrder: order, attach } = triang.fundamentalDomain;
   const F = triang.triangles.length;
-  const corners: V2[][] = new Array(F);
+  const corners: Vec2[][] = new Array(F);
   const placedAt = new Array<number>(F).fill(-1);
   const treeEdges: number[] = [];
   const treeKeys = new Set<number>();
@@ -144,8 +140,8 @@ export function developNet(triang: Triangulation, p: ArrayLike<number>): Develop
   const root = order[0];
   {
     const [a, b, c] = triang.triangles[root];
-    const A: V2 = [0, 0];
-    const B: V2 = [len(p, a, b), 0];
+    const A: Vec2 = [0, 0];
+    const B: Vec2 = [len(p, a, b), 0];
     const [cand0, cand1] = placeThird(A, B, len(p, c, a), len(p, c, b));
     const C = signedArea2(A, B, cand0) > 0 ? cand0 : cand1;
     corners[root] = [A, B, C];
@@ -163,7 +159,7 @@ export function developNet(triang: Triangulation, p: ArrayLike<number>): Develop
     const lw = 3 - lu - lv;
     const w = triang.triangles[t][lw];
     const [cand0, cand1] = placeThird(Pu, Pv, len(p, w, su), len(p, w, sv));
-    const cn: V2[] = new Array(3);
+    const cn: Vec2[] = new Array(3);
     cn[lu] = Pu; cn[lv] = Pv; cn[lw] = cand0;
     cn[lw] = signedArea2(cn[0], cn[1], cn[2]) > 0 ? cand0 : cand1;
     corners[t] = cn;
@@ -181,7 +177,7 @@ export function developNet(triang: Triangulation, p: ArrayLike<number>): Develop
     const [u, v] = edgeEnds(k);
     const P1u = corners[t1][localIndex(triang, t1, u)], P1v = corners[t1][localIndex(triang, t1, v)];
     const P2u = corners[t2][localIndex(triang, t2, u)], P2v = corners[t2][localIndex(triang, t2, v)];
-    const translation: V2 = [P1u[0] - P2u[0], P1u[1] - P2u[1]];
+    const translation: Vec2 = [P1u[0] - P2u[0], P1u[1] - P2u[1]];
     // rotational defect: angle between the two edge-image vectors.
     const e1x = P1v[0] - P1u[0], e1y = P1v[1] - P1u[1];
     const e2x = P2v[0] - P2u[0], e2y = P2v[1] - P2u[1];
@@ -199,10 +195,10 @@ export function developNet(triang: Triangulation, p: ArrayLike<number>): Develop
 
 export type Modulus = {
   /** Holonomy translations of the two generator loops, positively oriented. */
-  readonly v1: V2;
-  readonly v2: V2;
+  readonly v1: Vec2;
+  readonly v2: Vec2;
   /** τ = v₂/v₁ as a complex number; Im τ > 0. */
-  readonly tau: V2;
+  readonly tau: Vec2;
   /** Intrinsic total area (= covolume of Λ for a unit-index basis). */
   readonly area: number;
   /** |v₁ × v₂|; equals `area` exactly when the generators are a unit-index basis. */
@@ -211,10 +207,9 @@ export type Modulus = {
   readonly rotDefect: number;
 };
 
-const cross = (a: V2, b: V2) => a[0] * b[1] - a[1] * b[0];
 
 /** Complex division v₂/v₁ = (v₂ · conj v₁) / |v₁|². */
-function complexDiv(v2: V2, v1: V2): V2 {
+function complexDiv(v2: Vec2, v1: Vec2): Vec2 {
   const d = v1[0] * v1[0] + v1[1] * v1[1];
   return [(v2[0] * v1[0] + v2[1] * v1[1]) / d, (v2[1] * v1[0] - v2[0] * v1[1]) / d];
 }
@@ -226,7 +221,7 @@ function complexDiv(v2: V2, v1: V2): V2 {
  * sum those edge vectors around the loop. The sum over a closed loop is the net
  * displacement between the start and end lifts, i.e. the holonomy translation.
  */
-function loopHolonomy(triang: Triangulation, net: DevelopedNet, loop: readonly number[]): V2 {
+function loopHolonomy(triang: Triangulation, net: DevelopedNet, loop: readonly number[]): Vec2 {
   let x = 0, y = 0;
   for (let k = 0; k + 1 < loop.length; k++) {
     const a = loop[k], b = loop[k + 1];
@@ -265,7 +260,7 @@ export function modulus(triang: Triangulation, p: ArrayLike<number>): Modulus {
 export type Sl2z = readonly [number, number, number, number];
 
 /** Apply the Möbius transformation of m ∈ SL(2,ℤ) to τ (complex arithmetic). */
-export function applyMobius(m: Sl2z, tau: V2): V2 {
+export function applyMobius(m: Sl2z, tau: Vec2): Vec2 {
   const [a, b, c, d] = m;
   const nx = a * tau[0] + b, ny = a * tau[1];
   const dx = c * tau[0] + d, dy = c * tau[1];
@@ -283,7 +278,7 @@ export function applyMobius(m: Sl2z, tau: V2): V2 {
  * fundamental-domain walls), but Re/Im of applyMobius(m, τ(p)) with m FROZEN
  * is a smooth function of positions — freeze m at a seed, then constrain.
  */
-export function reduceModulusWithMatrix(tau: V2): { tau: V2; m: Sl2z } {
+export function reduceModulusWithMatrix(tau: Vec2): { tau: Vec2; m: Sl2z } {
   let re = tau[0], im = tau[1];
   let a = 1, b = 0, c = 0, d = 1;
   for (let guard = 0; guard < 1000; guard++) {
@@ -303,6 +298,6 @@ export function reduceModulusWithMatrix(tau: V2): { tau: V2; m: Sl2z } {
  * Reduce τ ∈ ℍ into the standard fundamental domain
  * { |Re τ| ≤ ½, |τ| ≥ 1 } via the generators T: τ↦τ+1 and S: τ↦−1/τ.
  */
-export function reduceModulus(tau: V2): V2 {
+export function reduceModulus(tau: Vec2): Vec2 {
   return reduceModulusWithMatrix(tau).tau;
 }

@@ -64,8 +64,11 @@ extrinsic search stack is **dependency-ordered**, each layer using only the ones
 geometry/ → functions/ → { configuration/, coordinates/, conditions/ } → solvers/ → sampling/ → search/
 ```
 
-with `topology/` (intrinsic machinery) + `triangulations/` (the 7 as data) underneath. Do not import
-three.js or touch `window`/`document` from any of these. **Machinery and its instances are flat
+`geometry/` is the **ℝ²/ℝ³ metric floor** — pure point/vector/line/triangle math, no torus — and it sits
+below *everything*, including the intrinsic side: `topology/` (machinery) + `triangulations/` (the 7 as
+data) build on `geometry/` (e.g. the developing map's planar net uses `geometry/vec2`) and on nothing
+else. So `geometry/` is the one true bottom; `topology/` depends only on it. Do not import three.js or
+touch `window`/`document` from any of these. **Machinery and its instances are flat
 siblings, never nested** — `topology/`↔`triangulations/`, `functions/`↔`conditions/`,
 `configuration/`↔`coordinates/` — because the arrow is *dependency*, not *containment* (so a
 machinery-purity violation like `topology/` importing `triangulations/` is a glaring cross-folder import).
@@ -116,9 +119,12 @@ its triangulation; not used on the interior hot path.
 
 ### Extrinsic: the search stack
 
-- `geometry/` — torus-blind ℝ²/ℝ³ kernels: `distance` (point/segment/triangle), `intersectionChord`
-  (`triTriChord`), `triangleIntersect` (the Möller–Trumbore predicates behind `isEmbedded`), all from
-  a `positions` buffer + vertex indices. `geometry/drawing/` is plane-curve utilities for demos.
+- `geometry/` — the **ℝ²/ℝ³ metric floor** (torus-blind; the one bottom both halves rest on):
+  `vec2`/`vec3` (the `Vec2`/`Vec3` point types + tuple ops), `triangle` (single-simplex math —
+  `cornerAngle`+`cornerAngleGrad`, `triangleNormal`/`Area`/`SignedArea2`, `signedVolume6`,
+  `planeCutRatio`), `distance` (point/segment/triangle), `intersectionChord` (`triTriChord`),
+  `triangleIntersect` (the Möller–Trumbore predicates behind `isEmbedded`), and `curve` (`PlaneCurve`).
+  Two tiers: tuple ops for cold code, allocation-free scalar/buffer kernels for the hot search loops.
 - `functions/` — the generic toolkit: `types` (`Fn`/`ScalarFn`) + `compose` (`Embedding` + the algebra
   `fdFn`/`scalarFn`/`precompose`/`postcompose`/`affine`). No instances.
 - `configuration/` — the configuration-space **machinery**: `space` (`ConfigSpace = (T, φ)` with

@@ -25,19 +25,18 @@
 
 import type { Triangulation } from './triangulation.ts';
 import { edgeKey } from './triangulation.ts';
+import { type Vec2, signedArea2 } from '../geometry/vec2.ts';
 
-export type XY = [number, number];
-
-export type HarmonicTile = { readonly id: number; readonly corners: XY[] };
+export type HarmonicTile = { readonly id: number; readonly corners: Vec2[] };
 
 export type HarmonicLayout = {
   /** 8 vertex base positions (one lift each). */
-  readonly vertexPos: XY[];
+  readonly vertexPos: Vec2[];
   /** The 16 triangles, each developed from its first vertex's lift. */
   readonly tiles: HarmonicTile[];
   /** Period lattice basis (after whitening). */
-  readonly V1: XY;
-  readonly V2: XY;
+  readonly V1: Vec2;
+  readonly V2: Vec2;
   /** Integer period jump of directed edge i→j, in lattice (α,β) coordinates. */
   readonly jump: (i: number, j: number) => readonly [number, number];
 };
@@ -121,7 +120,7 @@ function invSqrt2x2(a: number, b: number, d: number): [number, number, number, n
   const disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
   const l1 = tr / 2 + disc, l2 = tr / 2 - disc;
   // orthonormal eigenvectors paired with their OWN eigenvalues
-  let e1: XY, e2: XY;
+  let e1: Vec2, e2: Vec2;
   if (Math.abs(b) > 1e-12) {
     e1 = [b, l1 - a]; e2 = [b, l2 - a];
   } else {
@@ -154,8 +153,8 @@ export function harmonicLayout(triang: Triangulation): HarmonicLayout {
   };
 
   // start from a 60° basis (nice for the regular case); whitening fixes the rest
-  let V1: XY = [1, 0], V2: XY = [0.5, Math.sqrt(3) / 2];
-  const period = (i: number, j: number): XY => {
+  let V1: Vec2 = [1, 0], V2: Vec2 = [0.5, Math.sqrt(3) / 2];
+  const period = (i: number, j: number): Vec2 => {
     const [a, b] = jump(i, j);
     return [a * V1[0] + b * V2[0], a * V1[1] + b * V2[1]];
   };
@@ -172,17 +171,17 @@ export function harmonicLayout(triang: Triangulation): HarmonicLayout {
   L[0] = new Array(vertexCount).fill(0); L[0][0] = 1; rx[0] = 0; ry[0] = 0;
   const xs = solve(L.map((r) => [...r]), rx);
   const ys = solve(L.map((r) => [...r]), ry);
-  let vertexPos: XY[] = xs.map((xv, i) => [xv, ys[i]]);
+  let vertexPos: Vec2[] = xs.map((xv, i) => [xv, ys[i]]);
 
   // develop each triangle from its first vertex via period-corrected edges
   const develop = (): HarmonicTile[] => {
-    const d = (i: number, j: number): XY => { const p = period(i, j); return [vertexPos[j][0] + p[0] - vertexPos[i][0], vertexPos[j][1] + p[1] - vertexPos[i][1]]; };
+    const d = (i: number, j: number): Vec2 => { const p = period(i, j); return [vertexPos[j][0] + p[0] - vertexPos[i][0], vertexPos[j][1] + p[1] - vertexPos[i][1]]; };
     return triangles.map(([a, b, c], t) => {
       const A0 = vertexPos[a];
       const dab = d(a, b), dbc = d(b, c);
-      const B0: XY = [A0[0] + dab[0], A0[1] + dab[1]];
-      const C0: XY = [B0[0] + dbc[0], B0[1] + dbc[1]];
-      return { id: t, corners: [A0, B0, C0] as XY[] };
+      const B0: Vec2 = [A0[0] + dab[0], A0[1] + dab[1]];
+      const C0: Vec2 = [B0[0] + dbc[0], B0[1] + dbc[1]];
+      return { id: t, corners: [A0, B0, C0] as Vec2[] };
     });
   };
   let tiles = develop();
@@ -194,7 +193,7 @@ export function harmonicLayout(triang: Triangulation): HarmonicLayout {
     cxx += ex * ex; cxy += ex * ey; cyy += ey * ey;
   }
   const [w00, w01, w10, w11] = invSqrt2x2(cxx, cxy, cyy);
-  const W = (p: XY): XY => [w00 * p[0] + w01 * p[1], w10 * p[0] + w11 * p[1]];
+  const W = (p: Vec2): Vec2 => [w00 * p[0] + w01 * p[1], w10 * p[0] + w11 * p[1]];
 
   // apply whitening
   V1 = W(V1); V2 = W(V2);
@@ -202,19 +201,14 @@ export function harmonicLayout(triang: Triangulation): HarmonicLayout {
   tiles = develop();
 
   // orient positively: if the triangles develop clockwise, mirror in y
-  const totalArea2 = tiles.reduce((s, t) => s + tileSignedArea2(t.corners), 0);
+  const totalArea2 = tiles.reduce((s, t) => s + signedArea2(t.corners[0], t.corners[1], t.corners[2]), 0);
   if (totalArea2 < 0) {
-    vertexPos = vertexPos.map(([x, y]): XY => [x, -y]);
+    vertexPos = vertexPos.map(([x, y]): Vec2 => [x, -y]);
     V1 = [V1[0], -V1[1]]; V2 = [V2[0], -V2[1]];
     tiles = develop();
   }
 
   return { vertexPos, tiles, V1, V2, jump };
-}
-
-/** Signed (×2) area of a plane triangle. */
-export function tileSignedArea2(c: readonly XY[]): number {
-  return (c[1][0] - c[0][0]) * (c[2][1] - c[0][1]) - (c[1][1] - c[0][1]) * (c[2][0] - c[0][0]);
 }
 
 /**
@@ -231,7 +225,7 @@ export function periodicTiles(
   for (let n = -range; n <= range; n++) for (let m = -range; m <= range; m++) {
     const ox = n * V1[0] + m * V2[0], oy = n * V1[1] + m * V2[1];
     for (const { id, corners } of tiles) {
-      const c = corners.map(([x, y]): XY => [x + ox, y + oy]);
+      const c = corners.map(([x, y]): Vec2 => [x + ox, y + oy]);
       const cx = (c[0][0] + c[1][0] + c[2][0]) / 3, cy = (c[0][1] + c[1][1] + c[2][1]) / 3;
       if (cx >= win.x0 && cx <= win.x1 && cy >= win.y0 && cy <= win.y1) out.push({ id, corners: c });
     }

@@ -17,7 +17,8 @@
 
 import type { Triangulation } from './triangulation.ts';
 import { edgeKey, edgeEnds } from './triangulation.ts';
-import { type HarmonicLayout, type HarmonicTile, type XY } from './harmonicLayout.ts';
+import { type HarmonicLayout, type HarmonicTile } from './harmonicLayout.ts';
+import type { Vec2 } from '../geometry/vec2.ts';
 import type { DevelopStep } from './develop.ts';
 
 export type ExactDomainResult = {
@@ -35,7 +36,7 @@ export function exactMinCutDomain(triang: Triangulation, layout: HarmonicLayout)
   const F = triangles.length;
   const E = edges.length;
   const eKeys = edges.map(([u, v]) => edgeKey(u, v));
-  const close = (a: XY, b: XY) => Math.abs(a[0] - b[0]) < EPS && Math.abs(a[1] - b[1]) < EPS;
+  const close = (a: Vec2, b: Vec2) => Math.abs(a[0] - b[0]) < EPS && Math.abs(a[1] - b[1]) < EPS;
 
   // develop the glued complement of `cut`; valid iff connected AND every glued
   // edge is coincident (a consistent disk). returns the domain+order or null.
@@ -46,15 +47,15 @@ export function exactMinCutDomain(triang: Triangulation, layout: HarmonicLayout)
       const [u] = edgeEnds(k);
       gadj[t1].push({ nbr: t2, u }); gadj[t2].push({ nbr: t1, u });
     }
-    const placed: (XY[] | null)[] = new Array(F).fill(null);
-    placed[0] = tiles[0].corners.map(([x, y]): XY => [x, y]);
+    const placed: (Vec2[] | null)[] = new Array(F).fill(null);
+    placed[0] = tiles[0].corners.map(([x, y]): Vec2 => [x, y]);
     const order = [0]; const q = [0];
     for (let h = 0; h < q.length; h++) {
       const p = q[h];
       for (const { nbr, u } of gadj[p]) if (!placed[nbr]) {
         const ip = triangles[p].indexOf(u), it = triangles[nbr].indexOf(u);
         const dx = placed[p]![ip][0] - tiles[nbr].corners[it][0], dy = placed[p]![ip][1] - tiles[nbr].corners[it][1];
-        placed[nbr] = tiles[nbr].corners.map(([x, y]): XY => [x + dx, y + dy]);
+        placed[nbr] = tiles[nbr].corners.map(([x, y]): Vec2 => [x + dx, y + dy]);
         order.push(nbr); q.push(nbr);
       }
     }
@@ -92,7 +93,7 @@ export function exactMinCutDomain(triang: Triangulation, layout: HarmonicLayout)
 // `developOrder` of the fundamental domain (and the develop-winding animation).
 // ---------------------------------------------------------------------------
 
-const centroid = (c: readonly XY[]): XY => [(c[0][0] + c[1][0] + c[2][0]) / 3, (c[0][1] + c[1][1] + c[2][1]) / 3];
+const centroid = (c: readonly Vec2[]): Vec2 => [(c[0][0] + c[1][0] + c[2][0]) / 3, (c[0][1] + c[1][1] + c[2][1]) / 3];
 
 
 /**
@@ -106,7 +107,7 @@ export type WindingNet = {
   readonly tiles: HarmonicTile[];     // the fundamental domain (indexed by triangle id)
   readonly order: number[];           // triangle ids, root first (the winding reveal order)
   readonly steps: DevelopStep[];      // placement steps aligned with `order`
-  readonly center: XY;
+  readonly center: Vec2;
 };
 
 export function windingNet(triang: Triangulation, layout: HarmonicLayout): WindingNet {
@@ -120,13 +121,13 @@ export function windingNet(triang: Triangulation, layout: HarmonicLayout): Windi
  * outward, each triangle gluing onto an already-placed coincident neighbor.
  * Shared by `windingNet` (animation) and the canonical `developOrder`.
  */
-export function windingDevelop(triang: Triangulation, dom: HarmonicTile[]): { order: number[]; steps: DevelopStep[]; center: XY } {
+export function windingDevelop(triang: Triangulation, dom: HarmonicTile[]): { order: number[]; steps: DevelopStep[]; center: Vec2 } {
   const { triangles, edgeToTris } = triang;
   const F = triangles.length;
   const byId = new Map(dom.map((t) => [t.id, t]));
-  const cornerOf = (t: number, g: number): XY => byId.get(t)!.corners[triangles[t].indexOf(g)];
+  const cornerOf = (t: number, g: number): Vec2 => byId.get(t)!.corners[triangles[t].indexOf(g)];
   const EPS = 1e-6;
-  const close = (a: XY, b: XY) => Math.hypot(a[0] - b[0], a[1] - b[1]) < EPS;
+  const close = (a: Vec2, b: Vec2) => Math.hypot(a[0] - b[0], a[1] - b[1]) < EPS;
 
   // coincident-edge adjacency within the fundamental domain
   const adj: { nbr: number; u: number; v: number }[][] = Array.from({ length: F }, () => []);
@@ -142,7 +143,7 @@ export function windingDevelop(triang: Triangulation, dom: HarmonicTile[]): { or
   let dcx = 0, dcy = 0;
   for (let t = 0; t < F; t++) { const g = cen(t); dcx += g[0]; dcy += g[1]; }
   dcx /= F; dcy /= F;
-  const domCenter: XY = [dcx, dcy];
+  const domCenter: Vec2 = [dcx, dcy];
 
   // central triangle = nearest the domain centroid
   let root = 0, rootD = Infinity;

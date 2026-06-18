@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { makeCurve, makePolyline } from '../../../src/geometry/drawing/curve';
-import type { Vec2 } from '../../../src/geometry/drawing/vec2';
+import { makeCurve, makePolyline } from '../../src/geometry/curve.ts';
+import type { Vec2 } from '../../src/geometry/vec2.ts';
 
 describe('PlaneCurve', () => {
   it('straight line: length, projection, uniform spacing', () => {

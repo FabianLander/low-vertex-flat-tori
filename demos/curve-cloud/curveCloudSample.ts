@@ -16,8 +16,8 @@
  * Pure: no DOM, no three.js.
  */
 
-import { type Vec2, dist2 } from './vec2';
-import type { PlaneCurve } from './curve';
+import { type Vec2, dist2 } from '../../src/geometry/vec2.ts';
+import type { PlaneCurve } from '../../src/geometry/curve.ts';
 
 export type CloudPoint<T> = { p: Vec2; payload: T };
 

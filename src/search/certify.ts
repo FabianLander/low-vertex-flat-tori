@@ -13,7 +13,8 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import { modulus, reduceModulus, type V2 } from '../topology/develop.ts';
+import { modulus, reduceModulus } from '../topology/develop.ts';
+import type { Vec2 } from '../geometry/vec2.ts';
 import { maxConeDeficit } from '../conditions/flat.ts';
 import { isEmbedded, minMargin } from '../conditions/embedded/index.ts';
 
@@ -25,9 +26,9 @@ export interface Certificate {
   /** Smallest normalized cell gap (diagnostic; NOT the same as `embedded`). */
   readonly margin: number;
   /** RAW modulus τ ∈ ℍ — Teichmüller, depends on the marking. */
-  readonly tau: V2;
+  readonly tau: Vec2;
   /** REDUCED modulus τ̂ — moduli, in the standard fundamental domain. */
-  readonly tauHat: V2;
+  readonly tauHat: Vec2;
   /** Intrinsic total area (= covolume of Λ for a unit-index marking). */
   readonly area: number;
   /** Max holonomy rotation over the cut edges; ~0 confirms the holonomy is a pure translation (flatness). */

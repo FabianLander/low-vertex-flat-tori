@@ -17,7 +17,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Triangulation } from '../topology/triangulation.ts';
-import type { V2 } from '../topology/develop.ts';
+import type { Vec2 } from '../geometry/vec2.ts';
 import { developNet } from '../topology/develop.ts';
 import { latticeUV } from '../mesh/uv.ts';
 
@@ -92,13 +92,13 @@ export function developedSheet(triang: Triangulation, opts: DevelopedSheetOption
 
 /** Merged cylinder tubes along every distinct edge of the planar net (coincident
  *  internal edges drawn once; the two halves of a cut edge stay separate). */
-function foldLineTubes(corners: V2[][], radius: number): THREE.BufferGeometry | null {
+function foldLineTubes(corners: Vec2[][], radius: number): THREE.BufferGeometry | null {
   const unit = new THREE.CylinderGeometry(radius, radius, 1, 8, 1, true);
   const parts: THREE.BufferGeometry[] = [];
   const seen = new Set<string>();
   const a = new THREE.Vector3(), b = new THREE.Vector3(), dir = new THREE.Vector3();
   const mid = new THREE.Vector3(), quat = new THREE.Quaternion(), scale = new THREE.Vector3(), m = new THREE.Matrix4();
-  const r = (p: V2): string => `${Math.round(p[0] * 1e5)},${Math.round(p[1] * 1e5)}`;
+  const r = (p: Vec2): string => `${Math.round(p[0] * 1e5)},${Math.round(p[1] * 1e5)}`;
 
   for (const tri of corners) {
     for (let k = 0; k < 3; k++) {

@@ -9,7 +9,7 @@
  * Pure: no DOM, no three.js.
  */
 
-import { type Vec2, dist, lerp, projectToSegment } from './vec2';
+import { type Vec2, dist, lerp, projectToSegment } from './vec2.ts';
 
 export interface PlaneCurve {
   readonly length: number;

@@ -12,7 +12,8 @@
  */
 
 import { ALL_TORI } from '../../src/triangulations/index';
-import { harmonicLayout, type XY } from '../../src/topology/harmonicLayout';
+import { harmonicLayout } from '../../src/topology/harmonicLayout';
+import type { Vec2 } from '../../src/geometry/vec2';
 import { windingNet, type WindingNet } from '../../src/topology/fundamentalDomain';
 
 const STEP_MS = 380;
@@ -40,8 +41,8 @@ function resize(): void {
 }
 window.addEventListener('resize', resize);
 
-type Fit = { sx: (p: XY) => number; sy: (p: XY) => number };
-function fit(pts: XY[], W: number, H: number, margin = 100): Fit {
+type Fit = { sx: (p: Vec2) => number; sy: (p: Vec2) => number };
+function fit(pts: Vec2[], W: number, H: number, margin = 100): Fit {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const [x, y] of pts) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
   const scale = Math.min((W - 2 * margin) / (maxX - minX || 1), (H - 2 * margin) / (maxY - minY || 1));
@@ -126,14 +127,14 @@ function draw(): void {
   }
 }
 
-function poly(f: Fit, c: XY[]): void {
+function poly(f: Fit, c: Vec2[]): void {
   ctx.beginPath();
   ctx.moveTo(f.sx(c[0]), f.sy(c[0]));
   ctx.lineTo(f.sx(c[1]), f.sy(c[1]));
   ctx.lineTo(f.sx(c[2]), f.sy(c[2]));
   ctx.closePath();
 }
-function centroidPx(f: Fit, c: XY[]): { x: number; y: number } {
+function centroidPx(f: Fit, c: Vec2[]): { x: number; y: number } {
   return { x: (f.sx(c[0]) + f.sx(c[1]) + f.sx(c[2])) / 3, y: (f.sy(c[0]) + f.sy(c[1]) + f.sy(c[2])) / 3 };
 }
 

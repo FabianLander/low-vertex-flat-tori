@@ -12,7 +12,8 @@
  */
 
 import { ALL_TORI } from '../../src/triangulations/index';
-import { harmonicLayout, periodicTiles, type HarmonicLayout, type XY } from '../../src/topology/harmonicLayout';
+import { harmonicLayout, periodicTiles, type HarmonicLayout } from '../../src/topology/harmonicLayout';
+import type { Vec2 } from '../../src/geometry/vec2';
 
 const layouts: HarmonicLayout[] = ALL_TORI.map(harmonicLayout);
 let showLabels = true;
@@ -66,10 +67,10 @@ function drawCell(rect: Rect, idx: number): void {
   const scale = Math.min((rect.w - 2 * margin) / (maxX - minX || 1), (rect.h - 2 * margin - titleH) / (maxY - minY || 1));
   const ox = rect.x + (rect.w - scale * (minX + maxX)) / 2;
   const oy = rect.y + titleH + (rect.h - titleH + scale * (minY + maxY)) / 2;
-  const sx = (p: XY) => ox + scale * p[0];
-  const sy = (p: XY) => oy - scale * p[1];
+  const sx = (p: Vec2) => ox + scale * p[0];
+  const sy = (p: Vec2) => oy - scale * p[1];
 
-  const path = (c: XY[]) => { ctx.beginPath(); ctx.moveTo(sx(c[0]), sy(c[0])); ctx.lineTo(sx(c[1]), sy(c[1])); ctx.lineTo(sx(c[2]), sy(c[2])); ctx.closePath(); };
+  const path = (c: Vec2[]) => { ctx.beginPath(); ctx.moveTo(sx(c[0]), sy(c[0])); ctx.lineTo(sx(c[1]), sy(c[1])); ctx.lineTo(sx(c[2]), sy(c[2])); ctx.closePath(); };
 
   // clip drawing to the cell (below the title) so the ring is trimmed cleanly
   ctx.save();

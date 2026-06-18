@@ -9,14 +9,15 @@ import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
 import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
 import { fixedModulus, modulusWall } from '../../src/conditions/modulus.ts';
-import { modulus, reduceModulus, type V2 } from '../../src/topology/develop.ts';
+import { modulus, reduceModulus } from '../../src/topology/develop.ts';
+import type { Vec2 } from '../../src/geometry/vec2.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 
 const torus = byId(7);
 
 // A flat seed and its reduced modulus.
-function flatSeed(): { pos: Float64Array; tauHat: V2 } {
+function flatSeed(): { pos: Float64Array; tauHat: Vec2 } {
   const pos = RICH_REFERENCE.positions.slice();
   project(pos, [flat(torus)]);
   return { pos, tauHat: reduceModulus(modulus(torus, pos).tau) };
@@ -37,7 +38,7 @@ describe('modulus submanifolds', () => {
 
   it('project onto [flat, fixedModulus(τ̂₀)] realizes τ̂ = τ̂₀', () => {
     const { pos: seed, tauHat } = flatSeed();
-    const target: V2 = [tauHat[0] + 0.01, tauHat[1] + 0.01];
+    const target: Vec2 = [tauHat[0] + 0.01, tauHat[1] + 0.01];
     const p = seed.slice();
     const r = project(p, [flat(torus), fixedModulus(torus, seed, target)]);
 
