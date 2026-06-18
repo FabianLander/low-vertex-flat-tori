@@ -2,8 +2,8 @@
  * Flat-samples demo — normalization test on Rich's torus (column 0) + 7 seeds.
  *
  * Top row:    the 8 tori as given (gauge-centered only, for framing).
- * Bottom row: the same 8 after normalize() — the canonical similarity pose
- *             v0→(0,0,0), v1→(1,0,0), v2→xy-plane (see src/configuration/gauge.ts).
+ * Bottom row: the same 8 after normalizePose() — the canonical similarity pose
+ *             v0→(0,0,0), v1→(1,0,0), v2→xy-plane (see src/coordinates/normalized.ts).
  *
  * The three ANCHOR vertices that define the convention are marked:
  *   v0 = white (origin), v1 = red (the +x axis), v2 = green (the +y / xy-plane).
@@ -19,7 +19,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 import { RICH } from '../../src/triangulations';
-import { normalize } from '../../src/configuration/gauge';
+import { normalizePose } from '../../src/coordinates/normalized';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { makeTorusView } from '../../src/viewer/TorusView';
 
@@ -122,7 +122,7 @@ function addTorus(p24: Float64Array, x: number, y: number, colHex: number): void
 items.forEach((item, i) => {
   const x = (i - (N - 1) / 2) * SPACING;
   addTorus(displayGauge(item.raw), x, TOP_Y, item.color);   // top: raw
-  addTorus(normalize(item.raw), x, BOT_Y, item.color);      // bottom: canonical
+  addTorus(normalizePose(item.raw), x, BOT_Y, item.color);  // bottom: canonical
 
   // coordinate frame under each normalized torus: its origin IS v0, +x carries v1.
   const axes = new THREE.AxesHelper(1.0);

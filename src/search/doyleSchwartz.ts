@@ -1,19 +1,17 @@
 /**
- * The Doyle–Schwartz parametric family — an explicit seed configuration for the
- * degree-6-regular (#7) flat torus of any modulus τ = x + iy.
+ * The Doyle–Schwartz seed family — a SEED (not a coordinate system): the explicit
+ * closed-form #7 flat torus of modulus τ = x + iy, as bare positions. Used to seed
+ * searches (the semi-solution scan perturbs its tent poles) and as a known flat-#7
+ * fixture. It is value-only — no Jacobian, so it is not a `ConfigSpace`/`Embedding`;
+ * it lives here with the searches that consume it, not in `coordinates/`.
  *
- * Every member is a symmetric semi-solution (in fact an embedded flat torus):
- * the six planar vertices P1..P6 lie in z = 0 and are collinear in two triples
- * {P1,P2,P3}, {P4,P5,P6}; the two tent-pole vertices P0, P7 sit at height
- * y·√(8x) ≥ 0 with the ρ-symmetry P7 = ρ(P0), ρ(u,v,w) = (−u,−v,w); and all cone
- * angles equal 2π. It is the canonical starting point for the semi-solution
- * search (perturb the tent poles, then `project` onto flat ∧ collinear).
- *
- * Returns bare positions (24 floats, [x0,y0,z0, …, x7,y7,z7]) — a configuration
- * is a `Float64Array`. Formulas from Doyle–Schwartz [DS25] §2.2 (eq. 2). The DS
+ * Every member is a symmetric flat torus: the six planar vertices P1..P6 lie in z = 0
+ * and are collinear in two triples {P1,P2,P3}, {P4,P5,P6}; the two tent-pole vertices
+ * P0, P7 sit at height y·√(8x) ≥ 0 with the ρ-symmetry P7 = ρ(P0), ρ(u,v,w) = (−u,−v,w);
+ * all cone angles equal 2π. Formulas from Doyle–Schwartz [DS25] §2.2 (eq. 2); the DS
  * fundamental domain is x ≥ 0, x ≤ ½, (x−1)² + y² ≥ 1.
  *
- * Pure: no three.js, no DOM.
+ * Returns bare positions (24 floats, [x0,y0,z0, …, x7,y7,z7]). Pure: no three.js, no DOM.
  */
 
 /** Doyle–Schwartz vertex positions for modulus z = x + iy (24 floats). */

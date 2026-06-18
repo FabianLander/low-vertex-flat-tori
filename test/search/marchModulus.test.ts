@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { marchToWallAttempt, wallFamily } from '../../src/search/marchModulus.ts';
 import { fullSpace } from '../../src/coordinates/full.ts';
-import { doyleSchwartzPositions } from '../../src/coordinates/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '../../src/search/doyleSchwartz.ts';
 import { makeCutOffArea } from '../../src/embedding/index.ts';
-import { modulus, reduceModulus } from '../../src/topology/develop.ts';
+import { modulus } from '../../src/moduli/modulus.ts';
+import { reduceModulus } from '../../src/moduli/reduce.ts';
 import { RICH } from '../../src/triangulations/index.ts';
 
 describe('marchModulus — transport a torus onto a modulus wall', () => {

@@ -2,7 +2,7 @@
  * Vec3 — a point/vector in ℝ³ as a plain 3-tuple `[x, y, z]`. The one extrinsic 3D
  * coordinate type, living at the bottom of the extrinsic stack (`geometry/`, the
  * torus-blind ℝ³ layer) so every layer above can share it — normals/poses/centers
- * in `mesh/`, the canonical pose in `configuration/gauge`, the reference coords in
+ * in `mesh/`, the canonical pose in `coordinates/normalized`, the reference coords in
  * `sampling/reference`. It is NOT in `topology/`, which is pure combinatorics (no
  * metric / 3D coords).
  *

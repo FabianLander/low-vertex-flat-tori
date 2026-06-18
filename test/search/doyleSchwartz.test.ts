@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { doyleSchwartzPositions } from '../../src/coordinates/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '../../src/search/doyleSchwartz.ts';
 import { maxConeDeficit } from '../../src/constraints/flat.ts';
-import { modulus } from '../../src/topology/develop.ts';
+import { modulus } from '../../src/moduli/modulus.ts';
 import { byId } from '../../src/triangulations/index.ts';
 
 const torus = byId(7);
