@@ -11,12 +11,12 @@
  */
 
 import type { Fn } from '../functions/types.ts';
+import { triangleSignedArea2 } from '../geometry/triangle.ts';
 
 /** Twice the signed area of (Pi, Pj, Pk) in the XY-plane; zero iff collinear. */
 export function signedArea2(p: ArrayLike<number>, i: number, j: number, k: number): number {
   const oi = 3 * i, oj = 3 * j, ok = 3 * k;
-  return (p[oj] - p[oi]) * (p[ok + 1] - p[oi + 1])
-       - (p[oj + 1] - p[oi + 1]) * (p[ok] - p[oi]);
+  return triangleSignedArea2(p[oi], p[oi + 1], p[oj], p[oj + 1], p[ok], p[ok + 1]);
 }
 
 /** Collinearity of the vertex triple (i, j, k): planar signed area = 0. codim 1, analytic. */

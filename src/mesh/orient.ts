@@ -13,6 +13,7 @@
 
 import type { Triangulation } from '../topology/triangulation.ts';
 import type { Vec3 } from '../geometry/vec3.ts';
+import { triangleNormal, signedVolume6 } from '../geometry/triangle.ts';
 
 /** Unit normal of triangle t, (b−a)×(c−a) normalized (orientation as authored). */
 export function faceNormal(
@@ -23,11 +24,12 @@ export function faceNormal(
 ): void {
   const [a, b, c] = triang.triangles[t];
   const oa = 3 * a, ob = 3 * b, oc = 3 * c;
-  const ux = p[ob] - p[oa], uy = p[ob + 1] - p[oa + 1], uz = p[ob + 2] - p[oa + 2];
-  const vx = p[oc] - p[oa], vy = p[oc + 1] - p[oa + 1], vz = p[oc + 2] - p[oa + 2];
-  let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-  const m = Math.hypot(nx, ny, nz) || 1;
-  out[0] = nx / m; out[1] = ny / m; out[2] = nz / m;
+  triangleNormal(
+    p[oa], p[oa + 1], p[oa + 2],
+    p[ob], p[ob + 1], p[ob + 2],
+    p[oc], p[oc + 1], p[oc + 2],
+    out,
+  );
 }
 
 /**
@@ -38,10 +40,11 @@ export function outwardSign(triang: Triangulation, p: ArrayLike<number>): number
   let v6 = 0;
   for (const [a, b, c] of triang.triangles) {
     const oa = 3 * a, ob = 3 * b, oc = 3 * c;
-    const ax = p[oa], ay = p[oa + 1], az = p[oa + 2];
-    const bx = p[ob], by = p[ob + 1], bz = p[ob + 2];
-    const cx = p[oc], cy = p[oc + 1], cz = p[oc + 2];
-    v6 += ax * (by * cz - bz * cy) + ay * (bz * cx - bx * cz) + az * (bx * cy - by * cx);
+    v6 += signedVolume6(
+      p[oa], p[oa + 1], p[oa + 2],
+      p[ob], p[ob + 1], p[ob + 2],
+      p[oc], p[oc + 1], p[oc + 2],
+    );
   }
   return v6 >= 0 ? 1 : -1;
 }

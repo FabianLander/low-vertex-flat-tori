@@ -23,6 +23,7 @@ import type { ScalarFn } from '../../functions/types.ts';
 import { fdScalar } from '../../functions/compose.ts';
 import { triTriChord } from '../../geometry/intersectionChord.ts';
 import { segmentTriangleDist2 } from '../../geometry/distance.ts';
+import { planeCutRatio } from '../../geometry/triangle.ts';
 import { forEachCellGap, linearSize } from './margin.ts';
 import { cellTables } from './cells.ts';
 
@@ -48,47 +49,6 @@ export function makeChordLengthSquared(triang: Triangulation): ScalarFn {
   });
 }
 
-const EPS = 1e-12;
-
-/**
- * Ratio (smaller piece area / triangle area) ∈ [0, 0.5] of triangle `triIdx` cut by
- * a plane through `(refX,refY,refZ)` with normal `(npx,npy,npz)`. Zero if the plane
- * doesn't divide it. Both "two vertices opposite" and "one vertex on the plane"
- * reduce to min(t₁·t₂, 1 − t₁·t₂).
- */
-function smallerPieceRatio(
-  triang: Triangulation, positions: ArrayLike<number>, triIdx: number,
-  npx: number, npy: number, npz: number, refX: number, refY: number, refZ: number,
-): number {
-  const T = triang.triangles[triIdx];
-  const o0 = 3 * T[0], o1 = 3 * T[1], o2 = 3 * T[2];
-  const v0x = positions[o0], v0y = positions[o0 + 1], v0z = positions[o0 + 2];
-  const v1x = positions[o1], v1y = positions[o1 + 1], v1z = positions[o1 + 2];
-  const v2x = positions[o2], v2y = positions[o2 + 1], v2z = positions[o2 + 2];
-
-  const d0 = (v0x - refX) * npx + (v0y - refY) * npy + (v0z - refZ) * npz;
-  const d1 = (v1x - refX) * npx + (v1y - refY) * npy + (v1z - refZ) * npz;
-  const d2 = (v2x - refX) * npx + (v2y - refY) * npy + (v2z - refZ) * npz;
-  if (d0 > EPS && d1 > EPS && d2 > EPS) return 0;
-  if (d0 < -EPS && d1 < -EPS && d2 < -EPS) return 0;
-
-  const s0 = d0 < -EPS ? -1 : 1, s1 = d1 < -EPS ? -1 : 1, s2 = d2 < -EPS ? -1 : 1;
-  const numPos = (s0 > 0 ? 1 : 0) + (s1 > 0 ? 1 : 0) + (s2 > 0 ? 1 : 0);
-  if (numPos === 0 || numPos === 3) return 0;
-
-  const singleIsPos = numPos === 1;
-  let dS: number, dO1: number, dO2: number;
-  if ((s0 > 0) === singleIsPos)      { dS = d0; dO1 = d1; dO2 = d2; }
-  else if ((s1 > 0) === singleIsPos) { dS = d1; dO1 = d2; dO2 = d0; }
-  else                                { dS = d2; dO1 = d0; dO2 = d1; }
-
-  const denom1 = dS - dO1, denom2 = dS - dO2;
-  if (Math.abs(denom1) < EPS || Math.abs(denom2) < EPS) return 0;
-  let prod = (dS / denom1) * (dS / denom2);
-  if (prod < 0) prod = 0; else if (prod > 1) prod = 1;
-  return Math.min(prod, 1 - prod);
-}
-
 function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, tA: number, tB: number): number {
   const A = triang.triangles[tA], B = triang.triangles[tB];
   const oa0 = 3 * A[0], oa1 = 3 * A[1], oa2 = 3 * A[2];
@@ -103,6 +63,8 @@ function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, t
   const b1x = positions[ob1], b1y = positions[ob1 + 1], b1z = positions[ob1 + 2];
   const b2x = positions[ob2], b2y = positions[ob2 + 1], b2z = positions[ob2 + 2];
 
+  // Raw (un-normalized) plane normal of each face — the cut ratio is scale-invariant
+  // in it, so we skip the normalize that the unit-normal `triangleNormal` would add.
   const eA1x = a1x - a0x, eA1y = a1y - a0y, eA1z = a1z - a0z;
   const eA2x = a2x - a0x, eA2y = a2y - a0y, eA2z = a2z - a0z;
   const nAx = eA1y * eA2z - eA1z * eA2y, nAy = eA1z * eA2x - eA1x * eA2z, nAz = eA1x * eA2y - eA1y * eA2x;
@@ -110,8 +72,9 @@ function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, t
   const eB2x = b2x - b0x, eB2y = b2y - b0y, eB2z = b2z - b0z;
   const nBx = eB1y * eB2z - eB1z * eB2y, nBy = eB1z * eB2x - eB1x * eB2z, nBz = eB1x * eB2y - eB1y * eB2x;
 
-  const ratioA = smallerPieceRatio(triang, positions, tA, nBx, nBy, nBz, b0x, b0y, b0z);
-  const ratioB = smallerPieceRatio(triang, positions, tB, nAx, nAy, nAz, a0x, a0y, a0z);
+  // each triangle cut by the OTHER's plane → smaller-piece area ratio
+  const ratioA = planeCutRatio(a0x, a0y, a0z, a1x, a1y, a1z, a2x, a2y, a2z, nBx, nBy, nBz, b0x, b0y, b0z);
+  const ratioB = planeCutRatio(b0x, b0y, b0z, b1x, b1y, b1z, b2x, b2y, b2z, nAx, nAy, nAz, a0x, a0y, a0z);
   return c.length * c.length * (ratioA + ratioB);
 }
 
