@@ -8,6 +8,12 @@
  * loci and energies they define — because each is measured in many roles, and the
  * map is the shared thing.
  *
+ * A condition is thus used two ways, and the `functions/compose` algebra is what lets
+ * you move between them: `project`/`march` solve it HARD (drive the `Fn` to zero);
+ * `leastSquares(fn)` turns it into the `ScalarFn` energy `flow` descends SOFT (move
+ * toward its zeros); `stack(...)` combines conditions into one higher-dim `Fn`. So
+ * "constraint" and "energy" are uses, and hard/soft/combine are the verbs on an `Fn`.
+ *
  * `value` writes the k components; `jacobian` writes the k×n derivative, row-major
  * with stride n. Both take the config as `ArrayLike` so they can be evaluated on
  * staging buffers; neither mutates it.

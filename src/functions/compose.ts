@@ -46,6 +46,11 @@ const DEFAULT_H = 1e-7;
  * private scratch copy of the config (the input is never mutated). The single
  * place finite-differencing lives — maps with a closed-form derivative supply
  * their own `jacobian` instead.
+ *
+ * Step `h` defaults to 1e-7 (vs `fdScalar`'s 1e-6 — vector constraints want the
+ * tighter step). The `scratch` buffer is reused across `jacobian` calls, so this
+ * is NOT re-entrant: `value` must not itself evaluate this same `Fn`'s `jacobian`
+ * (no fd-map currently nests, so it holds).
  */
 export function fdFn(
   label: string,
@@ -99,7 +104,8 @@ export function scalarFn(
 /**
  * A scalar `Fn` whose gradient is the central finite difference of `compute`
  * (2n evaluations over a private scratch copy — the input is never mutated, unlike
- * the old in-place `fdGradient`). For energies with no closed-form gradient.
+ * the old in-place `fdGradient`). For energies with no closed-form gradient. Step
+ * `h` defaults to 1e-6; same reused-scratch non-re-entrancy caveat as `fdFn`.
  */
 export function fdScalar(
   label: string,
@@ -120,6 +126,38 @@ export function fdScalar(
       out[i] = (ep - em) * inv2h;
     }
   });
+}
+
+/**
+ * The least-squares ENERGY of a map: `½ Σ fn.value²`, a `ScalarFn` whose minimum is
+ * exactly the zero set `{fn = 0}` and whose gradient is `Jᵀ·fn(c)`. This is the bridge
+ * from a CONDITION (an `Fn` you'd Newton-solve with `project`) to the thing `flow`
+ * descends — "flow toward this condition's zeros." The third `ScalarFn` producer
+ * (analytic `scalarFn` / finite-diff `fdScalar` / least-squares-of-a-map). Analytic
+ * whenever `fn.jacobian` is. The reused J/value scratch makes it non-re-entrant (same
+ * caveat as `fdScalar`).
+ */
+export function leastSquares(fn: Fn): ScalarFn {
+  const k = fn.dim;
+  const v = new Float64Array(k);
+  let jac: Float64Array | null = null;
+  return scalarFn(
+    `½‖${fn.label}‖²`,
+    (c) => { fn.value(c, v); let s = 0; for (let r = 0; r < k; r++) s += v[r] * v[r]; return 0.5 * s; },
+    (c, out) => {
+      const n = c.length;
+      if (!jac || jac.length !== k * n) jac = new Float64Array(k * n);
+      fn.value(c, v);
+      fn.jacobian(c, jac);
+      out.fill(0);
+      for (let r = 0; r < k; r++) {            // ∇(½‖f‖²) = Jᵀ f
+        const vr = v[r];
+        if (vr === 0) continue;
+        const row = r * n;
+        for (let col = 0; col < n; col++) out[col] += jac[row + col] * vr;
+      }
+    },
+  );
 }
 
 /**
@@ -259,4 +297,29 @@ export function precomposeScalar(f: ScalarFn, phi: Embedding, label = `${f.label
       }
     },
   );
+}
+
+/**
+ * Stack maps into ONE higher-dim `Fn` — the product of conditions `g = (f₁,…,f_m)`, with
+ * `dim = Σ fᵢ.dim`. `value`/`jacobian` write each block straight into `out.subarray(…)` at
+ * its row offset (no copies). The zero set is the intersection ⋂{fᵢ = 0}; pair with
+ * `leastSquares` to flow toward several conditions at once. Takes raw `Fn`s — a `Held`'s
+ * `drive`/`measure` is a `project`-only concern (`stack` for the energy path uses the bare
+ * map, e.g. `coneDeficit`, not the `flat` `Held`).
+ */
+export function stack(...fns: Fn[]): Fn {
+  const dim = fns.reduce((s, f) => s + f.dim, 0);
+  return {
+    label: `stack(${fns.map((f) => f.label).join(',')})`,
+    dim,
+    value(c, out) {
+      let row = 0;
+      for (const f of fns) { f.value(c, out.subarray(row, row + f.dim)); row += f.dim; }
+    },
+    jacobian(c, out) {
+      const n = c.length;
+      let row = 0;
+      for (const f of fns) { f.jacobian(c, out.subarray(row * n, (row + f.dim) * n)); row += f.dim; }
+    },
+  };
 }

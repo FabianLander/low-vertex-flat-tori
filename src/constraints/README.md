@@ -10,11 +10,13 @@ imports the measurement straight from the module.
 - `types.ts` — the `Held`/`Constraint` contracts.
 - `flat.ts` — the cone-angle deficit measurement + the `flat` constraint (drive V−1).
 - `collinear.ts` — the planar signed-area measurement (analytic) + the constraint.
-- `modulus.ts` — the modulus `tau` (FD) + `fixedModulus` / `modulusWall` (frozen-chart).
+- `modulus.ts` — the modulus as a **chart × locus grid**: `pinTeichmuller`/`pinModuli` ×
+  `point`/`verticalLine`/`circle`, each `postcompose(locus, chart∘tau)` (fully analytic — `tau`'s
+  Jacobian comes from `moduli/modulus`); named cells `fixedModulus`/`modulusWall`. Consumes `moduli/`.
 
 The other species of condition — the **open** region you *stay inside* — is
-embeddedness, and it has its own first-class home in `embedding/` (a `Region`, gated
-by `flow`/`march`, plus the repulsion energies that drive a config into it). The
+embeddedness, and it has its own first-class home in `embedding/` (gated by a `Gate`
+predicate in `flow`/`march`, plus the repulsion energies that drive a config into it). The
 search is exactly "land on these closed constraints while staying inside that open
 region."
 

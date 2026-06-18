@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  fdFn, affine, postcompose, precompose, precomposeScalar, scalarFn,
+  fdFn, affine, postcompose, precompose, precomposeScalar, scalarFn, stack, leastSquares,
   type Embedding,
 } from '../../src/functions/compose.ts';
 import type { Fn } from '../../src/functions/types.ts';
@@ -152,6 +152,55 @@ describe('precompose', () => {
       xx[col] = x[col] - h; gphi.value(xx, vm);
       xx[col] = x[col];
       for (let r = 0; r < 2; r++) expect(J[r * 2 + col]).toBeCloseTo((vp[r] - vm[r]) / (2 * h), 5);
+    }
+  });
+});
+
+describe('stack', () => {
+  it('concatenates value and Jacobian into one higher-dim Fn', () => {
+    // g : ℝ³ → ℝ¹, g(c) = c0 + c1 + c2. stack(f, g) : ℝ³ → ℝ³.
+    const g: Fn = fdFn('sum', 1, (c, out) => { out[0] = c[0] + c[1] + c[2]; });
+    const fg = stack(f, g);
+    expect(fg.dim).toBe(3);
+    const c = new Float64Array([1.3, -0.7, 2.1]);
+
+    const v = new Float64Array(3);
+    fg.value(c, v);
+    expect(v[0]).toBeCloseTo(1.3 * 1.3, 9);          // f row 0
+    expect(v[1]).toBeCloseTo(-0.7 * 2.1, 9);         // f row 1
+    expect(v[2]).toBeCloseTo(1.3 - 0.7 + 2.1, 9);    // g row
+
+    // Jacobian = [ f's 2×3 block ; g's 1×3 block ]
+    const J = new Float64Array(3 * 3);
+    fg.jacobian(c, J);
+    expect(J[0]).toBeCloseTo(2 * 1.3, 4); expect(J[1]).toBeCloseTo(0, 4); expect(J[2]).toBeCloseTo(0, 4);
+    expect(J[3]).toBeCloseTo(0, 4); expect(J[4]).toBeCloseTo(2.1, 4); expect(J[5]).toBeCloseTo(-0.7, 4);
+    expect(J[6]).toBeCloseTo(1, 4); expect(J[7]).toBeCloseTo(1, 4); expect(J[8]).toBeCloseTo(1, 4);
+  });
+});
+
+describe('leastSquares', () => {
+  it('compute = ½‖f‖² and grad = Jᵀ·f (checked against the closed form and FD)', () => {
+    const E = leastSquares(f);          // ½(f0² + f1²) = ½((c0²)² + (c1 c2)²)
+    const c = new Float64Array([1.3, -0.7, 2.1]);
+
+    expect(E.compute(c)).toBeCloseTo(0.5 * ((1.3 ** 2) ** 2 + (-0.7 * 2.1) ** 2), 6);
+
+    // Jᵀf with J = [[2c0,0,0],[0,c2,c1]], f = [c0², c1 c2]:
+    //   [2c0·c0², c2·c1c2, c1·c1c2] = [2c0³, c1 c2², c1² c2]
+    const g = new Float64Array(3);
+    E.grad(c, g);
+    expect(g[0]).toBeCloseTo(2 * 1.3 ** 3, 4);
+    expect(g[1]).toBeCloseTo(-0.7 * 2.1 ** 2, 4);
+    expect(g[2]).toBeCloseTo(0.7 ** 2 * 2.1, 4);
+
+    // and against central differences of compute
+    const h = 1e-6, cc = Float64Array.from(c);
+    for (let j = 0; j < 3; j++) {
+      cc[j] = c[j] + h; const ep = E.compute(cc);
+      cc[j] = c[j] - h; const em = E.compute(cc);
+      cc[j] = c[j];
+      expect(g[j]).toBeCloseTo((ep - em) / (2 * h), 5);
     }
   });
 });
