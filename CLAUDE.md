@@ -17,7 +17,7 @@ degree 5/7 — so **nothing may assume degree 6**.
 npm install                       # once
 npm test                          # vitest run (all *.test.ts under test/, mirroring src/)
 npm run test:watch
-npx vitest run test/topology/develop.test.ts    # a single test file
+npx vitest run test/moduli/develop.test.ts      # a single test file
 npx vitest run -t "modulus"                    # tests matching a name
 npx tsc --noEmit                  # typecheck — this is the lint (no eslint configured)
 ```
@@ -65,11 +65,12 @@ geometry/ → functions/ → { configuration/, coordinates/, constraints/, embed
 ```
 
 `geometry/` is the **ℝ²/ℝ³ metric floor** — pure point/vector/line/triangle math, no torus — and it sits
-below *everything*, including the intrinsic side: `topology/` (machinery) + `triangulations/` (the 7 as
-data) build on `geometry/` (e.g. the developing map's planar net uses `geometry/vec2`) and on nothing
-else. So `geometry/` is the one true bottom; `topology/` depends only on it. Do not import three.js or
-touch `window`/`document` from any of these. **Machinery and its instances are flat
-siblings, never nested** — `topology/`↔`triangulations/`, `functions/`↔`constraints/`,
+below *everything*. The intrinsic side rests on it too: `topology/` (combinatorial — the discrete torus +
+its marking; the harmonic *scratch* layout uses `geometry/vec2`) → `triangulations/` (the 7 as data); and
+`moduli/` (develop a metric torus → its modulus τ, and the space ℍ/SL(2,ℤ)) is a separate pure leaf on
+`geometry/` + `topology/`, consumed by `constraints/modulus` and `search/certify`. So `geometry/` is the
+one true bottom. Do not import three.js or touch `window`/`document` from any of these. **Machinery and
+its instances are flat siblings, never nested** — `topology/`↔`triangulations/`, `functions/`↔`constraints/`,
 `configuration/`↔`coordinates/` — because the arrow is *dependency*, not *containment* (so a
 machinery-purity violation like `topology/` importing `triangulations/` is a glaring cross-folder import).
 
@@ -82,6 +83,10 @@ separate interfaces:
 - a **constraint** is an `Fn` driven to zero (`project`/`march`); held with optional usage (`Held`:
   which rows to drive). `flat` = `coneDeficit` driving V−1 rows.
 - an **energy** is a scalar `Fn` (`ScalarFn`: `compute`/`grad`) descended (`flow`).
+
+The three verbs on an `Fn` live in `functions/compose`: solve it hard (`project`/`march`), `stack` it
+with others into one higher-dim `Fn`, or `leastSquares` it into the `½‖·‖²` energy `flow` descends —
+so any condition can be Newton-solved OR gradient-flowed toward, and the embedded gate composes on top.
 
 There is **no `ConstraintMap` and no `Energy` interface** — they were retired onto `Fn`/`ScalarFn`.
 `functions/` is the **generic toolkit** — the `Fn`/`ScalarFn`/`Embedding` contracts (`types.ts`,
@@ -99,24 +104,46 @@ closures, never bundled with the coordinates. There is **no global triangulation
 interface) — the form a configuration takes at the serialize / render / certify edge, where it must carry
 its triangulation; not used on the interior hot path.
 
-### Intrinsic: `topology/` (machinery) + `triangulations/` (data)
+### Intrinsic: `topology/` (combinatorics) + `triangulations/` (data)
+
+**`topology/` is combinatorial.** It is the discrete torus — its combinatorics, homology, and the
+*choice* of developing chart (cut, develop order, marking) — and it does NO geometric measurement;
+that (developing a metric torus → its modulus) is `moduli/`, below.
 
 - `topology/triangulation.ts` — the `Triangulation` type + `defineTriangulation(spec)`. Everything
-  (edges, oriented vertex links, dual adjacency, develop order, generator loops) is
-  **derived from the triangle list and validated by V−E+F=0** — no baked-in 8/24/16 counts.
-  `defineTriangulation({ triangles })` alone yields a working torus, so the pipeline is
-  triangulation-independent. (The extrinsic triangle-collision tables — which non-adjacent cells must be
-  tested for the embedding check — are derived separately in `embedding/cells.ts`, not here.)
-- `topology/develop.ts` — the RUNTIME engine: unfold the triangulation; read the holonomy of the two
-  marked generator loops to get the modulus τ ∈ ℍ, and reduce it to τ̂ ∈ ℍ/SL(2,ℤ)
-  (`reduceModulusWithMatrix` returns the reducing matrix, for the frozen-chart wall constraints).
-- `topology/marking.ts` — `canonicalDecoration`: picks each triangulation's canonical marking
-  (the develop order + cut-aligned H₁ generators) via `harmonicLayout` (planar harmonic embedding) +
-  `fundamentalDomain` (the exact minimal-cut domain + centered-spiral unroll). The heavy derivation;
-  the registry runs it **on load** (deterministic, ~0.1s each; no cached file). A much larger census
-  would warrant precomputing it — build that then.
+  (edges, oriented vertex links, dual adjacency, develop order, gluing tree, H₁ generators, the
+  combinatorial decoration types `Marking`/`FundamentalDomain`/`Attach`/`DevelopStep`) is **derived
+  from the triangle list and validated by V−E+F=0** — no baked-in 8/24/16 counts.
+  `defineTriangulation({ triangles })` alone yields a working torus. (The extrinsic triangle-collision
+  tables are derived separately in `embedding/cells.ts`, not here.)
+- `topology/trees.ts` — the shared spanning-tree primitives (primal/dual trees, tree–cotree co-edges,
+  LCA `treePath`) the homology generators and the canonical marking are read off of.
+- `topology/marking.ts` — `canonicalDecoration`: picks each triangulation's canonical marking (cut +
+  develop order + cut-aligned H₁ generators), run **on load** by the registry (~0.1s each).
+- `topology/{harmonicLayout,fundamentalDomain}.ts` — the planar-layout helpers `marking` builds on:
+  the harmonic (Tutte) flat-torus embedding + the exact minimal-cut domain / centered-spiral unroll.
+  The harmonic torus is a convenient *scratch* layout (not one of OUR metrics) — geometry used only as a
+  *method* to choose the combinatorial marking/cut.
 - `triangulations/` — the 7 types as data: `EIGHT_VERTEX`, registry `ALL_TORI`/`byId(n)`/`RICH = byId(7)`,
   computing each triangulation's marking on load.
+
+### The modulus: `moduli/` (measure τ, and the space it lives in)
+
+The **geometric** counterpart to combinatorial `topology/`: it develops one of OUR metric tori into the
+plane and reads its modulus. `topology/` supplies the finite combinatorial data it walks along; `moduli/`
+does the measurement and owns the target space.
+
+- `moduli/develop.ts` — the developing map via per-triangle **frames** (each triangle's canonical shape
+  carried by a unit-complex rotation `R_t` built along the gluing tree — no circle–circle, no branch).
+  `developFrames` (the core) · `developNet` (vertex positions, for the rendered net + cut edges) ·
+  `framePlan` (the cached combinatorial recipe) · `canonicalShape`/`totalArea` · `tauFromNet` (read τ off
+  the developed image — the alternate route kept for the consistency check) · `cmul`/`cdiv`.
+- `moduli/modulus.ts` — the measurement: `modulus` (τ ∈ ℍ **directly** from the frames — holonomy of the
+  generator loops, no positions) + `tauJacobian` (the exact analytic ∂τ/∂p, forward-mode complex AD) +
+  the `Modulus` record.
+- `moduli/reduce.ts` — the space ℍ/SL(2,ℤ): `applyMobius`, `reduceModulus`/`reduceModulusWithMatrix`
+  (the quotient + the reducing matrix for the frozen chart), and the orbifold points `SQUARE`/`HEXAGONAL`.
+  Torus-blind (`Vec2` in/out).
 
 ### Extrinsic: the search stack
 
@@ -127,20 +154,28 @@ its triangulation; not used on the interior hot path.
   `triangleIntersect` (the Möller–Trumbore predicates behind `isEmbedded`), and `curve` (`PlaneCurve`).
   Two tiers: tuple ops for cold code, allocation-free scalar/buffer kernels for the hot search loops.
 - `functions/` — the generic toolkit: `types` (`Fn`/`ScalarFn`) + `compose` (`Embedding` + the algebra
-  `fdFn`/`scalarFn`/`precompose`/`postcompose`/`affine`). No instances.
+  `fdFn`/`scalarFn`/`precompose`/`postcompose`/`affine`, plus `stack` — combine conditions into one
+  higher-dim `Fn` — and `leastSquares` — soften a condition into the `½‖·‖²` energy `flow` descends).
+  No instances. A condition is one `Fn`: `project`/`march` solve it hard, `leastSquares`+`flow` move
+  toward it soft, `stack` combines.
 - `configuration/` — the configuration-space **machinery**: `space` (`ConfigSpace = (T, φ)` with
   `pull`/`push`/`coords`/`metric` + `makeConfigSpace`), `paperTorus` (the `{triang, positions}`
-  boundary bundle), `gauge` (canonical similarity pose, storage/dedup only).
-- `coordinates/` — the coordinate-system **instances** (each builds an `Embedding`→`ConfigSpace`):
-  `full`, `pin` (`pinCoords`/`pinVertices`), `symmetry` (+`RICH_SYMMETRY` = Rich's ρ), `doyleSchwartz`
-  (the DS flat-#7 parameterization; a nonlinear coordinate system, currently value-only for seeding).
-- `constraints/` — the **closed** conditions `{g=0}` you *project onto* (each a self-contained module,
-  measurement + usage), plus `types` (`Held`/`Constraint`): `flat` (`coneDeficit` + the V−1 constraint),
-  `collinear` (analytic), `modulus` (`tau` + `fixedModulus`/`modulusWall`, frozen-chart).
-- `embedding/` — the **open** condition Ω you *stay inside* (its own first-class home — the search's hard
-  part): the `Region` (`region`: `embedded` gate + margin) · `gate` (`isEmbedded`, the topological truth) ·
-  `margin` (cell-gaps + `minMargin`) · `energies` (Fabi's `chordLengthSquared`/`cutOffArea` + `cellMargin`
-  hinge + `cellBarrier` log-barrier) · `cells` (`cellTables`, the collision tables) · `index`.
+  boundary bundle), `csv` (the bundle's CSV form).
+- `coordinates/` — the coordinate-system **instances** (each an `Embedding` φ with both `push` and
+  `coords`): `full`, `pin` (`pinCoords`/`pinVertices`), `symmetry` (+`RICH_SYMMETRY` = Rich's ρ), and
+  `normalized` (+`normalizePose`) — the gauge-fixed section of C → C/Sim (kills the 7 similarity DOF,
+  3V−7 free coords; the realization-side mirror of `moduli/reduce`; replaces the old `gauge`).
+- `constraints/` — the **closed** conditions `{g=0}` you *project onto* (+ `types` `Held`/`Constraint`):
+  `flat` (`coneDeficit` + the V−1 constraint), `collinear` (analytic), `modulus` — the **point/line/circle
+  × Teichmüller/moduli grid**: `pinTeichmuller`/`pinModuli` (the chart) × `point`/`verticalLine`/`circle`
+  (the locus), each `postcompose(locus, chart∘tau)` and fully analytic; named cells `fixedModulus`,
+  `modulusWall`. (`tau`, `mobiusMap` consume `moduli/`.)
+- `embedding/` — the **open** condition Ω you *stay inside* (the search's hard part): `embedded`
+  (`isEmbedded` gate + `clearance`, its continuous companion) · `separation` (`minSeparation`, the honest
+  cell-to-cell diagnostic, + the fatten-energy cell-gap substrate) · `energies/` (overlap — Fabi's
+  `chordLengthSquared`/`cutOffArea`, drive a crossing torus onto Ω; fatten — `cellMargin`/`cellBarrier`,
+  push an embedded one deeper) · `cells` (`cellTables`) · `index`. **No `Region` type** — `flow`/`march`
+  take a `Gate` predicate built from `isEmbedded`.
 - `solvers/` — problem-agnostic steppers run **entirely on ℝⁿ**, all on one J-hub: `project`
   (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian descent of a `ScalarFn` along the manifold,
   gated by a `Gate` predicate), `march` (continuation tracking a family ∩ region). They take pulled
@@ -149,7 +184,7 @@ its triangulation; not used on the interior hot path.
 - `sampling/` — producing seeds: `rng`, `perturb`, `seeds` (random `perturbedSeeds`/… + deterministic
   `gridSeeds`, a finite Cartesian sweep over a coordinate system's params), `reference` (`RICH_REFERENCE`).
 - `search/` — `certify` (the result record: cone deficit, embedded, margin, raw τ AND reduced τ̂),
-  `collect` (rejection-sampling driver), `pull` (pull a `Constraint`/`Region` into a coordinate system),
+  `collect` (rejection-sampling driver), `pull` (pull a `Constraint`/gate into a coordinate system),
   and the recipes `discover` (`held=[flat]`), `wall` (`held=[flat, modulusWall(c)]`) via `flattenFlowEmbed`
   (`seed → project(held) → flow(held, energy, gate=embedded) → certify`), `semiSolution`, `marchModulus`.
 

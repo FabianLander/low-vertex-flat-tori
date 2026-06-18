@@ -57,13 +57,19 @@ never a `Triangulation`, an `Embedding`, or a chart.
 ## Layout
 
 ```
-src/topology/        the intrinsic flat torus, as generic machinery — works on ANY triangulation:
-  triangulation.ts     the Triangulation builder + types (combinatorics, derived & Euler-checked)
-  develop.ts           the developing map → τ, and reduceModulus → moduli
+src/topology/        the intrinsic torus, COMBINATORIAL — works on ANY triangulation:
+  triangulation.ts     the Triangulation builder + types (combinatorics + decoration types, Euler-checked)
+  trees.ts             shared spanning-tree primitives (primal/dual trees, tree–cotree, LCA path)
   marking.ts           the canonical marking (canonicalDecoration): H₁ generators + cut + develop order
   fundamentalDomain.ts the developing chart — exact minimal cut + centered-spiral unroll order
-  harmonicLayout.ts    flat-torus harmonic (Tutte) embedding — period-jump cocycle for generators
-  (depends only on geometry/ — the ℝ²/ℝ³ metric floor)
+  harmonicLayout.ts    flat-torus harmonic (Tutte) embedding — the SCRATCH layout that picks the marking
+  (depends only on geometry/; the geometric measurement of a metric torus lives in moduli/, below)
+
+src/moduli/          the modulus: develop a metric torus → τ, and the space it lives in:
+  develop.ts           the developing map via per-triangle frames (no circle–circle): developNet + frames
+  modulus.ts           τ ∈ ℍ directly from the frames + tauJacobian (the exact analytic ∂τ/∂p)
+  reduce.ts            the space ℍ/SL(2,ℤ): applyMobius, reduceModulus, SQUARE/HEXAGONAL (torus-blind)
+  (depends on topology + geometry; consumed by constraints/modulus and search/certify)
 
 src/triangulations/  the specific triangulations we study, as DATA — scales to many:
   eightVertex.ts       the 7 V=8 lists (a census); add nineVertex.ts, … later
@@ -77,16 +83,20 @@ Dependency-ordered, each layer using only the ones below:
 
   src/geometry/        torus-blind ℝ²/ℝ³ kernels: point/segment/triangle distances, the tri–tri chord
   src/functions/       the generic toolkit ONLY: the `Fn`/`ScalarFn`/`Embedding` contracts (types.ts)
-                       + the compose algebra (fdFn/precompose/postcompose/affine). ONE concept — a
+                       + the compose algebra (fdFn/precompose/postcompose/affine; `stack` to combine
+                       conditions, `leastSquares` to soften one into a flow energy). ONE concept — a
                        constraint is an `Fn` driven to 0, an energy a scalar `Fn` descended. No torus.
   src/configuration/   the configuration-space MACHINERY: `ConfigSpace = (T, φ)` with pull/push/coords/
-                       metric (space.ts); `paperTorus` (the {triang, positions} boundary bundle); gauge.
-  src/coordinates/     the coordinate-system INSTANCES (each an `Embedding` φ → a `ConfigSpace`):
-                       full · pin (pinCoords/pinVertices) · symmetry · doyleSchwartz.
-  src/constraints/     the CLOSED conditions {g=0} you project onto (measurement + usage): flat
-                       (coneDeficit), collinear, modulus (tau + fixedModulus / modulusWall). types.ts: Held.
-  src/embedding/       the OPEN condition Ω you stay inside (its own home): region (embedded gate +
-                       margin) · gate (isEmbedded) · margin (minMargin) · energies · cells (cellTables).
+                       metric (space.ts); `paperTorus` (the {triang, positions} boundary bundle); csv.
+  src/coordinates/     the coordinate-system INSTANCES (each an `Embedding` φ, both push + coords):
+                       full · pin (pinCoords/pinVertices) · symmetry · normalized (the gauge-fixed
+                       section of C → C/Sim, 3V−7 free coords; the mirror of moduli/reduce).
+  src/constraints/     the CLOSED conditions {g=0} you project onto (+ types.ts Held): flat (coneDeficit),
+                       collinear, modulus — the point/line/circle × Teichmüller/moduli grid
+                       (pinTeichmuller/pinModuli × point/verticalLine/circle; named: fixedModulus, modulusWall).
+  src/embedding/       the OPEN condition Ω you stay inside (its own home): embedded (isEmbedded gate +
+                       clearance) · separation (minSeparation + the fatten cell-gap substrate) ·
+                       energies/ (overlap + fatten) · cells (cellTables). No Region — a Gate predicate.
   src/solvers/         the engine, on ℝⁿ: project (corrector), flow (Riemannian descent, gated),
                        march (continuation), tangentProject; types.ts holds the `Gate` contract.
   src/sampling/        producing seeds: rng · perturb · seeds (random + deterministic gridSeeds) ·
@@ -102,12 +112,14 @@ scripts/             headless CLI runners (the search drivers); scripts/legacy/ 
 data/                CSV result sets (one torus per row, 24 floats)
 ```
 
-The dependency rule: **`src/topology` and `src/triangulations` never import three.js or touch the
-DOM**, and `topology` depends only on `geometry/` (the pure ℝ²/ℝ³ metric floor — the developing map's
-planar net uses `geometry/vec2`) — so every intrinsic algorithm runs headless under `tsx`. Arrows are
-one-way folder→folder: `geometry → topology → triangulations`; the search stack `geometry → functions
-→ {configuration, coordinates, constraints, embedding} → solvers → sampling → search` builds on top; rendering
-sits on top of all of it. `geometry/` is the single bottom both halves rest on. Machinery and its instances are flat siblings — `topology`↔`triangulations`,
+The dependency rule: **`src/topology`, `src/triangulations`, `src/moduli` never import three.js or touch
+the DOM** — so every intrinsic algorithm runs headless under `tsx`. `topology` (combinatorial) depends
+only on `geometry/` (its harmonic *scratch* layout uses `geometry/vec2`); `moduli/` (the modulus
+measurement + space) depends on `topology` + `geometry`. Arrows are one-way folder→folder: `geometry →
+topology → triangulations` and `geometry`/`topology` → `moduli`; the search stack `geometry → functions →
+{configuration, coordinates, constraints, embedding} → solvers → sampling → search` builds on top (with
+`constraints`/`search` also consuming `moduli`); rendering sits on top of all of it. `geometry/` is the
+single bottom both halves rest on. Machinery and its instances are flat siblings — `topology`↔`triangulations`,
 `functions`↔`constraints`, `configuration`↔`coordinates` — never nested (the arrow is dependency, not
 containment).
 
@@ -183,9 +195,11 @@ in Float32.
 
 ## Normalization convention
 
-`src/configuration/gauge.ts` puts an 8-vertex torus into a **canonical pose** under the similarity
-group of ℝ³ (translation ⊕ rotation ⊕ uniform scale = 7 DOF): vertex 0 at the origin, vertex 1 at
-(1,0,0), vertex 2 in the xy-plane with y₂ ≥ 0. That removes the 7 similarity DOF, leaving **24 − 7
-= 17** free numbers (`toReduced`/`fromReduced`). Only proper rotations are used, so chirality is
-preserved, not quotiented. It's for storage/dedup only — off the search path, where the gauge is
-handled implicitly by the solvers' minimum-norm step.
+`src/coordinates/normalized.ts` puts a torus into a **canonical pose** under the similarity group of
+ℝ³ (translation ⊕ rotation ⊕ uniform scale = 7 DOF): vertex 0 at the origin, vertex 1 at (1,0,0),
+vertex 2 in the xy-plane with y₂ ≥ 0. That removes the 7 similarity DOF, leaving **3V − 7** free
+numbers. Only proper rotations are used, so chirality is preserved, not quotiented. It is a real
+**coordinate system** (the section of C → C/Sim): `normalizePose` is the projection onto the slice
+(`coords`), the linear scatter back is `push`. Use it to search in a gauge-fixed chart (full-rank
+constraints, deduplicated up to similarity), or for storage/dedup; off it, the gauge is handled
+implicitly by the solvers' minimum-norm step.

@@ -29,16 +29,26 @@ it by *projecting* (Newton) and move on it along its tangent space. The map is j
   lag above tol unseen. The Jacobian is the exact analytic cone-angle derivative.
 - **`collinear(i,j,k)`** — a vertex triple is collinear in the plane (planar signed area = 0). codim 1,
   an `fdFn`. Used by the Doyle–Schwartz semi-solution search.
-- **`fixedModulus(τ̂₀)` / `modulusWall(c)`** — fix the moduli point (`τ̂ = τ̂₀`) or pin a wall
-  (`|Re τ̂| = c`: the rectangular `c=0`, the rhombic `c=½`). The reduced modulus τ̂ is only
-  piecewise-smooth (the reducing `SL(2,ℤ)` element jumps at fundamental-domain walls), so we use the
-  **frozen-chart trick**: capture the reducing matrix `m` at a seed. In code this is exactly a
-  *post-composition* — `postcompose(mobius(m), tau)` (with an affine shift / take-Re on top) — so the
-  exact frozen Möbius rides on the (finite-differenced) `tau` map and the chain rule fuses the
-  Jacobians. Valid in the seed's `SL(2,ℤ)` chamber; `march` re-freezes each substep. (See
-  [developing.md](developing.md) for τ and the reduction.)
+- **modulus** — pin the modulus to a **locus** in either **space**: `pinTeichmuller(t, locus)` (the
+  raw τ) or `pinModuli(t, seed, locus)` (the reduced τ̂), where the locus is a `point` (codim 2),
+  `verticalLine`, or `circle` (codim 1). That 2 × 3 grid covers fixing a moduli point, a wall
+  `|Re τ̂| = c`, or the `|τ̂| = 1` arc; the named cells are `fixedModulus(τ̂₀)` and `modulusWall(c)`.
+  Each is `postcompose(locus, chart ∘ tau)`: `tau` has an exact analytic Jacobian (`moduli/modulus`),
+  the chart and the locus are exact, so the whole chain is analytic. The reduced τ̂ is only
+  piecewise-smooth (the reducing `SL(2,ℤ)` element jumps at fundamental-domain walls), so the moduli
+  chart is the **frozen Möbius** `mobius(m)` with `m` captured at the seed — valid in its `SL(2,ℤ)`
+  chamber; `march` re-freezes each substep. Teichmüller uses no chart (identity), so it is globally
+  smooth but its target is marking-dependent. (See [developing.md](developing.md) for τ / reduction.)
 
 Constraints compose: `project(x, [flat, modulusWall(c)])` lands a flat torus on the wall.
+
+**Combine and soften.** Two generic `functions/compose` operations make the constraint/energy
+duality concrete: **`stack(...fns)`** concatenates conditions into one higher-dim `Fn` (its zero set
+is the intersection), and **`leastSquares(fn)`** turns a condition into the `ScalarFn` energy
+`½‖fn‖²` whose descent reaches `{fn = 0}`. So one condition is *solved hard* —
+`project(x, [flat, modulusWall(c)])` — or *flowed toward soft* —
+`flow(x, [flat], leastSquares(pinModuli(…)), {gate: embedded})` — and a collection becomes one energy
+via `leastSquares(stack(…))`. Hard / soft / combine are the three verbs on an `Fn`.
 
 ## Open conditions — regions
 
@@ -86,11 +96,12 @@ so organizing by this kind matches how the math is used.
 | symbol | file | role |
 | --- | --- | --- |
 | `Fn`, `ScalarFn` | `functions/types.ts` | the map contract (constraint/energy are uses of it) |
+| `stack`, `leastSquares` | `functions/compose.ts` | combine conditions into one `Fn` / soften a condition to its `½‖·‖²` energy |
 | `Held`, `Constraint` | `constraints/types.ts` | the closed-condition contracts — no `Energy` type |
 | `Region` | `embedding/region.ts` | the open-condition contract (gate + margin) |
 | `Gate` | `solvers/types.ts` | the runtime form of a region: a predicate on ℝⁿ the solvers gate on |
 | `flat` (+ `coneDeficit`) | `constraints/flat.ts` | flatness: the deficit measurement + the constraint |
 | `collinear` | `constraints/collinear.ts` | planar collinearity (analytic signed area) |
-| `modulus` (`tau`, `fixedModulus`, `modulusWall`) | `constraints/modulus.ts` | the modulus measurement + point/wall constraints (frozen chart) |
+| `modulus` (`tau`, loci `point`/`verticalLine`/`circle`, `pinTeichmuller`/`pinModuli`, `fixedModulus`/`modulusWall`) | `constraints/modulus.ts` | the point/line/circle × Teichmüller/moduli grid (`postcompose(locus, chart∘tau)`) |
 | `embedded` (`isEmbedded`, `minMargin`, the energies) | `embedding/` | the embeddedness gate + margin + repulsion energies, in one folder |
 | intersection predicates | `geometry/triangleIntersect.ts` | the torus-blind kernels behind `isEmbedded` |

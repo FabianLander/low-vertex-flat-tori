@@ -9,7 +9,8 @@ makes a toy test just "ℝⁿ + some functions". `solvers/` depends on no implem
 
 - `types.ts` — the one solver-side contract: `Gate`, a predicate on ℝⁿ (the runtime
   form of an open region). The condition contracts live below: `Held`/`Constraint` in
-  `constraints/types.ts`, the open `Region` in `embedding/region.ts`. There is no separate
+  `constraints/types.ts`; the open embedded region is just its `isEmbedded` gate
+  (`embedding/embedded.ts`), pulled to a `Gate`. There is no separate
   constraint *or energy* interface — a constraint IS an `Fn` driven to zero, an energy
   IS a scalar `Fn` descended (`flow` takes a `ScalarFn`).
 - `held.ts` — normalize a `Constraint` (bare `Fn` or `Fn`+usage) into the driven-rows

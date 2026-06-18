@@ -12,7 +12,7 @@ The **intrinsic** flat torus, built up in order:
 | discrete topology | [triangulation.md](triangulation.md) | a combinatorial triangulation realizing the torus | `topology/triangulation.ts`, `triangulations/` |
 | developing chart | [fundamental-domain.md](fundamental-domain.md) | how to cut it open and unroll it — the minimal cut + unroll order | `topology/fundamentalDomain.ts` |
 | marking | [marking.md](marking.md) | a basis of `H₁(T²,ℤ)` — the two τ-generators | `topology/marking.ts` |
-| measurement | [developing.md](developing.md) | the developing map: unfold → holonomy → τ ∈ ℍ (Teichmüller), and the `SL(2,ℤ)` quotient to moduli | `topology/develop.ts` |
+| measurement | [developing.md](developing.md) | the developing map: unfold (frames) → holonomy → τ ∈ ℍ (Teichmüller), and the `SL(2,ℤ)` quotient to moduli | `moduli/develop.ts`, `moduli/modulus.ts`, `moduli/reduce.ts` |
 
 The **extrinsic** half — realizing a flat torus in ℝ³ and *searching* for flat embedded ones. This
 is the **search system**: find points on a high-codimension submanifold that also lie inside a tiny
@@ -24,7 +24,7 @@ open set.
 | functions | [conditions.md](conditions.md) | the differentiable-map **toolkit** — the `Fn`/`ScalarFn`/`Embedding` contracts + the compose algebra (machinery, no instances) | `functions/` |
 | configuration | [configuration-space.md](configuration-space.md) | the `ConfigSpace = (T, φ)` spine — `pull`/`push`/`coords`, the metric, interior vs boundary | `configuration/` |
 | coordinates | [configuration-space.md](configuration-space.md) | the coordinate systems — `Embedding`s φ → a `ConfigSpace` (full, pin, symmetry, Doyle–Schwartz) | `coordinates/` |
-| conditions | [conditions.md](conditions.md) | what we ask of a config — each module its own measurement + usage; the closed `{g=0}` kind in `constraints/`, the open (`Region`) kind in `embedding/` | `constraints/`, `embedding/` |
+| conditions | [conditions.md](conditions.md) | what we ask of a config — the closed `{g=0}` kind in `constraints/` (driven hard, or softened to an energy via `leastSquares`); the open kind (the `isEmbedded` gate) in `embedding/` | `constraints/`, `embedding/` |
 | operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian, run on ℝⁿ — and `certify` | `solvers/`, `search/certify.ts` |
 | sampling | [searches.md](searches.md) | producing seeds: rng, perturb, random + deterministic grid sources | `sampling/` |
 | searches | [searches.md](searches.md) | what each search *does* in C — the flat manifold, the modulus foliation, the embedded region; solving *for* a modulus vs *marching* to it | `search/` |
