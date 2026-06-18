@@ -28,7 +28,7 @@ import { modulus, reduceModulus } from '../../src/topology/develop';
 import { project } from '../../src/solvers/project';
 import { flat, maxConeDeficit } from '../../src/constraints/flat';
 import { isEmbedded } from '../../src/embedding/index';
-import { minMargin, linearSize } from '../../src/embedding/index';
+import { minSeparation, linearSize } from '../../src/embedding/index';
 import { makeRng } from '../../src/sampling/rng';
 
 import pushT7Raw from './data/push-t7-best.csv?raw';
@@ -118,7 +118,7 @@ function attempt(f: Family, scratch: Float64Array): boolean {
   const raw = modulus(f.triang, scratch).tau;
   tHat = reduceModulus(raw);
   if (Math.abs(Math.abs(tHat[0]) - TARGET_RE) >= params.band || !isEmbedded(f.triang, scratch)) return false;
-  const margin = minMargin(f.triang, scratch).margin;
+  const margin = minSeparation(f.triang, scratch).distance;
 
   if (f.pos.length < MAX_FINDS) {
     const p = Float64Array.from(scratch.subarray(0, f.N));

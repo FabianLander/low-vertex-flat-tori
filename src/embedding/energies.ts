@@ -24,7 +24,7 @@ import { fdScalar } from '../functions/compose.ts';
 import { triTriChord } from '../geometry/intersectionChord.ts';
 import { segmentTriangleDist2 } from '../geometry/distance.ts';
 import { planeCutRatio } from '../geometry/triangle.ts';
-import { forEachCellGap, linearSize } from './margin.ts';
+import { forEachCellGap, linearSize } from './separation.ts';
 import { cellTables } from './cells.ts';
 
 // ─── overlap energies (Fabi's) ──────────────────────────────────────────────

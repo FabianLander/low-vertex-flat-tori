@@ -25,7 +25,7 @@ import * as THREE from 'three';
 import { byId } from '../../src/triangulations';
 import { modulus, reduceModulus } from '../../src/topology/develop';
 import { maxConeDeficit } from '../../src/constraints/flat';
-import { minMargin } from '../../src/embedding/index';
+import { minSeparation } from '../../src/embedding/index';
 import { parseEmbeddings } from '../../src/configuration/csv';
 import type { PaperTorus } from '../../src/configuration/paperTorus.ts';
 import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
@@ -75,7 +75,7 @@ for (const path of Object.keys(csvFiles).sort()) {
   const group: Entry[] = parseEmbeddings(csvFiles[path], triang).map((paper) => {
     const deficit = maxConeDeficit(triang, paper.positions);
     const tau = reduceModulus(modulus(triang, paper.positions).tau);
-    const margin = minMargin(triang, paper.positions).margin;
+    const margin = minSeparation(triang, paper.positions).distance;
     return { paper, type, deficit, margin, tau: [tau[0], tau[1]] as const };
   });
   group.sort((a, b) => a.tau[1] - b.tau[1]);   // within a type: thinnest → tallest

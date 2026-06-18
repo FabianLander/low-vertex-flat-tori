@@ -13,7 +13,6 @@
 
 import type { ConfigSpace } from '../configuration/space.ts';
 import type { Constraint } from '../constraints/types.ts';
-import type { Region } from '../embedding/index.ts';
 import type { Gate } from '../solvers/types.ts';
 
 /** Pull a `Constraint` (bare `Fn` or `Held`) through φ into the working space ℝⁿ. */
@@ -36,8 +35,11 @@ export function pullHeld(space: ConfigSpace, held: readonly Constraint[]): Const
   return held.map((c) => pullConstraint(space, c));
 }
 
-/** Pull an ambient `Region` to a working-space `Gate`: x ↦ region.contains(push(x)). */
-export function regionGate(space: ConfigSpace, region: Region): Gate {
+/**
+ * Pull an ambient predicate (on ℝ³ⱽ — e.g. `isEmbedded`) to a working-space `Gate`:
+ * x ↦ contains(push(x)). The open-condition analogue of `pullConstraint`.
+ */
+export function ambientGate(space: ConfigSpace, contains: (c: ArrayLike<number>) => boolean): Gate {
   const buf = new Float64Array(space.ambient);
-  return (x) => { space.push(x, buf); return region.contains(buf); };
+  return (x) => { space.push(x, buf); return contains(buf); };
 }

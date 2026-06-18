@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { certify } from '../../src/search/certify.ts';
-import { makeCellMargin, isEmbedded, minMargin } from '../../src/embedding/index.ts';
+import { makeCellMargin, isEmbedded, clearance } from '../../src/embedding/index.ts';
 import { project } from '../../src/solvers/project.ts';
 import { flow } from '../../src/solvers/flow.ts';
 import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
@@ -24,7 +24,7 @@ describe('certify', () => {
     expect(cert.coneDeficit).toBeLessThan(1e-9);
     expect(cert.embedded).toBe(isEmbedded(torus, p));
     expect(cert.embedded).toBe(true);
-    expect(cert.margin).toBe(minMargin(torus, p).margin);
+    expect(cert.margin).toBe(clearance(torus, p));
     expect(cert.area).toBeGreaterThan(0);
     expect(cert.rotDefect).toBeLessThan(1e-9); // holonomy is a pure translation (flat)
   });

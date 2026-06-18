@@ -25,12 +25,12 @@ import type { ConfigSpace } from '../configuration/space.ts';
 import { fullSpace } from '../coordinates/full.ts';
 import { flat } from '../constraints/flat.ts';
 import { modulusWall } from '../constraints/modulus.ts';
-import { embedded } from '../embedding/index.ts';
+import { isEmbedded } from '../embedding/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
 import { march } from '../solvers/march.ts';
 import { modulus, reduceModulus } from '../topology/develop.ts';
-import { pullHeld, regionGate } from './pull.ts';
+import { pullHeld, ambientGate } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 /**
@@ -88,7 +88,7 @@ export function marchToWallAttempt(
 ): (seed: Float64Array) => MarchOutcome | null {
   const space = fullSpace(triang);        // seed ∈ ℝⁿ is the ambient config (φ = id)
   const held0 = pullHeld(space, [flat(triang)]);
-  const gate = regionGate(space, embedded(triang));
+  const gate = ambientGate(space, (c) => isEmbedded(triang, c));
   const family = wallFamily(space);
   const energy = space.pullScalar(opts.energy);
   const fattenEnergy = opts.fattenEnergy ? space.pullScalar(opts.fattenEnergy) : undefined;

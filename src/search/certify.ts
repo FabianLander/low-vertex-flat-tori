@@ -16,14 +16,14 @@ import type { Triangulation } from '../topology/triangulation.ts';
 import { modulus, reduceModulus } from '../topology/develop.ts';
 import type { Vec2 } from '../geometry/vec2.ts';
 import { maxConeDeficit } from '../constraints/flat.ts';
-import { isEmbedded, minMargin } from '../embedding/index.ts';
+import { isEmbedded, clearance } from '../embedding/index.ts';
 
 export interface Certificate {
   /** Flatness residual: max |2π − θ_v| over vertices. ~0 ⟺ flat. */
   readonly coneDeficit: number;
   /** Topological truth: no two triangle interiors cross. */
   readonly embedded: boolean;
-  /** Smallest normalized cell gap (diagnostic; NOT the same as `embedded`). */
+  /** Clearance: gate-aligned distance to the nearest crossing / √area (robustness; 0 on ∂Ω). NOT the boolean `embedded`. */
   readonly margin: number;
   /** RAW modulus τ ∈ ℍ — Teichmüller, depends on the marking. */
   readonly tau: Vec2;
@@ -40,7 +40,7 @@ export function certify(triang: Triangulation, positions: ArrayLike<number>): Ce
   return {
     coneDeficit: maxConeDeficit(triang, positions),
     embedded: isEmbedded(triang, positions),
-    margin: minMargin(triang, positions).margin,
+    margin: clearance(triang, positions),
     tau: m.tau,
     tauHat: reduceModulus(m.tau),
     area: m.area,

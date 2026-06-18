@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { makeChordLengthSquared } from '../../src/embedding/index';
 import { makeCutOffArea } from '../../src/embedding/index';
 import { makeCellMargin, makeCellBarrier } from '../../src/embedding/index';
-import { minMargin, linearSize } from '../../src/embedding/index';
+import { minSeparation, minCellGap, linearSize } from '../../src/embedding/index';
 import { totalArea } from '../../src/topology/develop';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { mulberry32 } from '../../src/sampling/rng';
@@ -20,8 +20,8 @@ describe('repulsion energies', () => {
 
   it('cell-margin: Rich has a strictly positive gap, and the energy is scale-free', () => {
     const p = RICH_REFERENCE.positions;
-    const report = minMargin(RICH, p);
-    expect(report.margin).toBeGreaterThan(0);
+    const report = minSeparation(RICH, p);
+    expect(report.distance).toBeGreaterThan(0);
 
     // Scale-invariance: inflating the mesh leaves the cell-margin energy fixed.
     const scaled = Float64Array.from(p, (v) => v * 3.7);
@@ -31,7 +31,7 @@ describe('repulsion energies', () => {
 
   it('cell-barrier: 0 when nothing is within δ, positive once δ exceeds the min gap, scale-free', () => {
     const p = RICH_REFERENCE.positions;
-    const m = minMargin(RICH, p).margin;
+    const m = minCellGap(RICH, p);
     // δ tiny → no gap is within it → barrier inactive.
     expect(makeCellBarrier(RICH, { delta: 1e-9 }).compute(p)).toBe(0);
     // δ past the smallest cell gap → at least that pair is active → barrier > 0.
@@ -44,7 +44,7 @@ describe('repulsion energies', () => {
 
   it('cell-barrier blows up as δ grows (more pairs caught, log → larger)', () => {
     const p = RICH_REFERENCE.positions;
-    const m = minMargin(RICH, p).margin;
+    const m = minCellGap(RICH, p);
     const small = makeCellBarrier(RICH, { delta: 1.5 * m }).compute(p);
     const big = makeCellBarrier(RICH, { delta: 5 * m }).compute(p);
     expect(big).toBeGreaterThan(small);

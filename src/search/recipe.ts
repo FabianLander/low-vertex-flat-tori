@@ -21,10 +21,10 @@ import type { Triangulation } from '../topology/triangulation.ts';
 import type { ScalarFn } from '../functions/types.ts';
 import type { Constraint } from '../constraints/types.ts';
 import { fullSpace } from '../coordinates/full.ts';
-import { embedded } from '../embedding/index.ts';
+import { isEmbedded } from '../embedding/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
-import { pullHeld, regionGate } from './pull.ts';
+import { pullHeld, ambientGate } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 export interface FlowSearchOptions {
@@ -48,7 +48,7 @@ export function flattenFlowEmbed(
   opts: FlowSearchOptions,
 ): (seed: Float64Array) => Certificate | null {
   const space = fullSpace(triang);        // x ∈ ℝⁿ is the ambient config (φ = id)
-  const gate = regionGate(space, embedded(triang));
+  const gate = ambientGate(space, (c) => isEmbedded(triang, c));
   const energy = space.pullScalar(opts.energy);
   const fattenEnergy = opts.fattenEnergy ? space.pullScalar(opts.fattenEnergy) : undefined;
   const flowOpts = {

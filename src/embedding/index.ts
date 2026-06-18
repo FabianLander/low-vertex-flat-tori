@@ -1,20 +1,22 @@
 /**
- * embedded — the embeddedness condition, in one place: the gate (the topological
- * truth), the margin (the geometric diagnostic + the shared cell-gap primitive),
- * the energies (overlap + near-miss potentials `flow` descends), and the `Region`
- * that bundles gate + margin. The torus-blind intersection kernels are in
- * `geometry/triangleIntersect`.
+ * embedding — the open condition Ω you stay inside, in one place:
+ *   embedded.ts    the gate (`isEmbedded`, the topological truth + violations) and its
+ *                  continuous companion `clearance` (Rich's condition, made continuous)
+ *   separation.ts  `minSeparation` — true min distance between any two non-adjacent
+ *                  cells (the geometric diagnostic) + the cell-gap substrate the energies use
+ *   energies.ts    the forces: overlap (drive onto Ω) + fatten (push deeper in)
+ *   cells.ts       the substrate: which non-adjacent cell pairs to test
+ * The torus-blind intersection/distance kernels are in `geometry/`.
  */
 
-export { embedded, type Region } from './region.ts';
 export {
-  isEmbedded, firstViolation, allViolations, violationFaceScalars,
+  isEmbedded, firstViolation, allViolations, violationFaceScalars, clearance,
   type EmbeddingViolation,
-} from './gate.ts';
+} from './embedded.ts';
 export {
-  minMargin, linearSize, forEachCellGap,
-  type MarginReport, type GapType,
-} from './margin.ts';
+  minSeparation, minCellGap, linearSize, forEachCellGap,
+  type SeparationReport, type GapType,
+} from './separation.ts';
 export {
   makeChordLengthSquared, makeCutOffArea, makeCellMargin, makeCellBarrier,
   type CellMarginOptions, type CellBarrierOptions,
