@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { makeChordLengthSquared } from '../../../src/conditions/embedded/index';
-import { makeCutOffArea } from '../../../src/conditions/embedded/index';
-import { makeCellMargin, makeCellBarrier } from '../../../src/conditions/embedded/index';
-import { minMargin, linearSize } from '../../../src/conditions/embedded/index';
-import { totalArea } from '../../../src/topology/develop';
-import { RICH_REFERENCE } from '../../../src/sampling/reference';
-import { mulberry32 } from '../../../src/sampling/rng';
-import { RICH } from '../../../src/triangulations';
+import { makeChordLengthSquared } from '../../src/embedding/index';
+import { makeCutOffArea } from '../../src/embedding/index';
+import { makeCellMargin, makeCellBarrier } from '../../src/embedding/index';
+import { minMargin, linearSize } from '../../src/embedding/index';
+import { totalArea } from '../../src/topology/develop';
+import { RICH_REFERENCE } from '../../src/sampling/reference';
+import { mulberry32 } from '../../src/sampling/rng';
+import { RICH } from '../../src/triangulations';
 
 const CHORD_LENGTH_SQUARED = makeChordLengthSquared(RICH);
 const CUTOFF_AREA = makeCutOffArea(RICH);

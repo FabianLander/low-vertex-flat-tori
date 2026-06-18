@@ -1,6 +1,6 @@
 /**
  * Pulling conditions into a working space — the bridge the search layer owns between
- * `configuration/` (the `ConfigSpace`) and `conditions/` (constraints + regions).
+ * `configuration/` (the `ConfigSpace`) and the conditions (`constraints/` + `embedding/`).
  *
  * The solvers run in ℝⁿ on constraints/gates already pulled through φ. The
  * configuration space pulls *functions* (`space.pull`/`pullScalar`); the
@@ -12,7 +12,8 @@
  */
 
 import type { ConfigSpace } from '../configuration/space.ts';
-import type { Constraint, Region } from '../conditions/types.ts';
+import type { Constraint } from '../constraints/types.ts';
+import type { Region } from '../embedding/index.ts';
 import type { Gate } from '../solvers/types.ts';
 
 /** Pull a `Constraint` (bare `Fn` or `Held`) through φ into the working space ℝⁿ. */

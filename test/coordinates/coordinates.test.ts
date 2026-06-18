@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { fullSpace } from '../../src/coordinates/full.ts';
 import { pinVertices } from '../../src/coordinates/pin.ts';
 import { symmetry, RICH_SYMMETRY } from '../../src/coordinates/symmetry.ts';
-import { coneDeficit, coneAngleDeficits } from '../../src/conditions/flat.ts';
+import { coneDeficit, coneAngleDeficits } from '../../src/constraints/flat.ts';
 import { RICH } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 

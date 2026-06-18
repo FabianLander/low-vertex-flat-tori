@@ -10,9 +10,9 @@
  *
  * It is pure DATA: a plain object, like `Triangulation` (built by `defineTriangulation`).
  * No geometry/measurement methods — those are free functions in their own layers (cone
- * angles in `conditions/flat`, ℝ³ kernels in `geometry/`, area in `topology/develop`),
+ * angles in `constraints/flat`, ℝ³ kernels in `geometry/`, area in `topology/develop`),
  * so this type depends only on the triangulation and stays a clean sibling of
- * `conditions/`. Construct through `makePaperTorus` / `paperTorusFromVec3s` (which
+ * `constraints/`. Construct through `makePaperTorus` / `paperTorusFromVec3s` (which
  * validate the one invariant — `positions.length === 3V` — at the IO boundary); the
  * interior never builds a malformed one.
  *

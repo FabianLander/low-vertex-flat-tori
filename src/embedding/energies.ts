@@ -18,12 +18,12 @@
  * Pure: no three.js, no DOM.
  */
 
-import type { Triangulation } from '../../topology/triangulation.ts';
-import type { ScalarFn } from '../../functions/types.ts';
-import { fdScalar } from '../../functions/compose.ts';
-import { triTriChord } from '../../geometry/intersectionChord.ts';
-import { segmentTriangleDist2 } from '../../geometry/distance.ts';
-import { planeCutRatio } from '../../geometry/triangle.ts';
+import type { Triangulation } from '../topology/triangulation.ts';
+import type { ScalarFn } from '../functions/types.ts';
+import { fdScalar } from '../functions/compose.ts';
+import { triTriChord } from '../geometry/intersectionChord.ts';
+import { segmentTriangleDist2 } from '../geometry/distance.ts';
+import { planeCutRatio } from '../geometry/triangle.ts';
 import { forEachCellGap, linearSize } from './margin.ts';
 import { cellTables } from './cells.ts';
 

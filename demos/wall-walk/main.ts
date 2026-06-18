@@ -26,9 +26,9 @@ import { byId } from '../../src/triangulations';
 import type { Triangulation } from '../../src/topology/triangulation';
 import { modulus, reduceModulus } from '../../src/topology/develop';
 import { project } from '../../src/solvers/project';
-import { flat, maxConeDeficit } from '../../src/conditions/flat';
-import { isEmbedded } from '../../src/conditions/embedded/index';
-import { minMargin, linearSize } from '../../src/conditions/embedded/index';
+import { flat, maxConeDeficit } from '../../src/constraints/flat';
+import { isEmbedded } from '../../src/embedding/index';
+import { minMargin, linearSize } from '../../src/embedding/index';
 import { makeRng } from '../../src/sampling/rng';
 
 import pushT7Raw from './data/push-t7-best.csv?raw';

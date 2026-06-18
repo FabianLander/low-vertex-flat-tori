@@ -23,7 +23,7 @@ The simplex kernels — properties of one point/segment/triangle, allocation-fre
 scalar coordinates in (the caller reads corners out of its buffer):
 
 - `triangle.ts` — single-triangle math: `cornerAngle`(+`cornerAngleGrad`, the
-  discrete-DG corner-angle gradient behind `conditions/flat`), `triangleNormal`,
+  discrete-DG corner-angle gradient behind `constraints/flat`), `triangleNormal`,
   `triangleArea`, `triangleSignedArea2`, `signedVolume6`, `planeCutRatio`.
 - `distance.ts` — allocation-free squared-distance kernels between points, segments,
   and filled triangles (Ericson closest-point routines).
@@ -42,7 +42,7 @@ And the plane-curve primitive (used by figures/demos):
 - **Tuple ops** (`vec2`/`vec3` — `Vec2`/`Vec3` in, out) are for COLD code: setup,
   the canonical pose, normals, the developed net. Ergonomic; they allocate.
 - **Scalar/buffer kernels** (`distance`, the intersection predicates, and the inlined
-  cross/dot in hot Jacobians like `conditions/flat`) take raw scalar components or a
+  cross/dot in hot Jacobians like `constraints/flat`) take raw scalar components or a
   `positions` buffer and **never allocate** — they run in the inner search loops.
 
 So a hot loop stays on scalars on purpose; reach for the tuple ops everywhere else.

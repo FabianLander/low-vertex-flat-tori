@@ -8,11 +8,11 @@
 
 import { describe, it, expect } from 'vitest';
 import { flow } from '../../src/solvers/flow.ts';
-import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
+import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
 import type { Fn, ScalarFn } from '../../src/functions/types.ts';
 import { scalarFn } from '../../src/functions/compose.ts';
-import { isEmbedded } from '../../src/conditions/embedded/index.ts';
-import { makeCellMargin } from '../../src/conditions/embedded/index.ts';
+import { isEmbedded } from '../../src/embedding/index.ts';
+import { makeCellMargin } from '../../src/embedding/index.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 

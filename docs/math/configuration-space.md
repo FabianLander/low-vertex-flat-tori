@@ -98,7 +98,7 @@ Three consequences fix the responsibilities of the layers around it:
 
 - **Conditions are pure *ambient* facts.** `coneDeficit(T)`, `tau(T)`, `embedded(T)` are functions of
   a realization in `ℝ³ⱽ` — they know nothing about restrictions, because a cone angle is a cone angle.
-  Restriction is *not their concern*; it is `pull`'s. (Code: `conditions/`.)
+  Restriction is *not their concern*; it is `pull`'s. (Code: `constraints/` + `embedding/`.)
 - **The solver is pure `ℝⁿ`, fully `T`-blind.** The caller `pull`s the constraints/energy to `ℝⁿ` and
   `pull`s the `embedded` *gate* to an `ℝⁿ` predicate (`x ↦ embedded.contains(push(x))`); the solver
   then sees only a dimension, some `Fn`s on `ℝⁿ`, a predicate on `ℝⁿ`, and a metric. No `Triangulation`,

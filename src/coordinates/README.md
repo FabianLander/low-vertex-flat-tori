@@ -3,7 +3,7 @@
 The **instances** to `configuration/`'s machinery: each file builds a coordinate
 system — an `Embedding` φ : ℝⁿ → ℝ³ⱽ paired (via `makeConfigSpace`) with a
 triangulation into a `ConfigSpace`. Same machinery↔instances split as
-`topology/`↔`triangulations/` and `functions/`↔`conditions/`. Depends on
+`topology/`↔`triangulations/` and `functions/`↔`constraints/`. Depends on
 `configuration/` and `functions/`; nothing depends back.
 
 Two kinds of coordinate system, both `Embedding`s:

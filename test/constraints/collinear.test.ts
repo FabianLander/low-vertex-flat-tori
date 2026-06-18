@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collinear, signedArea2 } from '../../src/conditions/collinear.ts';
+import { collinear, signedArea2 } from '../../src/constraints/collinear.ts';
 
 describe('collinear', () => {
   it('signed area is 0 on a collinear triple, nonzero otherwise', () => {

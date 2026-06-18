@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { doyleSchwartzPositions } from '../../src/coordinates/doyleSchwartz.ts';
-import { maxConeDeficit } from '../../src/conditions/flat.ts';
+import { maxConeDeficit } from '../../src/constraints/flat.ts';
 import { modulus } from '../../src/topology/develop.ts';
 import { byId } from '../../src/triangulations/index.ts';
 

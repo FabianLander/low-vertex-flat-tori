@@ -1,9 +1,9 @@
 # functions/ — the differentiable-map toolkit
 
 Pure machinery, no torus content: what a differentiable map of the configuration
-**is**, and how to build and combine them. The generic layer that `conditions/`
-(and anything else) builds its concrete maps from — the same machinery-vs-instances
-split as `topology/` (generic) ↔ `triangulations/` (data).
+**is**, and how to build and combine them. The generic layer that `constraints/` +
+`embedding/` (and anything else) build their concrete maps from — the same
+machinery-vs-instances split as `topology/` (generic) ↔ `triangulations/` (data).
 
 - `types.ts` — `Fn` (the C → ℝᵏ contract: `value` + `jacobian`) and `ScalarFn` (an
   `Fn` at dim 1 with `compute`/`grad`). One concept: a *constraint* is an `Fn`
@@ -15,4 +15,5 @@ split as `topology/` (generic) ↔ `triangulations/` (data).
   chain rule — e.g. the frozen Möbius onto `tau`).
 
 The concrete maps (cone-angle deficit, τ, cell gaps, the energies) live with the
-conditions they define, in `conditions/`.
+conditions they define — the closed ones in `constraints/`, the embedded region in
+`embedding/`.

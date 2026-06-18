@@ -3,7 +3,7 @@
 The **instances** to `topology/`'s machinery: the triangulations we actually
 study, as raw triangle lists, mapped through `defineTriangulation` into working
 `Triangulation`s. Same machinery↔instances split as `configuration/`↔`coordinates/`
-and `functions/`↔`conditions/`. Depends only on `topology/`; the search/render
+and `functions/`↔`constraints/`. Depends only on `topology/`; the search/render
 stack depends on this registry.
 
 - `eightVertex.ts` — `EIGHT_VERTEX`: the seven combinatorial types of 8-vertex

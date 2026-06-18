@@ -5,7 +5,7 @@ from a triangle list and **validated by V − E + F = 0** — no baked-in 8/24/1
 counts, no degree-6 assumption (only Rich's #7 is degree-6-regular). Everything
 here runs on ANY triangulation, headless. This is the **machinery**; the seven
 specific tori live as data in `triangulations/` (the same machinery↔instances
-split as `functions/`↔`conditions/` and `configuration/`↔`coordinates/`).
+split as `functions/`↔`constraints/` and `configuration/`↔`coordinates/`).
 
 **Depends only on `geometry/`** — the pure ℝ²/ℝ³ metric floor (the developing map's
 planar net uses `geometry/vec2`) — and nothing else in `src/`. Pure: no three.js, no
@@ -17,11 +17,11 @@ to read edge lengths).
   develop order + gluing tree, and the H₁ generators (or auto-derives the last
   two), validating the Euler characteristic. **Purely intrinsic** — the extrinsic
   triangle-collision tables (which non-adjacent cells the embedding check tests)
-  live in `conditions/embedded/cells.ts`, with their consumer, not here.
+  live in `embedding/cells.ts`, with their consumer, not here.
 - `develop.ts` — the developing map: unfold a flat realization → read the holonomy
   of the marked generator loops → the modulus **τ ∈ ℍ** (Teichmüller), and
   `reduceModulus`/`reduceModulusWithMatrix` → **τ̂ ∈ ℍ/SL(2,ℤ)** (moduli). Plus
-  `totalArea`, `applyMobius`. What `conditions/modulus`, `certify`, and the viewer's
+  `totalArea`, `applyMobius`. What `constraints/modulus`, `certify`, and the viewer's
   modulus decorations read.
 - `marking.ts` — `canonicalDecoration`: picks the canonical marking (the cut +
   develop order + cut-aligned H₁ generators). The heavier derivation; deterministic

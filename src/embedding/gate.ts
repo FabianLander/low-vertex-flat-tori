@@ -14,8 +14,8 @@
  * Pure: no three.js, no DOM.
  */
 
-import type { Triangulation } from '../../topology/triangulation.ts';
-import { segmentTriangleIntersect, triangleTriangleIntersect } from '../../geometry/triangleIntersect.ts';
+import type { Triangulation } from '../topology/triangulation.ts';
+import { segmentTriangleIntersect, triangleTriangleIntersect } from '../geometry/triangleIntersect.ts';
 import { cellTables } from './cells.ts';
 
 export type EmbeddingViolation = {

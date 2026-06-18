@@ -98,5 +98,5 @@ Every search builds a `ConfigSpace`, `pull`s its `held` conditions into it (`sea
 the ℝⁿ solvers. `march` consumes a `Family` (`solvers/march.ts`): `param(x)` reads the marched modulus
 coordinate off the point (pushing to ℝ³ⱽ, then `develop.ts`), and `held(x, s)` rebuilds and pulls
 `[flat, modulusWall(torus, push(x), s)]` **at the current point** — that rebuild is the per-step
-re-freeze. Everything else is reused: `conditions/modulus`'s `tau` + `modulusWall`, `solvers/project`
-(the corrector), `conditions/embedded`'s `embedded` (pulled to the gate), `solvers/march` (the loop).
+re-freeze. Everything else is reused: `constraints/modulus`'s `tau` + `modulusWall`, `solvers/project`
+(the corrector), `embedding`'s `embedded` (pulled to the gate), `solvers/march` (the loop).

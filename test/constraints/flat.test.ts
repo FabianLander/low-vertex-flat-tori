@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { coneAngles, coneAngleDeficits, maxConeDeficit, coneDeficit } from '../../src/conditions/flat.ts';
+import { coneAngles, coneAngleDeficits, maxConeDeficit, coneDeficit } from '../../src/constraints/flat.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 import { mulberry32 } from '../../src/sampling/rng.ts';
 import { RICH } from '../../src/triangulations/index.ts';

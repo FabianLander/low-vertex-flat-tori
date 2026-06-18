@@ -8,8 +8,8 @@ know **nothing** about a `Triangulation`, an `Embedding`, or a chart — that's 
 makes a toy test just "ℝⁿ + some functions". `solvers/` depends on no implementation.
 
 - `types.ts` — the one solver-side contract: `Gate`, a predicate on ℝⁿ (the runtime
-  form of an open region). The condition contracts `Held`/`Constraint`/`Region` live in
-  `conditions/types.ts` (the solvers import them from below). There is no separate
+  form of an open region). The condition contracts live below: `Held`/`Constraint` in
+  `constraints/types.ts`, the open `Region` in `embedding/region.ts`. There is no separate
   constraint *or energy* interface — a constraint IS an `Fn` driven to zero, an energy
   IS a scalar `Fn` descended (`flow` takes a `ScalarFn`).
 - `held.ts` — normalize a `Constraint` (bare `Fn` or `Fn`+usage) into the driven-rows

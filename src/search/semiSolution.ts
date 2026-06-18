@@ -21,8 +21,8 @@
 
 import type { Triangulation } from '../topology/triangulation.ts';
 import { pinCoords } from '../coordinates/pin.ts';
-import { flat } from '../conditions/flat.ts';
-import { collinear } from '../conditions/collinear.ts';
+import { flat } from '../constraints/flat.ts';
+import { collinear } from '../constraints/collinear.ts';
 import { doyleSchwartzPositions } from '../coordinates/doyleSchwartz.ts';
 import { gaussian } from '../sampling/rng.ts';
 import { project } from '../solvers/project.ts';

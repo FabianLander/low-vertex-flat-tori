@@ -13,11 +13,11 @@
  * Pure: no three.js, no DOM.
  */
 
-import type { Triangulation } from '../../topology/triangulation.ts';
-import { totalArea } from '../../topology/develop.ts';
+import type { Triangulation } from '../topology/triangulation.ts';
+import { totalArea } from '../topology/develop.ts';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2, triangleTriangleDist2,
-} from '../../geometry/distance.ts';
+} from '../geometry/distance.ts';
 import { cellTables } from './cells.ts';
 
 /** Linear size of the torus, L = √(total area) — the normalizing length. */

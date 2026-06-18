@@ -35,8 +35,8 @@ import { makeRng } from '../src/sampling/rng.ts';
 import { collect } from '../src/search/collect.ts';
 import { wallAttempt } from '../src/search/wall.ts';
 import { poolSeeds, logSigma } from '../src/sampling/seeds.ts';
-import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
-import { makeChordLengthSquared } from '../src/conditions/embedded/index.ts';
+import { makeCutOffArea } from '../src/embedding/index.ts';
+import { makeChordLengthSquared } from '../src/embedding/index.ts';
 
 const a = makeArgs(process.argv);
 const triang = byId(a.num('--type', 7));

@@ -23,9 +23,9 @@ import type { ScalarFn } from '../functions/types.ts';
 import type { Family } from '../solvers/march.ts';
 import type { ConfigSpace } from '../configuration/space.ts';
 import { fullSpace } from '../coordinates/full.ts';
-import { flat } from '../conditions/flat.ts';
-import { modulusWall } from '../conditions/modulus.ts';
-import { embedded } from '../conditions/embedded/index.ts';
+import { flat } from '../constraints/flat.ts';
+import { modulusWall } from '../constraints/modulus.ts';
+import { embedded } from '../embedding/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
 import { march } from '../solvers/march.ts';
@@ -56,7 +56,7 @@ export interface MarchModulusOptions {
   c: number;
   /** Repulsion energy used to reach an embedded starting torus (Fabi's chord²/cutOffArea). */
   energy: ScalarFn;
-  /** Optional FATTENING energy (`conditions/embedded/index`) descended after
+  /** Optional FATTENING energy (`embedding/index`) descended after
    *  reaching embedded, before marching — pushes the start to a robust margin so
    *  the march has room to move the modulus instead of pinching at step one. */
   fattenEnergy?: ScalarFn;

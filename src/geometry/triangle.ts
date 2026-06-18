@@ -4,7 +4,7 @@
  * hot-path tier — same style as `distance.ts`), so the caller that owns a
  * `Triangulation` reads the three corners out of its buffer and passes them here.
  * The triangle→vertex lookup, and any sum over a vertex link / cell list, stays in
- * the layer above (`conditions/flat`, `mesh/orient`, `topology/develop`, …).
+ * the layer above (`constraints/flat`, `mesh/orient`, `topology/develop`, …).
  *
  * Pure: no three.js, no DOM, no Triangulation.
  */

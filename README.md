@@ -73,7 +73,7 @@ src/triangulations/  the specific triangulations we study, as DATA — scales to
 
 THE SEARCH SYSTEM — a modular, problem-agnostic kit for constrained search (see docs/math).
 Dependency-ordered, each layer using only the ones below:
-  geometry → functions → {configuration, coordinates, conditions} → solvers → sampling → search
+  geometry → functions → {configuration, coordinates, constraints, embedding} → solvers → sampling → search
 
   src/geometry/        torus-blind ℝ²/ℝ³ kernels: point/segment/triangle distances, the tri–tri chord
   src/functions/       the generic toolkit ONLY: the `Fn`/`ScalarFn`/`Embedding` contracts (types.ts)
@@ -83,9 +83,10 @@ Dependency-ordered, each layer using only the ones below:
                        metric (space.ts); `paperTorus` (the {triang, positions} boundary bundle); gauge.
   src/coordinates/     the coordinate-system INSTANCES (each an `Embedding` φ → a `ConfigSpace`):
                        full · pin (pinCoords/pinVertices) · symmetry · doyleSchwartz.
-  src/conditions/      the concrete maps + uses, one per condition. Closed {g=0}: flat (coneDeficit),
-                       collinear, modulus (tau + fixedModulus / modulusWall, frozen chart). Open:
-                       embedded/ (gate isEmbedded · margin minMargin · energies). types.ts: Held/Region.
+  src/constraints/     the CLOSED conditions {g=0} you project onto (measurement + usage): flat
+                       (coneDeficit), collinear, modulus (tau + fixedModulus / modulusWall). types.ts: Held.
+  src/embedding/       the OPEN condition Ω you stay inside (its own home): region (embedded gate +
+                       margin) · gate (isEmbedded) · margin (minMargin) · energies · cells (cellTables).
   src/solvers/         the engine, on ℝⁿ: project (corrector), flow (Riemannian descent, gated),
                        march (continuation), tangentProject; types.ts holds the `Gate` contract.
   src/sampling/        producing seeds: rng · perturb · seeds (random + deterministic gridSeeds) ·
@@ -105,9 +106,9 @@ The dependency rule: **`src/topology` and `src/triangulations` never import thre
 DOM**, and `topology` depends only on `geometry/` (the pure ℝ²/ℝ³ metric floor — the developing map's
 planar net uses `geometry/vec2`) — so every intrinsic algorithm runs headless under `tsx`. Arrows are
 one-way folder→folder: `geometry → topology → triangulations`; the search stack `geometry → functions
-→ {configuration, coordinates, conditions} → solvers → sampling → search` builds on top; rendering
+→ {configuration, coordinates, constraints, embedding} → solvers → sampling → search` builds on top; rendering
 sits on top of all of it. `geometry/` is the single bottom both halves rest on. Machinery and its instances are flat siblings — `topology`↔`triangulations`,
-`functions`↔`conditions`, `configuration`↔`coordinates` — never nested (the arrow is dependency, not
+`functions`↔`constraints`, `configuration`↔`coordinates` — never nested (the arrow is dependency, not
 containment).
 
 ## Searches

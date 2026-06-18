@@ -34,10 +34,10 @@ import { project } from '../src/solvers/project.ts';
 import { flow } from '../src/solvers/flow.ts';
 import { certify } from '../src/search/certify.ts';
 import { identity } from '../src/configuration/chart.ts';
-import { flat } from '../src/conditions/flat.ts';
-import { fixedModulus } from '../src/conditions/modulus.ts';
-import { embedded } from '../src/conditions/embedded/index.ts';
-import { makeCutOffArea } from '../src/conditions/embedded/index.ts';
+import { flat } from '../src/constraints/flat.ts';
+import { fixedModulus } from '../src/constraints/modulus.ts';
+import { embedded } from '../src/embedding/index.ts';
+import { makeCutOffArea } from '../src/embedding/index.ts';
 import { makeRng } from '../src/sampling/rng.ts';
 
 const args = process.argv.slice(2);

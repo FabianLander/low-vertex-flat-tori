@@ -3,7 +3,7 @@
  *
  * After the configuration-space refactor the solvers run ENTIRELY in a problem's
  * working space ℝⁿ: they take constraints already pulled to ℝⁿ (`Constraint`, from
- * `conditions/`) and, for the gated steppers, a `Gate` — the runtime predicate form
+ * `constraints/`) and, for the gated steppers, a `Gate` — the runtime predicate form
  * of an open region, already pulled to the working space (`x ↦ region.contains(push(x))`,
  * built in `search/`). The solvers know nothing about a `Triangulation`, an
  * `Embedding`, or a `Region` type — only ℝⁿ, some `Fn`s, and a predicate. That is

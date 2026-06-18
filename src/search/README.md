@@ -16,8 +16,8 @@ god-object** — a search is just a seed source, an `attempt` recipe, and the
   Pure control flow; all IO via `onAccept`/`onTry` callbacks. (Seed sources themselves
   live in `sampling/`.)
 - `pull.ts` — pull a `Constraint`/`Region` into a coordinate system: the bridge between
-  `configuration/`+`coordinates/` and `conditions/`, so the ℝⁿ solvers get pulled `Fn`s
-  and a `Gate`.
+  `configuration/`+`coordinates/` and the conditions (`constraints/`+`embedding/`), so the
+  ℝⁿ solvers get pulled `Fn`s and a `Gate`.
 - `recipe.ts` — `flattenFlowEmbed(torus, buildHeld, accept, energy)`: the shared recipe
   `seed → project(held) → flow(held, energy, gate=embedded) → certify`, on `fullSpace`.
 - `discover.ts` — find any flat embedded torus. `held = [flat]`.
@@ -35,7 +35,7 @@ god-object** — a search is just a seed source, an `attempt` recipe, and the
 
 The runnable searches are thin `scripts/` wrappers over this folder: `npm run discover`,
 `npm run wall`, `npm run semi-solutions`, `npm run march-modulus`. The core operations
-(`project`/`flow`/`march`) live in `solvers/`; the conditions (closed `{g=0}` and open
-`Region`) in `conditions/`; the map toolkit in `functions/`; coordinate systems in
+(`project`/`flow`/`march`) live in `solvers/`; the conditions (closed `{g=0}` in
+`constraints/`, the open `Region` in `embedding/`); the map toolkit in `functions/`; coordinate systems in
 `coordinates/`; seed sources in `sampling/`. The old scripts are archived (read-only) in
 `scripts/legacy/`.

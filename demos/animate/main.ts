@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { RICH } from '../../src/triangulations';
 import { makePaperTorus, clonePaperTorus, type PaperTorus } from '../../src/configuration/paperTorus.ts';
-import { coneAngleDeficits } from '../../src/conditions/flat.ts';
+import { coneAngleDeficits } from '../../src/constraints/flat.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { perturb } from '../../src/sampling/perturb';
 import { mulberry32 } from '../../src/sampling/rng';

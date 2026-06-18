@@ -4,7 +4,7 @@
  *
  * Problem-agnostic: it takes the working point `x ∈ ℝⁿ` and abstract `Constraint`s
  * (each an `Fn` on ℝⁿ — a condition already PULLED through the configuration space,
- * `conditions/`), NOT a `Triangulation` or a chart. The restriction to a subspace is
+ * `constraints/`), NOT a `Triangulation` or a chart. The restriction to a subspace is
  * baked into the pulled `Fn`s (their Jacobians are already in ℝⁿ), so there is no
  * pullback step here. This is the generalization of `newtonFlatten`:
  *   - full space + [flat]                              ≡ newtonFlatten
@@ -30,7 +30,7 @@
 
 import { solveDenseInPlace } from './linalg.ts';
 import { normHeld, residualOf, totalDrive } from './held.ts';
-import type { Constraint } from '../conditions/types.ts';
+import type { Constraint } from '../constraints/types.ts';
 
 export type ProjectStatus = 'converged' | 'diverged' | 'max-iters';
 

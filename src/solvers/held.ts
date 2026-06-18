@@ -9,7 +9,7 @@
 
 import { infNorm } from './linalg.ts';
 import type { Fn } from '../functions/types.ts';
-import type { Constraint, Held } from '../conditions/types.ts';
+import type { Constraint, Held } from '../constraints/types.ts';
 
 export interface NormHeld {
   readonly fn: Fn;

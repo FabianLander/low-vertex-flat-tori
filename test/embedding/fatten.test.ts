@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { makeCellMargin, minMargin, isEmbedded } from '../../../src/conditions/embedded/index.ts';
-import { flow } from '../../../src/solvers/flow.ts';
-import { flat, maxConeDeficit } from '../../../src/conditions/flat.ts';
-import { RICH_REFERENCE } from '../../../src/sampling/reference.ts';
-import { RICH } from '../../../src/triangulations/index.ts';
+import { makeCellMargin, minMargin, isEmbedded } from '../../src/embedding/index.ts';
+import { flow } from '../../src/solvers/flow.ts';
+import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
+import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { RICH } from '../../src/triangulations/index.ts';
 
 describe('cellMargin — the fattening energy', () => {
   it('is zero when every gap ≥ ε, positive when ε exceeds the margin', () => {

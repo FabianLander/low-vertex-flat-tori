@@ -24,7 +24,7 @@
 import { project, type ProjectOptions } from './project.ts';
 import { tangentProject, makeTangentScratch } from './tangentProject.ts';
 import { normHeld, totalDrive } from './held.ts';
-import type { Constraint } from '../conditions/types.ts';
+import type { Constraint } from '../constraints/types.ts';
 import type { Gate } from './types.ts';
 import type { ScalarFn } from '../functions/types.ts';
 

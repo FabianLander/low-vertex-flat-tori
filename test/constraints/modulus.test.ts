@@ -7,8 +7,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { project } from '../../src/solvers/project.ts';
-import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
-import { fixedModulus, modulusWall } from '../../src/conditions/modulus.ts';
+import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
+import { fixedModulus, modulusWall } from '../../src/constraints/modulus.ts';
 import { modulus, reduceModulus } from '../../src/topology/develop.ts';
 import type { Vec2 } from '../../src/geometry/vec2.ts';
 import { byId } from '../../src/triangulations/index.ts';

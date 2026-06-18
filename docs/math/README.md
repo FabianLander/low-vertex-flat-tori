@@ -24,7 +24,7 @@ open set.
 | functions | [conditions.md](conditions.md) | the differentiable-map **toolkit** — the `Fn`/`ScalarFn`/`Embedding` contracts + the compose algebra (machinery, no instances) | `functions/` |
 | configuration | [configuration-space.md](configuration-space.md) | the `ConfigSpace = (T, φ)` spine — `pull`/`push`/`coords`, the metric, interior vs boundary | `configuration/` |
 | coordinates | [configuration-space.md](configuration-space.md) | the coordinate systems — `Embedding`s φ → a `ConfigSpace` (full, pin, symmetry, Doyle–Schwartz) | `coordinates/` |
-| conditions | [conditions.md](conditions.md) | what we ask of a config — each module its own measurement + usage; closed `{g=0}` and open (`Region`) kinds, by return type | `conditions/` |
+| conditions | [conditions.md](conditions.md) | what we ask of a config — each module its own measurement + usage; the closed `{g=0}` kind in `constraints/`, the open (`Region`) kind in `embedding/` | `constraints/`, `embedding/` |
 | operations | [solvers.md](solvers.md) | project / flow / march — all from the held Jacobian, run on ℝⁿ — and `certify` | `solvers/`, `search/certify.ts` |
 | sampling | [searches.md](searches.md) | producing seeds: rng, perturb, random + deterministic grid sources | `sampling/` |
 | searches | [searches.md](searches.md) | what each search *does* in C — the flat manifold, the modulus foliation, the embedded region; solving *for* a modulus vs *marching* to it | `search/` |
@@ -40,7 +40,7 @@ Two structural lines run through all of it:
   it and nothing else.
 - **machinery vs. instances.** Three places apply this split, all as flat sibling folders (never
   nested): `topology/` ↔ `triangulations/` (the 7 as data); `functions/` (the generic
-  differentiable-map toolkit) ↔ `conditions/` (the concrete maps + their uses); and `configuration/`
+  differentiable-map toolkit) ↔ `constraints/`+`embedding/` (the concrete maps + their uses); and `configuration/`
   (the `ConfigSpace` machinery) ↔ `coordinates/` (the coordinate-system instances). Machinery depends
   on nothing problem-specific; instances depend on the machinery, never the reverse.
 

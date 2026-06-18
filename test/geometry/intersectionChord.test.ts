@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { triTriChord } from '../../src/geometry/intersectionChord';
-import { cellTables } from '../../src/conditions/embedded/index';
+import { cellTables } from '../../src/embedding/index';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { RICH } from '../../src/triangulations';
 

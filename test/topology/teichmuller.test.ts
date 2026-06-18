@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_TORI } from '../../src/triangulations';
 import { project } from '../../src/solvers/project.ts';
-import { flat, maxConeDeficit } from '../../src/conditions/flat.ts';
+import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
 import { modulus } from '../../src/topology/develop';
 import { mulberry32 } from '../../src/sampling/rng';
 

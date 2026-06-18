@@ -6,7 +6,7 @@
  * `geometry/triangleIntersect`.
  */
 
-export { embedded } from './region.ts';
+export { embedded, type Region } from './region.ts';
 export {
   isEmbedded, firstViolation, allViolations, violationFaceScalars,
   type EmbeddingViolation,

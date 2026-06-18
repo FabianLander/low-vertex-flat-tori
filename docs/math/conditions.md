@@ -3,9 +3,9 @@
 > A **condition** is a property a configuration may or may not have. They come in two mathematically
 > distinct kinds, and the distinction is the whole shape of the search: **closed** conditions are
 > *submanifolds* `{g=0}` you land *on*; **open** conditions are *regions* you stay *inside*.
-> Code: `src/conditions/` — one module per condition, each owning its measurement (an `Fn` built
-> from the `functions/` toolkit) and its usage. Closed vs open is carried by the *return type*
-> (a `Held`/`Fn` vs a `Region`), not the directory.
+> Code: the two kinds get two homes — the closed conditions in `src/constraints/`, the open
+> embedded region in `src/embedding/` — each a module owning its measurement (an `Fn` built from
+> the `functions/` toolkit) and its usage (a `Held`/`Fn` constraint, or the `Region`).
 
 > **One concept underneath.** Every closed condition, and the potential of every open one, is the
 > *same* thing — a differentiable map of the configuration, an **`Fn`** (`value` + `jacobian`, in
@@ -56,7 +56,7 @@ energies that move a config with respect to it are separate standalone functions
 `compute` + `grad`) you push downhill, the dual of a constraint (an `Fn` driven to zero). The `Region`
 itself supplies only the gate + margin; the energies are standalone functions `flow` takes explicitly.
 Each is written out in full (formula inline), and they come in two families — all in
-`conditions/embedded/energies.ts`:
+`embedding/energies.ts`:
 - **overlap** — **Fabi's** `chordLengthSquared` / `cutOffArea`: penalize *actual* overlaps, zero on the
   whole embedded set, so they drive a *crossing* torus onto `Ω` (these found the tori).
 - **near-miss / barrier** — alive in `Ω`'s interior, so they FATTEN a barely-embedded torus (the
@@ -65,7 +65,7 @@ Each is written out in full (formula inline), and they come in two families — 
   inside `Ω`), and it watches the full embedding test — the six cell-gap types AND the shared-vertex
   opposite-edge↔triangle gaps.
 
-`minMargin` is the embedding diagnostic (`conditions/embedded/margin.ts`), not an energy.
+`minMargin` is the embedding diagnostic (`embedding/margin.ts`), not an energy.
 
 Energies are *descended* by `flow`; the region's `contains` is the *gate* `flow`/`march` enforce.
 Note descending these energies lowers a sum of pair penalties — it does **not** monotonically
@@ -86,10 +86,11 @@ so organizing by this kind matches how the math is used.
 | symbol | file | role |
 | --- | --- | --- |
 | `Fn`, `ScalarFn` | `functions/types.ts` | the map contract (constraint/energy are uses of it) |
-| `Held`, `Constraint`, `Region` | `conditions/types.ts` | the condition contracts (closed `Held`/`Fn`, open `Region`) — no `Energy` type |
+| `Held`, `Constraint` | `constraints/types.ts` | the closed-condition contracts — no `Energy` type |
+| `Region` | `embedding/region.ts` | the open-condition contract (gate + margin) |
 | `Gate` | `solvers/types.ts` | the runtime form of a region: a predicate on ℝⁿ the solvers gate on |
-| `flat` (+ `coneDeficit`) | `conditions/flat.ts` | flatness: the deficit measurement + the constraint |
-| `collinear` | `conditions/collinear.ts` | planar collinearity (analytic signed area) |
-| `modulus` (`tau`, `fixedModulus`, `modulusWall`) | `conditions/modulus.ts` | the modulus measurement + point/wall constraints (frozen chart) |
-| `embedded` (`isEmbedded`, `minMargin`, the energies) | `conditions/embedded/` | the embeddedness gate + margin + repulsion energies, in one folder |
+| `flat` (+ `coneDeficit`) | `constraints/flat.ts` | flatness: the deficit measurement + the constraint |
+| `collinear` | `constraints/collinear.ts` | planar collinearity (analytic signed area) |
+| `modulus` (`tau`, `fixedModulus`, `modulusWall`) | `constraints/modulus.ts` | the modulus measurement + point/wall constraints (frozen chart) |
+| `embedded` (`isEmbedded`, `minMargin`, the energies) | `embedding/` | the embeddedness gate + margin + repulsion energies, in one folder |
 | intersection predicates | `geometry/triangleIntersect.ts` | the torus-blind kernels behind `isEmbedded` |

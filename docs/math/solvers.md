@@ -79,7 +79,8 @@ Teichmüller. Every search ends here.
 | `flow` | `solvers/flow.ts` | Riemannian descent of an energy on `M`, gated by a `Gate` |
 | `march`, `Family` | `solvers/march.ts` | continuation tracking `M_s ∩ Ω`; reports `blocked` at a pinch |
 | `Gate` | `solvers/types.ts` | the open region as the solver sees it: a predicate on ℝⁿ |
-| `Constraint`, `Held`, `Region` | `conditions/types.ts` | the condition contracts the solvers consume |
+| `Constraint`, `Held` | `constraints/types.ts` | the closed-condition contracts the solvers consume |
+| `Region` | `embedding/region.ts` | the open-condition contract (pulled to a `Gate`) |
 | `pull*` | `search/pull.ts` | pull a `Constraint`/`Region` into a coordinate system (→ ℝⁿ `Fn`/`Gate`) |
 | `certify`, `Certificate` | `search/certify.ts` | the recorded measurement (raw τ AND reduced τ̂, margin, embedded) |
 

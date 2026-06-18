@@ -61,7 +61,7 @@ Everything outside `mesh/`, `viewer/`, `render/` (and the browser entries `demos
 extrinsic search stack is **dependency-ordered**, each layer using only the ones below:
 
 ```
-geometry/ → functions/ → { configuration/, coordinates/, conditions/ } → solvers/ → sampling/ → search/
+geometry/ → functions/ → { configuration/, coordinates/, constraints/, embedding/ } → solvers/ → sampling/ → search/
 ```
 
 `geometry/` is the **ℝ²/ℝ³ metric floor** — pure point/vector/line/triangle math, no torus — and it sits
@@ -69,11 +69,11 @@ below *everything*, including the intrinsic side: `topology/` (machinery) + `tri
 data) build on `geometry/` (e.g. the developing map's planar net uses `geometry/vec2`) and on nothing
 else. So `geometry/` is the one true bottom; `topology/` depends only on it. Do not import three.js or
 touch `window`/`document` from any of these. **Machinery and its instances are flat
-siblings, never nested** — `topology/`↔`triangulations/`, `functions/`↔`conditions/`,
+siblings, never nested** — `topology/`↔`triangulations/`, `functions/`↔`constraints/`,
 `configuration/`↔`coordinates/` — because the arrow is *dependency*, not *containment* (so a
 machinery-purity violation like `topology/` importing `triangulations/` is a glaring cross-folder import).
 
-### The one concept: `Fn` — toolkit (`functions/`) vs instances (`conditions/`)
+### The one concept: `Fn` — toolkit (`functions/`) vs instances (`constraints/` + `embedding/`)
 
 The system is built from **one** thing — a differentiable map of the configuration,
 `Fn : C = ℝ³ⱽ → ℝᵏ` (`value` + `jacobian`). "Constraint" and "energy" are *uses* of an `Fn`, not
@@ -86,8 +86,9 @@ separate interfaces:
 There is **no `ConstraintMap` and no `Energy` interface** — they were retired onto `Fn`/`ScalarFn`.
 `functions/` is the **generic toolkit** — the `Fn`/`ScalarFn`/`Embedding` contracts (`types.ts`,
 `compose.ts`) and the compose algebra (`fdFn`/`fdScalar`, `precompose`/`postcompose`/`affine`), no
-torus content. The **concrete maps** live with the condition they define, in `conditions/` — the same
-machinery↔instances split as `topology/`↔`triangulations/` and `configuration/`↔`coordinates/`.
+torus content. The **concrete maps** live with the condition they define — the closed ones in
+`constraints/`, the open embedded region in `embedding/` — the same machinery↔instances split as
+`topology/`↔`triangulations/` and `configuration/`↔`coordinates/`.
 
 ### Configuration is a bare `Float64Array`
 
@@ -105,7 +106,7 @@ its triangulation; not used on the interior hot path.
   **derived from the triangle list and validated by V−E+F=0** — no baked-in 8/24/16 counts.
   `defineTriangulation({ triangles })` alone yields a working torus, so the pipeline is
   triangulation-independent. (The extrinsic triangle-collision tables — which non-adjacent cells must be
-  tested for the embedding check — are derived separately in `conditions/embedded/`, not here.)
+  tested for the embedding check — are derived separately in `embedding/cells.ts`, not here.)
 - `topology/develop.ts` — the RUNTIME engine: unfold the triangulation; read the holonomy of the two
   marked generator loops to get the modulus τ ∈ ℍ, and reduce it to τ̂ ∈ ℍ/SL(2,ℤ)
   (`reduceModulusWithMatrix` returns the reducing matrix, for the frozen-chart wall constraints).
@@ -133,11 +134,13 @@ its triangulation; not used on the interior hot path.
 - `coordinates/` — the coordinate-system **instances** (each builds an `Embedding`→`ConfigSpace`):
   `full`, `pin` (`pinCoords`/`pinVertices`), `symmetry` (+`RICH_SYMMETRY` = Rich's ρ), `doyleSchwartz`
   (the DS flat-#7 parameterization; a nonlinear coordinate system, currently value-only for seeding).
-- `conditions/` — one self-contained module per condition (measurement + usage), plus `types`
-  (`Held`/`Constraint`/`Region`): `flat` (`coneDeficit` + the V−1 constraint), `collinear` (analytic),
-  `modulus` (`tau` + `fixedModulus`/`modulusWall`, frozen-chart), and `embedded/` (folder: `gate`
-  `isEmbedded` · `margin` cell-gaps + `minMargin` · `energies` Fabi's `chordLengthSquared`/`cutOffArea`
-  + `cellMargin` hinge + `cellBarrier` log-barrier · `region`).
+- `constraints/` — the **closed** conditions `{g=0}` you *project onto* (each a self-contained module,
+  measurement + usage), plus `types` (`Held`/`Constraint`): `flat` (`coneDeficit` + the V−1 constraint),
+  `collinear` (analytic), `modulus` (`tau` + `fixedModulus`/`modulusWall`, frozen-chart).
+- `embedding/` — the **open** condition Ω you *stay inside* (its own first-class home — the search's hard
+  part): the `Region` (`region`: `embedded` gate + margin) · `gate` (`isEmbedded`, the topological truth) ·
+  `margin` (cell-gaps + `minMargin`) · `energies` (Fabi's `chordLengthSquared`/`cutOffArea` + `cellMargin`
+  hinge + `cellBarrier` log-barrier) · `cells` (`cellTables`, the collision tables) · `index`.
 - `solvers/` — problem-agnostic steppers run **entirely on ℝⁿ**, all on one J-hub: `project`
   (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian descent of a `ScalarFn` along the manifold,
   gated by a `Gate` predicate), `march` (continuation tracking a family ∩ region). They take pulled

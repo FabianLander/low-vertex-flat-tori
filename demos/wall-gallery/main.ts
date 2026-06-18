@@ -24,8 +24,8 @@ import * as THREE from 'three';
 
 import { byId } from '../../src/triangulations';
 import { modulus, reduceModulus } from '../../src/topology/develop';
-import { maxConeDeficit } from '../../src/conditions/flat';
-import { minMargin } from '../../src/conditions/embedded/index';
+import { maxConeDeficit } from '../../src/constraints/flat';
+import { minMargin } from '../../src/embedding/index';
 import { parseEmbeddings } from '../../src/configuration/csv';
 import type { PaperTorus } from '../../src/configuration/paperTorus.ts';
 import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
