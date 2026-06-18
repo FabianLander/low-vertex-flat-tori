@@ -24,7 +24,7 @@ import type { Family } from '../solvers/march.ts';
 import type { ConfigSpace } from '../configuration/space.ts';
 import { fullSpace } from '../coordinates/full.ts';
 import { flat } from '../constraints/flat.ts';
-import { modulusWall } from '../constraints/modulus.ts';
+import { modulusWall, fixedModulus } from '../constraints/modulus.ts';
 import { isEmbedded } from '../embedding/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
@@ -47,6 +47,25 @@ export function wallFamily(space: ConfigSpace): Family {
     held: (x, s) => {
       space.push(x, pbuf);
       return pullHeld(space, [flat(triang), modulusWall(triang, pbuf, s)]);
+    },
+  };
+}
+
+/**
+ * The 1-parameter family marching ALONG the imaginary axis (Re τ̂ = 0) to the modulus
+ * POINT τ̂ = (0, s) — i.e. continuation toward the square torus i (s = 1). `param`
+ * reads the current Im τ̂; `held` pins `[flat, fixedModulus(0, s)]` AT the current
+ * point (frozen chart, re-frozen each step, pulled into the working space). Mirror of
+ * `wallFamily`, with the codim-2 `fixedModulus` in place of the codim-1 wall.
+ */
+export function imaginaryFamily(space: ConfigSpace): Family {
+  const triang = space.triang;
+  const pbuf = new Float64Array(space.ambient);
+  return {
+    param: (x) => { space.push(x, pbuf); return reduceModulus(modulus(triang, pbuf).tau)[1]; },
+    held: (x, s) => {
+      space.push(x, pbuf);
+      return pullHeld(space, [flat(triang), fixedModulus(triang, pbuf, [0, s])]);
     },
   };
 }
