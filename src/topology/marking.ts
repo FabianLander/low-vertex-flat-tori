@@ -1,21 +1,27 @@
 /**
- * marking.ts — choosing a triangulation's MARKING: a basis of H₁(T²,ℤ), as two
- * oriented vertex edge-loops. This is the Teichmüller marking — its holonomy
+ * marking — choosing a triangulation's canonical MARKING: a basis of H₁(T²,ℤ), as
+ * two oriented vertex edge-loops. This is the Teichmüller marking — its holonomy
  * under the developing map gives τ.
  *
- * Also the single compute pass `canonicalDecoration`: layout → cut → {develop
- * order ∥ generators}. The cut is the shared root — the fundamental domain owns
- * it (`fundamentalDomain.ts`); the marking reads it to align its generators. The
- * pass returns the savable triple `{ cut, developOrder, generatorLoops }`, which
- * the cache stores and `defineTriangulation` splits into the two decorations.
+ * `canonicalDecoration` is the single pass that picks it: a planar harmonic layout
+ * of the triangulation → the minimal cut → {develop order ∥ cut-aligned generators}.
+ * The cut is the shared root — the fundamental domain owns it; the marking reads it
+ * to align its generators. The pass returns the triple `{ cut, developOrder,
+ * generatorLoops }`, which `defineTriangulation` splits into the triangulation's two
+ * decorations (`fundamentalDomain`, `marking`).
+ *
+ * It uses the planar-drawing helpers `harmonicLayout` (harmonic embedding) +
+ * `fundamentalDomain` (exact minimal-cut domain), so it is heavier than the rest of
+ * the builder — the registry runs it once per triangulation when building `ALL_TORI`
+ * (~0.1s each for the 8-vertex census). Deterministic and memoized; no cached file.
  *
  * Pure: no DOM/three.js.
  */
 
-import type { Triangulation } from './triangulation';
-import { edgeKey, edgeEnds, homologyGenerators } from './triangulation';
-import { harmonicLayout, type HarmonicLayout } from './harmonicLayout';
-import { exactMinCutDomain, windingDevelop } from './fundamentalDomain';
+import type { Triangulation } from './triangulation.ts';
+import { edgeKey, edgeEnds, homologyGenerators } from './triangulation.ts';
+import { harmonicLayout, type HarmonicLayout } from './harmonicLayout.ts';
+import { exactMinCutDomain, windingDevelop } from './fundamentalDomain.ts';
 
 /** The savable canonical decoration — the cache shape. `attach` is re-derived. */
 export type SavedMarking = {
@@ -27,10 +33,10 @@ export type SavedMarking = {
 const cache = new WeakMap<Triangulation, SavedMarking>();
 
 /**
- * The canonical decoration (the savable triple: cut + unfold order + cut-aligned
- * H₁ basis; `attach` is re-derived from these at construction). The EXPENSIVE
- * step (harmonic layout + min-cut), run by `compute-markings` to fill the cache.
- * Deterministic and memoized, so saving it is a pure optimization.
+ * The canonical decoration (the triple: cut + unfold order + cut-aligned H₁ basis;
+ * `attach` is re-derived from these at construction). The EXPENSIVE step (harmonic
+ * layout + exact min-cut) — the registry calls it once per triangulation when
+ * building `ALL_TORI`. Deterministic and memoized.
  */
 export function canonicalDecoration(triang: Triangulation): SavedMarking {
   const hit = cache.get(triang);

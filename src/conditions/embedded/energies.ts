@@ -24,20 +24,22 @@ import { fdScalar } from '../../functions/compose.ts';
 import { triTriChord } from '../../geometry/intersectionChord.ts';
 import { segmentTriangleDist2 } from '../../geometry/distance.ts';
 import { forEachCellGap, linearSize } from './margin.ts';
+import { cellTables } from './cells.ts';
 
 // ─── overlap energies (Fabi's) ──────────────────────────────────────────────
 
 /** Σ of squared intersection-chord lengths over non-adjacent triangle pairs. */
 export function makeChordLengthSquared(triang: Triangulation): ScalarFn {
   const tris = triang.triangles;
+  const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
   return fdScalar('chord length²', (positions) => {
     let E = 0;
-    for (const [tA, tB] of triang.disjointTrianglePairs) {
+    for (const [tA, tB] of disjointTrianglePairs) {
       const A = tris[tA], B = tris[tB];
       const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
       if (c) E += c.length * c.length;
     }
-    for (const pair of triang.sharedVertexTrianglePairs) {
+    for (const pair of sharedVertexTrianglePairs) {
       const A = tris[pair.a], B = tris[pair.b];
       const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
       if (c) E += c.length * c.length;
@@ -115,10 +117,11 @@ function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, t
 
 /** Σ ℓ² · (smaller-piece-area ratios) — chord²-modulated cut-off area. */
 export function makeCutOffArea(triang: Triangulation): ScalarFn {
+  const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
   return fdScalar('cut-off area (chord²-modulated)', (positions) => {
     let E = 0;
-    for (const [tA, tB] of triang.disjointTrianglePairs) E += pairCutOffEnergy(triang, positions, tA, tB);
-    for (const pair of triang.sharedVertexTrianglePairs) E += pairCutOffEnergy(triang, positions, pair.a, pair.b);
+    for (const [tA, tB] of disjointTrianglePairs) E += pairCutOffEnergy(triang, positions, tA, tB);
+    for (const pair of sharedVertexTrianglePairs) E += pairCutOffEnergy(triang, positions, pair.a, pair.b);
     return E;
   });
 }
@@ -174,6 +177,7 @@ export function makeCellBarrier(triang: Triangulation, opts: CellBarrierOptions 
   const FLOOR = 1e-9;   // clamp d̃ so −log stays finite if a pair is essentially touching
   const barrier = (d: number): number =>
     d >= delta ? 0 : -strength * Math.log((d < FLOOR ? FLOOR : d) / delta);
+  const { sharedVertexTrianglePairs } = cellTables(triang);
 
   return fdScalar(`cell-barrier (δ=${delta}, μ=${strength})`, (p) => {
     let E = 0;
@@ -181,7 +185,7 @@ export function makeCellBarrier(triang: Triangulation, opts: CellBarrierOptions 
     // Shared-vertex pairs: each triangle's opposite edge vs the other's triangle —
     // the embedding-critical adjacent gaps, normalized by √area like the cell gaps.
     const invL = 1 / linearSize(triang, p);
-    for (const pair of triang.sharedVertexTrianglePairs) {
+    for (const pair of sharedVertexTrianglePairs) {
       const ta = triang.triangles[pair.a], tb = triang.triangles[pair.b];
       E += barrier(edgeTriGap(p, pair.aOpp[0], pair.aOpp[1], tb[0], tb[1], tb[2]) * invL);
       E += barrier(edgeTriGap(p, pair.bOpp[0], pair.bOpp[1], ta[0], ta[1], ta[2]) * invL);

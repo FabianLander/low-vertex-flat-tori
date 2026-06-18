@@ -9,18 +9,17 @@
  * any new triangulation and `defineTriangulation({ triangles })` to get a fully working
  * torus; nothing here is hard-wired to a particular vertex/edge/face count.
  *
- * This replaces the old global singleton in `topology.ts`: instead of one
- * module-level `TRIANGLES`, every triangulation is a value you pass around. The
- * seven 8-vertex combinatorial types live in `tori.ts` (`TORUS_8V`); each
- * `src/tori/torusN.ts` wraps one of them, and its marking is attached from the
- * cache (`markings.generated.ts`).
+ * Every triangulation is a value you pass around (no global singleton). The seven
+ * 8-vertex combinatorial types live as data in `triangulations/eightVertex.ts`
+ * (`EIGHT_VERTEX`); the registry `triangulations/index.ts` maps each through
+ * `defineTriangulation`, computing its canonical marking on load (`canonicalDecoration`).
  *
  * Pure data/combinatorics — no three.js, no DOM, no metric (3D coords).
  *
  * Each triangulation carries two decorations — a `FundamentalDomain` (how to
- * unfold it) and a `Marking` (its H₁ basis) — taken from the saved cache
- * (`markings.generated.ts`, computed by `canonicalDecoration`) or a layout-free fallback;
- * see `buildDecoration`.
+ * unfold it) and a `Marking` (its H₁ basis) — supplied by the registry (from
+ * `canonicalDecoration`) via the spec, or a layout-free fallback when the spec omits
+ * them; see `buildDecoration`.
  *
  * NB: degree is NEVER assumed — among the 8-vertex types only Rich's (#7) is
  * degree-6-regular; the rest mix degree 5/7. Every count is derived/validated
@@ -50,25 +49,6 @@ export type Attach = {
   readonly parent: number; // -1 for the root
   readonly u: number;
   readonly v: number;
-};
-
-/** A pair of triangles sharing exactly one vertex (for the embedding check). */
-export type SharedVertexPair = {
-  readonly a: number;                        // triangle index
-  readonly b: number;                        // triangle index
-  readonly shared: number;                   // the shared vertex
-  readonly aOpp: readonly [number, number];  // a's two other vertices
-  readonly bOpp: readonly [number, number];  // b's two other vertices
-};
-
-/** Cell-pair tables for the repulsion/barrier energies (non-adjacent pairs). */
-export type CellPairs = {
-  readonly vertexVertex: readonly [number, number][]; // two vertex indices
-  readonly vertexEdge: readonly [number, number][];   // [vertex, edge index]
-  readonly vertexFace: readonly [number, number][];   // [vertex, face index]
-  readonly edgeEdge: readonly [number, number][];     // two edge indices
-  readonly edgeFace: readonly [number, number][];     // [edge index, face index]
-  readonly faceFace: readonly [number, number][];     // = disjointTrianglePairs
 };
 
 /** Specification of a torus: just the triangulation, plus optional choices. The
@@ -129,12 +109,6 @@ export type Triangulation = {
   readonly fundamentalDomain: FundamentalDomain;
   /** The H₁ basis decorating it — gives τ. */
   readonly marking: Marking;
-  /** The C(16,2) triangle pairs sharing 0 vertices (full tri–tri embedding test). */
-  readonly disjointTrianglePairs: readonly [number, number][];
-  /** Triangle pairs sharing exactly 1 vertex (reduce to 2 segment–tri tests). */
-  readonly sharedVertexTrianglePairs: readonly SharedVertexPair[];
-  /** Non-adjacent cell pairs of all six type combinations (repulsion energies). */
-  readonly cellPairs: CellPairs;
 };
 
 /** Symmetric integer key for an undirected edge {u,v}. */
@@ -148,7 +122,7 @@ export function edgeEnds(k: number): readonly [number, number] {
 }
 
 // ---------------------------------------------------------------------------
-// Derivations (lifted from topology.ts / develop.ts, made degree-generic)
+// Derivations — every combinatorial table from the triangle list, degree-generic
 // ---------------------------------------------------------------------------
 
 function deriveEdges(triangles: readonly Tri[]): Edge[] {
@@ -266,9 +240,9 @@ function deriveAttach(
 }
 
 /**
- * Decorate a triangulation with its fundamental domain + marking: the saved
- * canonical decoration (`markings.generated.ts`) if there is one for this id, else a
- * layout-free fallback — a BFS develop order and a tree–cotree H₁ basis with no
+ * Decorate a triangulation with its fundamental domain + marking: the canonical
+ * decoration if the spec supplies it (the registry computes it via `canonicalDecoration`),
+ * else a layout-free fallback — a BFS develop order and a tree–cotree H₁ basis with no
  * minimal cut. `attach` is always re-derived here.
  */
 function buildDecoration(
@@ -287,76 +261,6 @@ function buildDecoration(
     fundamentalDomain: { cut, developOrder, attach },
     marking: { generatorLoops },
   };
-}
-
-// ---------------------------------------------------------------------------
-// Triangle-pair classification (for the embedding check) and cell-pair tables
-// (for the repulsion/barrier energies). Counts vary across the 7 tori — only
-// vertex-vertex / vertex-edge / vertex-face / edge-face / edgeShared are
-// topology-invariant — so we compute, never assert magic numbers.
-// ---------------------------------------------------------------------------
-
-function classifyTrianglePairs(triangles: readonly Tri[]): {
-  disjoint: [number, number][];
-  sharedVertex: SharedVertexPair[];
-} {
-  const disjoint: [number, number][] = [];
-  const sharedVertex: SharedVertexPair[] = [];
-  const n = triangles.length;
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      const t1 = triangles[i], t2 = triangles[j];
-      const shared: number[] = [];
-      for (const v of t1) if (v === t2[0] || v === t2[1] || v === t2[2]) shared.push(v);
-      if (shared.length === 0) {
-        disjoint.push([i, j]);
-      } else if (shared.length === 1) {
-        const sv = shared[0];
-        const aOpp = t1.filter((v) => v !== sv);
-        const bOpp = t2.filter((v) => v !== sv);
-        sharedVertex.push({ a: i, b: j, shared: sv, aOpp: [aOpp[0], aOpp[1]], bOpp: [bOpp[0], bOpp[1]] });
-      }
-      // shared.length === 2 (edge-shared): generically no interior intersection — skipped.
-    }
-  }
-  return { disjoint, sharedVertex };
-}
-
-function deriveCellPairs(
-  triangles: readonly Tri[],
-  vertexCount: number,
-  edges: readonly Edge[],
-  disjointTrianglePairs: readonly [number, number][],
-): CellPairs {
-  const vertexVertex: [number, number][] = [];
-  for (let i = 0; i < vertexCount; i++) for (let j = i + 1; j < vertexCount; j++) vertexVertex.push([i, j]);
-
-  const vertexEdge: [number, number][] = [];
-  for (let v = 0; v < vertexCount; v++) for (let e = 0; e < edges.length; e++) {
-    const [a, b] = edges[e];
-    if (v !== a && v !== b) vertexEdge.push([v, e]);
-  }
-
-  const vertexFace: [number, number][] = [];
-  for (let v = 0; v < vertexCount; v++) for (let f = 0; f < triangles.length; f++) {
-    const [a, b, c] = triangles[f];
-    if (v !== a && v !== b && v !== c) vertexFace.push([v, f]);
-  }
-
-  const edgeEdge: [number, number][] = [];
-  for (let i = 0; i < edges.length; i++) for (let j = i + 1; j < edges.length; j++) {
-    const [u1, v1] = edges[i], [u2, v2] = edges[j];
-    if (u1 !== u2 && u1 !== v2 && v1 !== u2 && v1 !== v2) edgeEdge.push([i, j]);
-  }
-
-  const faceEdgeKeys = triangles.map(([a, b, c]) => new Set([edgeKey(a, b), edgeKey(b, c), edgeKey(c, a)]));
-  const edgeFace: [number, number][] = [];
-  for (let e = 0; e < edges.length; e++) {
-    const k = edgeKey(edges[e][0], edges[e][1]);
-    for (let f = 0; f < triangles.length; f++) if (!faceEdgeKeys[f].has(k)) edgeFace.push([e, f]);
-  }
-
-  return { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace: disjointTrianglePairs.map((p) => p) };
 }
 
 // ---------------------------------------------------------------------------
@@ -502,12 +406,10 @@ export function defineTriangulation(spec: TriangulationSpec): Triangulation {
   const edgeToTris = deriveEdgeToTris(triangles);
   const degreeSequence = vertexLinks.map((l) => l.length).slice().sort((a, b) => a - b);
 
-  // Decorate with the fundamental domain + marking: the saved canonical decoration
-  // (markings.generated.ts) if we have one, else a layout-free fallback. attach is re-derived.
+  // Decorate with the fundamental domain + marking: the canonical decoration when
+  // the spec supplies it (registry → canonicalDecoration), else a layout-free
+  // fallback. attach is re-derived.
   const { fundamentalDomain, marking } = buildDecoration(spec, triangles, edgeToTris, name);
-
-  const { disjoint, sharedVertex } = classifyTrianglePairs(triangles);
-  const cellPairs = deriveCellPairs(triangles, vertexCount, edges, disjoint);
 
   return {
     id,
@@ -520,8 +422,5 @@ export function defineTriangulation(spec: TriangulationSpec): Triangulation {
     edgeToTris,
     fundamentalDomain,
     marking,
-    disjointTrianglePairs: disjoint,
-    sharedVertexTrianglePairs: sharedVertex,
-    cellPairs,
   };
 }

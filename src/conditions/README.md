@@ -14,9 +14,11 @@ Conditions come in two kinds, carried by the **return type**, not the directory:
   - `modulus.ts` — the modulus `tau` (FD) + `fixedModulus` / `modulusWall` (frozen-chart).
 - **open** — you *stay inside* them. A `Region` (gate + margin); `flow`/`march` gate on it.
   - `embedded/` — the embeddedness condition, in one folder (it has the most to it):
-    `gate.ts` (`isEmbedded`, the topological truth) · `margin.ts` (cell gaps + `minMargin`) ·
-    `energies.ts` (the overlap + near-miss potentials `flow` descends) · `region.ts` (the
-    `Region`) · `index.ts` (the public surface). Blind intersection kernels are in `geometry/`.
+    `cells.ts` (`cellTables`: the triangle-collision tables — which non-adjacent cells to test —
+    derived from the triangulation and memoized; EXTRINSIC bookkeeping, so it lives here, not on
+    `Triangulation`) · `gate.ts` (`isEmbedded`, the topological truth) · `margin.ts` (cell gaps +
+    `minMargin`) · `energies.ts` (the overlap + near-miss potentials `flow` descends) · `region.ts`
+    (the `Region`) · `index.ts` (the public surface). Blind intersection kernels are in `geometry/`.
 
 A condition is a file when it fits in one, a folder when it genuinely needs several
 (`embedded/`). The `functions/` toolkit + `topology/` + `geometry/` are below; the

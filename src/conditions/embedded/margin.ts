@@ -18,6 +18,7 @@ import { totalArea } from '../../topology/develop.ts';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2, triangleTriangleDist2,
 } from '../../geometry/distance.ts';
+import { cellTables } from './cells.ts';
 
 /** Linear size of the torus, L = √(total area) — the normalizing length. */
 export function linearSize(triang: Triangulation, p: ArrayLike<number>): number {
@@ -98,7 +99,7 @@ export function forEachCellGap(
   visit: (gap: number, type: GapType, a: number, b: number) => void,
 ): void {
   const invL = 1 / linearSize(triang, p);
-  const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = triang.cellPairs;
+  const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = cellTables(triang).cellPairs;
   for (const [i, j] of vertexVertex) visit(vv(p, i, j) * invL, 'vv', i, j);
   for (const [v, e] of vertexEdge) visit(ve(triang, p, v, e) * invL, 've', v, e);
   for (const [v, f] of vertexFace) visit(vf(triang, p, v, f) * invL, 'vf', v, f);

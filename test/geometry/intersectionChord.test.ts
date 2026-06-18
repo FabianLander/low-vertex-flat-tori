@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { triTriChord } from '../../src/geometry/intersectionChord';
+import { cellTables } from '../../src/conditions/embedded/index';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { RICH } from '../../src/triangulations';
 
 const TRIANGLES = RICH.triangles;
-const DISJOINT_TRIANGLE_PAIRS = RICH.disjointTrianglePairs;
+const DISJOINT_TRIANGLE_PAIRS = cellTables(RICH).disjointTrianglePairs;
 
 // triTriChord is torus-blind: it reads two triangles from a shared positions
 // buffer at the six vertex offsets the caller passes. These helpers build a

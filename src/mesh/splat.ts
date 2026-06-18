@@ -10,7 +10,7 @@
  * Both viewer/TorusView and mesh/faces consume this, so the splat lives once.
  */
 
-import type { Triangulation } from '../topology/triangulation';
+import type { Triangulation } from '../topology/triangulation.ts';
 
 /** Face corner positions, length = triangles.length * 9. */
 export function splatFacePositions(

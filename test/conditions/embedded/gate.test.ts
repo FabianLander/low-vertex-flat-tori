@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { isEmbedded, firstViolation, allViolations } from '../../../src/conditions/embedded/index';
+import { isEmbedded, firstViolation, allViolations, cellTables } from '../../../src/conditions/embedded/index';
 import { RICH_REFERENCE } from '../../../src/sampling/reference';
 import { RICH } from '../../../src/triangulations';
 
 describe('embeddedness', () => {
   it('pair classification matches the 24 / 72 split for Rich', () => {
-    expect(RICH.disjointTrianglePairs.length).toBe(24);
-    expect(RICH.sharedVertexTrianglePairs.length).toBe(72);
+    const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(RICH);
+    expect(disjointTrianglePairs.length).toBe(24);
+    expect(sharedVertexTrianglePairs.length).toBe(72);
   });
 
   it('Rich reference is embedded', () => {

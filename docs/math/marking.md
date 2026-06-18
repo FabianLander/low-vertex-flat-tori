@@ -58,12 +58,13 @@ harmonicLayout → exactMinCutDomain → CUT ─┬→ windingDevelop → develo
                                           └→ cutGenerators  → generatorLoops (marking)
 ```
 
-The expensive part (the min-cut) makes the result worth **caching**: `canonicalDecoration` returns
-the savable triple `{ cut, developOrder, generatorLoops }` (the `SavedMarking` shape), written by
-`npm run compute-markings` to `triangulations/markings.generated.ts`. The registry injects it into
-`defineTriangulation` via the spec; `attach` is re-derived (layout-free) at construction. The
-computation is deterministic, so the cache is a pure optimization — a triangulation with no saved
-entry falls back to a layout-free marking, so the build always works.
+`canonicalDecoration` returns the triple `{ cut, developOrder, generatorLoops }` (the `SavedMarking`
+shape). The registry (`triangulations/index.ts`) computes it **on load** — once per triangulation
+when building `ALL_TORI` — and passes it into `defineTriangulation` via the spec; `attach` is
+re-derived (layout-free) at construction. The min-cut is the expensive part (~0.1s for the 8-vertex
+census), so for a much larger census this would be worth precomputing to a cache; until then the
+single on-load computation keeps one source of truth. A triangulation built without it falls back to
+a layout-free marking.
 
 ## In code
 
@@ -71,6 +72,6 @@ entry falls back to a layout-free marking, so the build always works.
 | --- | --- | --- |
 | `Marking` (`tri.marking`) | `topology/triangulation.ts` | `{ generatorLoops }` |
 | `cutGenerators` | `topology/marking.ts` | the cut-aligned generator selection |
-| `canonicalDecoration`, `SavedMarking` | `topology/marking.ts` | the shared compute pass; the cache shape |
+| `canonicalDecoration`, `SavedMarking` | `topology/marking.ts` | the on-load compute pass; its result shape |
 | `harmonicLayout` (`jump`) | `topology/harmonicLayout.ts` | the integer period-jump cocycle |
-| `MARKINGS` | `triangulations/markings.generated.ts` | the saved cache |
+| `ALL_TORI` | `triangulations/index.ts` | runs `canonicalDecoration` on load per torus |

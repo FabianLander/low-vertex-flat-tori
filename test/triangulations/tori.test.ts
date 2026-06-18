@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_TORI, RICH } from '../../src/triangulations/index';
 import { edgeKey } from '../../src/topology/triangulation';
-import { tutteLayout, tileSignedArea2 } from '../../src/topology/tutteLayout';
 
 /** Two cyclic sequences equal up to rotation. */
 function sameCycle(a: readonly number[], b: readonly number[]): boolean {
@@ -121,17 +120,6 @@ describe('all 7 combinatorial 8-vertex tori', () => {
         expect(inSpanGF2(B, c1)).toBe(false);
         expect(inSpanGF2(B, c2)).toBe(false);
         expect(inSpanGF2(B, c1 ^ c2)).toBe(false);
-      });
-
-      it('Tutte layout is a non-degenerate triangulated 18-gon', () => {
-        const L = tutteLayout(torus);
-        expect(L.boundaryLoop).toHaveLength(18);
-        expect(L.tiles).toHaveLength(16);
-        expect(L.cutPairs).toHaveLength(9);
-        for (const tile of L.tiles) {
-          expect(Math.abs(tileSignedArea2(tile.corners))).toBeGreaterThan(1e-9);
-        }
-        for (const pair of L.cutPairs) expect(pair.sides).toHaveLength(2);
       });
     });
   }

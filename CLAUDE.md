@@ -48,9 +48,9 @@ npm run semi-solutions -- [opts]   # Doyle–Schwartz semi-solution scan (flat i
 npm run march-modulus  -- --c 0    # transport a torus onto a wall by continuation; reports the pinch
 ```
 
-These write 24-float CSV rows. They are thin runners over `src/search/`; flags are in each script
-header. **`scripts/legacy/` is a read-only archive** — kept for inspiration when writing new scripts,
-NOT built or run; its files still import the deleted `src/math/` and are intentionally left stale.
+These write 24-float CSV rows and are thin runners over `src/search/` (flags in each script
+header). **`scripts/legacy/` is a read-only archive** — its files still import the deleted `src/math/`
+and are intentionally left stale, NOT built or run.
 
 ## Architecture
 
@@ -97,16 +97,22 @@ its triangulation; not used on the interior hot path.
 
 ### Intrinsic: `topology/` (machinery) + `triangulations/` (data)
 
-- `topology/triangulation.ts` — the `Triangulation` type + `defineTorus(spec)`. Everything
-  (edges, oriented vertex links, dual adjacency, cell-pair tables, develop order, generator loops) is
+- `topology/triangulation.ts` — the `Triangulation` type + `defineTriangulation(spec)`. Everything
+  (edges, oriented vertex links, dual adjacency, develop order, generator loops) is
   **derived from the triangle list and validated by V−E+F=0** — no baked-in 8/24/16 counts.
-  `defineTorus({ triangles })` alone yields a working torus, so the pipeline is
-  triangulation-independent.
-- `topology/develop.ts` — unfold the triangulation; read the holonomy of the two marked generator
-  loops to get the modulus τ ∈ ℍ, and reduce it to τ̂ ∈ ℍ/SL(2,ℤ) (`reduceModulusWithMatrix` returns
-  the reducing matrix, for the frozen-chart wall constraints).
-- `topology/{marking,fundamentalDomain,harmonicLayout,tutteLayout}.ts` — markings, cuts, planar layouts.
-- `triangulations/` — the 7 types as data: `EIGHT_VERTEX`, registry `ALL_TORI`/`byId(n)`/`RICH = byId(7)`.
+  `defineTriangulation({ triangles })` alone yields a working torus, so the pipeline is
+  triangulation-independent. (The extrinsic triangle-collision tables — which non-adjacent cells must be
+  tested for the embedding check — are derived separately in `conditions/embedded/`, not here.)
+- `topology/develop.ts` — the RUNTIME engine: unfold the triangulation; read the holonomy of the two
+  marked generator loops to get the modulus τ ∈ ℍ, and reduce it to τ̂ ∈ ℍ/SL(2,ℤ)
+  (`reduceModulusWithMatrix` returns the reducing matrix, for the frozen-chart wall constraints).
+- `topology/marking.ts` — `canonicalDecoration`: picks each triangulation's canonical marking
+  (the develop order + cut-aligned H₁ generators) via `harmonicLayout` (planar harmonic embedding) +
+  `fundamentalDomain` (the exact minimal-cut domain + centered-spiral unroll). The heavy derivation;
+  the registry runs it **on load** (deterministic, ~0.1s each; no cached file). A much larger census
+  would warrant precomputing it — build that then.
+- `triangulations/` — the 7 types as data: `EIGHT_VERTEX`, registry `ALL_TORI`/`byId(n)`/`RICH = byId(7)`,
+  computing each triangulation's marking on load.
 
 ### Extrinsic: the search stack
 

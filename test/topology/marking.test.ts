@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_TORI } from '../../src/triangulations';
 import { edgeKey } from '../../src/topology/triangulation';
-import { MARKINGS } from '../../src/triangulations/markings.generated';
 import { harmonicLayout } from '../../src/topology/harmonicLayout';
 import { exactMinCutDomain } from '../../src/topology/fundamentalDomain';
 import { canonicalDecoration } from '../../src/topology/marking';
@@ -45,8 +44,11 @@ describe('canonicalDecoration (minimal-domain marking, all tori)', () => {
       expect(Math.abs(det)).toBe(1);
     });
 
-    it(`#${torus.id}: a fresh recompute matches the saved markings (deterministic)`, () => {
-      expect(canonicalDecoration(torus)).toEqual(MARKINGS[torus.id]);
+    it(`#${torus.id}: the triangulation carries its canonical marking (computed on load)`, () => {
+      const deco = canonicalDecoration(torus);
+      expect([...torus.fundamentalDomain.developOrder]).toEqual(deco.developOrder);
+      expect([...torus.fundamentalDomain.cut]).toEqual(deco.cut);
+      expect(torus.marking.generatorLoops).toEqual(deco.generatorLoops);
     });
   }
 });

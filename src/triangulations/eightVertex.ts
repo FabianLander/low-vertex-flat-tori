@@ -7,7 +7,7 @@
  * new vertex count, add a sibling census file (e.g. nineVertex.ts).
  */
 
-import type { Tri } from '../topology/triangulation';
+import type { Tri } from '../topology/triangulation.ts';
 
 export type CensusEntry = { readonly name: string; readonly triangles: readonly Tri[] };
 

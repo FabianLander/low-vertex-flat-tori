@@ -15,9 +15,10 @@
  * Pure: no DOM/three.js.
  */
 
-import type { Triangulation } from './triangulation';
-import { edgeKey, edgeEnds } from './triangulation';
-import { type HarmonicLayout, type HarmonicTile, type XY } from './harmonicLayout';
+import type { Triangulation } from './triangulation.ts';
+import { edgeKey, edgeEnds } from './triangulation.ts';
+import { type HarmonicLayout, type HarmonicTile, type XY } from './harmonicLayout.ts';
+import type { DevelopStep } from './develop.ts';
 
 export type ExactDomainResult = {
   readonly domain: HarmonicTile[];   // one positioned copy of each triangle
@@ -93,7 +94,6 @@ export function exactMinCutDomain(triang: Triangulation, layout: HarmonicLayout)
 
 const centroid = (c: readonly XY[]): XY => [(c[0][0] + c[1][0] + c[2][0]) / 3, (c[0][1] + c[1][1] + c[2][1]) / 3];
 
-export type DevelopStep = { readonly t: number; readonly parent: number; readonly edge: readonly [number, number] };
 
 /**
  * The minimal fundamental domain developed in a continuous WINDING order: the F

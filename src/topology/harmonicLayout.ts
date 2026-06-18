@@ -23,8 +23,8 @@
  * Pure: no DOM, no three.js.
  */
 
-import type { Triangulation } from './triangulation';
-import { edgeKey } from './triangulation';
+import type { Triangulation } from './triangulation.ts';
+import { edgeKey } from './triangulation.ts';
 
 export type XY = [number, number];
 

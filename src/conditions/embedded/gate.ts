@@ -16,6 +16,7 @@
 
 import type { Triangulation } from '../../topology/triangulation.ts';
 import { segmentTriangleIntersect, triangleTriangleIntersect } from '../../geometry/triangleIntersect.ts';
+import { cellTables } from './cells.ts';
 
 export type EmbeddingViolation = {
   /** 'tri-tri' = disjoint pair's interiors cross; 'edge-tri' = vertex-shared pair's edge pierces the other. */
@@ -32,13 +33,14 @@ export function isEmbedded(triang: Triangulation, positions: ArrayLike<number>):
 /** The first crossing found, or null if embedded. */
 export function firstViolation(triang: Triangulation, positions: ArrayLike<number>): EmbeddingViolation | null {
   const { triangles } = triang;
-  for (const [t1, t2] of triang.disjointTrianglePairs) {
+  const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
+  for (const [t1, t2] of disjointTrianglePairs) {
     const a = triangles[t1], b = triangles[t2];
     if (triangleTriangleIntersect(positions, a[0], a[1], a[2], b[0], b[1], b[2])) {
       return { kind: 'tri-tri', t1, t2 };
     }
   }
-  for (const pair of triang.sharedVertexTrianglePairs) {
+  for (const pair of sharedVertexTrianglePairs) {
     const t1 = triangles[pair.a], t2 = triangles[pair.b];
     if (segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2])
       || segmentTriangleIntersect(positions, pair.bOpp[0], pair.bOpp[1], t1[0], t1[1], t1[2])) {
@@ -51,14 +53,15 @@ export function firstViolation(triang: Triangulation, positions: ArrayLike<numbe
 /** Every crossing (for diagnostics / painting). */
 export function allViolations(triang: Triangulation, positions: ArrayLike<number>): EmbeddingViolation[] {
   const { triangles } = triang;
+  const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
   const out: EmbeddingViolation[] = [];
-  for (const [t1, t2] of triang.disjointTrianglePairs) {
+  for (const [t1, t2] of disjointTrianglePairs) {
     const a = triangles[t1], b = triangles[t2];
     if (triangleTriangleIntersect(positions, a[0], a[1], a[2], b[0], b[1], b[2])) {
       out.push({ kind: 'tri-tri', t1, t2 });
     }
   }
-  for (const pair of triang.sharedVertexTrianglePairs) {
+  for (const pair of sharedVertexTrianglePairs) {
     const t1 = triangles[pair.a], t2 = triangles[pair.b];
     const hit = segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2])
       || segmentTriangleIntersect(positions, pair.bOpp[0], pair.bOpp[1], t1[0], t1[1], t1[2]);

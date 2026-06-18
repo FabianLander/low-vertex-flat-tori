@@ -30,8 +30,8 @@
  * Pure module: no three.js, no DOM.
  */
 
-import type { Triangulation } from './triangulation';
-import { edgeKey, edgeEnds } from './triangulation';
+import type { Triangulation } from './triangulation.ts';
+import { edgeKey, edgeEnds } from './triangulation.ts';
 
 export type V2 = readonly [number, number];
 
@@ -126,10 +126,10 @@ function placeThird(Pi: V2, Pj: V2, rI: number, rJ: number): [V2, V2] {
 }
 
 /**
- * Unfold all triangles into the plane along the marking: place the root, then
- * glue each later triangle (in `marking.developOrder`) onto its parent across the
- * shared edge (`marking.attach`). The non-tree shared edges become the boundary
- * identifications (`cutEdges`), each carrying its holonomy translation.
+ * Unfold all triangles into the plane along the developing chart: place the root,
+ * then glue each later triangle (in `fundamentalDomain.developOrder`) onto its parent
+ * across the shared edge (`fundamentalDomain.attach`). The non-tree shared edges become
+ * the boundary identifications (`cutEdges`), each carrying its holonomy translation.
  */
 export function developNet(triang: Triangulation, p: ArrayLike<number>): DevelopedNet {
   const { developOrder: order, attach } = triang.fundamentalDomain;

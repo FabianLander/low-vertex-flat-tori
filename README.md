@@ -59,17 +59,16 @@ never a `Triangulation`, an `Embedding`, or a chart.
 ```
 src/topology/        the intrinsic flat torus, as generic machinery — works on ANY triangulation:
   triangulation.ts     the Triangulation builder + types (combinatorics, derived & Euler-checked)
-  fundamentalDomain.ts the developing chart — minimal cut + centered-spiral unroll order
-  marking.ts           the H₁ generators (canonicalDecoration), the SavedMarking type
   develop.ts           the developing map → τ, and reduceModulus → moduli
-  harmonicLayout.ts    a combinatorial flat-structure helper (period-jump cocycle for generators)
-  tutteLayout.ts       abstract cut-polygon drawing
+  marking.ts           the canonical marking (canonicalDecoration): H₁ generators + cut + develop order
+  fundamentalDomain.ts the developing chart — exact minimal cut + centered-spiral unroll order
+  harmonicLayout.ts    flat-torus harmonic (Tutte) embedding — period-jump cocycle for generators
   (depends on nothing else in src/)
 
 src/triangulations/  the specific triangulations we study, as DATA — scales to many:
   eightVertex.ts       the 7 V=8 lists (a census); add nineVertex.ts, … later
-  index.ts             the registry: ALL_TORI, RICH, byId — maps the census through the builder
-  markings.generated.ts  the derived marking cache (npm run compute-markings)
+  index.ts             the registry: ALL_TORI, RICH, byId — maps the census through the builder,
+                       computing each triangulation's canonical marking on load
   (depends on topology)
 
 THE SEARCH SYSTEM — a modular, problem-agnostic kit for constrained search (see docs/math).
@@ -157,7 +156,6 @@ Install once: `npm install`.
 ```
 npm run dev <demo>        # serve a demo (vite). Omit <demo> to list them.
 npm run build <demo>      # self-contained build → dist/<demo>/
-npx tsx scripts/legacy/compute-markings.mjs   # recompute the marking cache (after adding/changing a triangulation)
 npm test                  # vitest
 npx tsc --noEmit          # the typecheck — there is no separate linter
 ```
@@ -169,9 +167,10 @@ npx tsc --noEmit          # the typecheck — there is no separate linter
 ### Adding a triangulation
 
 Add an entry `{ name, triangles }` to the census (`src/triangulations/eightVertex.ts`, or a new
-per-vertex-count file), then `npx tsx scripts/legacy/compute-markings.mjs` to fill its marking. Nothing else — the
-builder derives all combinatorics and validates `V − E + F = 0`; the marking is computed, not
-authored. No vertex/edge/face count is hard-wired.
+per-vertex-count file). That's it — the registry computes its canonical marking on load, the builder
+derives all combinatorics and validates `V − E + F = 0`. The marking is computed, not authored; no
+vertex/edge/face count is hard-wired. (The marking derivation is ~0.1s per triangulation; for a much
+larger census, precompute it instead.)
 
 ## Data format
 
