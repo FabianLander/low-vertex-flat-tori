@@ -20,7 +20,7 @@ export {
 export {
   makeChordLengthSquared, makeCutOffArea, makeCellMargin, makeCellBarrier,
   type CellMarginOptions, type CellBarrierOptions,
-} from './energies.ts';
+} from './energies/index.ts';
 export {
   cellTables,
   type CellTables, type CellPairs, type SharedVertexPair,

@@ -21,9 +21,9 @@ magnitude**:
   between any two NON-ADJACENT (vertex-disjoint) cells — the honest geometric
   diagnostic) and the FATTEN-energy substrate `forEachCellGap`/`minCellGap` (the cell
   gaps the near-miss energies descend; midpoint-based so shared-vertex folds don't zero).
-- `energies.ts` — the forces (smooth optimization surrogates — choices, not canonical):
-  **overlap** (`chordLengthSquared`/`cutOffArea`, drive a crossing torus onto Ω) +
-  **fatten** (`cellMargin`/`cellBarrier`, push an embedded torus deeper in).
+- `energies/` — the forces (smooth optimization surrogates — choices, not canonical):
+  `overlap.ts` (`chordLengthSquared`/`cutOffArea`, drive a crossing torus onto Ω) +
+  `fatten.ts` (`cellMargin`/`cellBarrier`, push an embedded torus deeper in).
 - `cells.ts` — the substrate: which non-adjacent cell pairs to test (`cellTables`,
   derived from the triangulation and memoized). EXTRINSIC bookkeeping — it lives here
   with its only consumer, not on `Triangulation`.
