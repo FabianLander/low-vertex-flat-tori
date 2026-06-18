@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Triangulation } from '../topology/triangulation.ts';
 import type { Vec2 } from '../geometry/vec2.ts';
-import { developNet } from '../topology/develop.ts';
+import { developNet } from '../moduli/develop.ts';
 import { latticeUV } from '../mesh/uv.ts';
 
 const UP = new THREE.Vector3(0, 1, 0);

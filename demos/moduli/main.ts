@@ -5,7 +5,7 @@
  * COMPONENTS: each is a Markov walk that started from one seed flat torus and
  * wandered over the embedded-and-flat manifold. We treat each file as one
  * CLASS and give it its own color. For every torus (one CSV row, 24 floats) we
- * develop it and read off its modulus τ = v₂/v₁ ∈ ℍ (see src/topology/develop.ts,
+ * develop it and read off its modulus τ = v₂/v₁ ∈ ℍ (see src/moduli/develop.ts,
  * the same computation animated in develop-orig-7). Then we scatter all ~45k
  * points in the upper half plane, so each class is a colored cloud in
  * Teichmüller space.
@@ -18,7 +18,7 @@
  */
 
 import { RICH } from '../../src/triangulations';
-import { modulus } from '../../src/topology/develop';
+import { modulus } from '../../src/moduli/modulus';
 import type { Vec2 } from '../../src/geometry/vec2';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';

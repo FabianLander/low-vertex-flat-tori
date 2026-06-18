@@ -14,7 +14,7 @@ import * as THREE from 'three';
 
 import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { modulus } from '../../src/topology/develop';
+import { modulus } from '../../src/moduli/modulus';
 import { parseEmbeddings } from '../../src/configuration/csv';
 import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
 import { developedSheet, type DevelopedSheet } from '../../src/viewer/developedSheet';

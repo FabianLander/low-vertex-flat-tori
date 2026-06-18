@@ -15,7 +15,8 @@ import { march, type Family } from '../../src/solvers/march.ts';
 import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
 import { modulusWall } from '../../src/constraints/modulus.ts';
 import { makeCellMargin, isEmbedded } from '../../src/embedding/index.ts';
-import { modulus, reduceModulus } from '../../src/topology/develop.ts';
+import { modulus } from '../../src/moduli/modulus.ts';
+import { reduceModulus } from '../../src/moduli/reduce.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 

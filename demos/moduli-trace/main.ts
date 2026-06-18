@@ -13,7 +13,7 @@
  */
 
 import { RICH } from '../../src/triangulations';
-import { modulus } from '../../src/topology/develop';
+import { modulus } from '../../src/moduli/modulus';
 import { makeCurve, type PlaneCurve } from '../../src/geometry/curve.ts';
 import { sampleAlongCurve, type CloudPoint, type Match } from './curveCloudSample.ts';
 import type { Vec2 } from '../../src/geometry/vec2.ts';

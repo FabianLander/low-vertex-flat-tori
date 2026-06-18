@@ -20,7 +20,8 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import { developNet, modulus, type DevelopedNet } from '../topology/develop.ts';
+import { developNet, type DevelopedNet } from '../moduli/develop.ts';
+import { modulus } from '../moduli/modulus.ts';
 
 export function latticeUV(
   triang: Triangulation,

@@ -17,7 +17,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Triangulation } from '../topology/triangulation.ts';
-import { modulus, reduceModulus } from '../topology/develop.ts';
+import { modulus } from '../moduli/modulus.ts';
+import { reduceModulus } from '../moduli/reduce.ts';
 
 const UP = new THREE.Vector3(0, 1, 0);
 

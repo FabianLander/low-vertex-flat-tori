@@ -13,7 +13,8 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import { modulus, reduceModulus } from '../topology/develop.ts';
+import { modulus } from '../moduli/modulus.ts';
+import { reduceModulus } from '../moduli/reduce.ts';
 import type { Vec2 } from '../geometry/vec2.ts';
 import { maxConeDeficit } from '../constraints/flat.ts';
 import { isEmbedded, clearance } from '../embedding/index.ts';

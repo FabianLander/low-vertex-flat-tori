@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { modulus, reduceModulus, reduceModulusWithMatrix, applyMobius, developNet } from '../../src/topology/develop';
-import { totalArea } from '../../src/topology/develop';
+import { developNet } from '../../src/moduli/develop';
+import { modulus } from '../../src/moduli/modulus';
+import { reduceModulus, reduceModulusWithMatrix, applyMobius } from '../../src/moduli/reduce';
+import { totalArea } from '../../src/moduli/develop';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { RICH } from '../../src/triangulations';
 

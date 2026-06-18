@@ -19,7 +19,8 @@
  */
 
 import type { Triangulation } from './triangulation.ts';
-import { edgeKey, edgeEnds, homologyGenerators } from './triangulation.ts';
+import { edgeEnds, homologyGenerators } from './triangulation.ts';
+import { spanningTree, treePath } from './trees.ts';
 import { harmonicLayout, type HarmonicLayout } from './harmonicLayout.ts';
 import { exactMinCutDomain, windingDevelop } from './fundamentalDomain.ts';
 
@@ -66,23 +67,10 @@ function cutGenerators(triang: Triangulation, layout: HarmonicLayout, cut: numbe
   const { edges, vertexCount } = triang;
   const cutSet = new Set(cut);
 
-  // primal spanning tree (BFS over vertices) using only non-cut edges
-  const adj: number[][] = Array.from({ length: vertexCount }, () => []);
-  for (const [u, v] of edges) { if (cutSet.has(edgeKey(u, v))) continue; adj[u].push(v); adj[v].push(u); }
-  const parent = new Array<number>(vertexCount).fill(-1);
-  const seen = new Set<number>([0]);
-  const q = [0];
-  for (let h = 0; h < q.length; h++) for (const v of adj[q[h]]) if (!seen.has(v)) { seen.add(v); parent[v] = q[h]; q.push(v); }
-  if (seen.size !== vertexCount) return null; // cut disconnected the 1-skeleton
-
-  const treePath = (u: number, v: number): number[] => {
-    const up = (x: number) => { const p = [x]; while (parent[p[p.length - 1]] !== -1) p.push(parent[p[p.length - 1]]); return p; };
-    const pu = up(u), pv = up(v);
-    const iv = new Map(pv.map((x, i) => [x, i] as const));
-    let lca = -1, iu = -1;
-    for (let i = 0; i < pu.length; i++) if (iv.has(pu[i])) { lca = pu[i]; iu = i; break; }
-    return [...pu.slice(0, iu + 1), ...pv.slice(0, iv.get(lca)!).reverse()]; // u … lca … v
-  };
+  // primal spanning tree over the NON-cut edges; if it doesn't reach every vertex,
+  // the cut disconnected the 1-skeleton (no usable generators).
+  const { parent, reached } = spanningTree(vertexCount, edges, cutSet);
+  if (reached !== vertexCount) return null;
 
   // a closed vertex loop's class in (V₁,V₂) coordinates = Σ jump over its edges
   const loopClass = (loop: number[]): [number, number] => {
@@ -96,7 +84,7 @@ function cutGenerators(triang: Triangulation, layout: HarmonicLayout, cut: numbe
   const cls: [number, number][] = [];
   for (const k of cut) {
     const [u, v] = edgeEnds(k);
-    const loop = [...treePath(v, u), v];
+    const loop = [...treePath(parent, v, u), v];
     loops.push(loop);
     cls.push(loopClass(loop));
   }

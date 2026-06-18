@@ -28,6 +28,8 @@
  */
 
 
+import { spanningTree, dualSpanningTree, coTreeEdges, treePath } from './trees.ts';
+
 export type Tri = readonly [number, number, number];
 export type Edge = readonly [number, number];
 
@@ -49,6 +51,17 @@ export type Attach = {
   readonly parent: number; // -1 for the root
   readonly u: number;
   readonly v: number;
+};
+
+/** One unfolding step: triangle `t` attached across edge `edge` to `parent`
+ *  (parent = -1 for the root), in develop-order sequence. Combinatorial gluing
+ *  data — the per-step form of the develop order; the geometric developing map
+ *  (`moduli/develop`) and the winding net (`fundamentalDomain`) both lay points
+ *  out along these steps. */
+export type DevelopStep = {
+  readonly t: number;
+  readonly parent: number;
+  readonly edge: readonly [number, number];
 };
 
 /** Specification of a torus: just the triangulation, plus optional choices. The
@@ -295,59 +308,22 @@ export function autoDevelopOrder(triangles: readonly Tri[], root = 0): number[] 
  * tree–cotree (Eppstein) decomposition: a primal spanning tree T, a dual
  * spanning tree of the edges NOT in T, leaving exactly 2g = 2 edges. Each
  * leftover edge closed by its primal-tree path is a homology generator. Returns
- * each loop as a closed vertex walk [u, …, v, u].
+ * each loop as a closed vertex walk [u, …, v, u]. (The graph primitives are in
+ * `trees.ts`; this reads loops off them.)
  */
 export function homologyGenerators(triangles: readonly Tri[]): number[][] {
   const vertexCount = vertexCountOf(triangles);
   const edges = deriveEdges(triangles);
   const edgeToTris = deriveEdgeToTris(triangles);
 
-  // primal spanning tree (BFS over vertices)
-  const adj: number[][] = Array.from({ length: vertexCount }, () => []);
-  for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }
-  const parent = new Array<number>(vertexCount).fill(-1);
-  const inPrimalTree = new Set<number>();
-  const vSeen = new Set<number>([0]);
-  const vq = [0];
-  for (let h = 0; h < vq.length; h++) {
-    const u = vq[h];
-    for (const v of adj[u]) if (!vSeen.has(v)) { vSeen.add(v); parent[v] = u; inPrimalTree.add(edgeKey(u, v)); vq.push(v); }
-  }
+  const { parent, inTree } = spanningTree(vertexCount, edges);
+  const inDual = dualSpanningTree(triangles, edgeToTris, inTree);
 
-  // dual spanning tree over edges NOT in the primal tree (BFS over triangles)
-  const inDualTree = new Set<number>();
-  const tSeen = new Set<number>([0]);
-  const tq = [0];
-  for (let h = 0; h < tq.length; h++) {
-    const t = tq[h];
-    const tri = triangles[t];
-    for (let s = 0; s < 3; s++) {
-      const k = edgeKey(tri[s], tri[(s + 1) % 3]);
-      if (inPrimalTree.has(k)) continue; // dual tree may not cross the primal tree
-      const [tA, tB] = edgeToTris.get(k)!;
-      const nbr = tA === t ? tB : tA;
-      if (!tSeen.has(nbr)) { tSeen.add(nbr); inDualTree.add(k); tq.push(nbr); }
-    }
-  }
-
-  // leftover edges = generators (exactly 2 for a torus)
-  const treePath = (u: number, v: number): number[] => {
-    const up = (x: number) => { const p: number[] = [x]; while (parent[p[p.length - 1]] !== -1) p.push(parent[p[p.length - 1]]); return p; };
-    const pu = up(u), pv = up(v);
-    const setv = new Map(pv.map((x, i) => [x, i] as const));
-    let lca = -1, iu = -1;
-    for (let i = 0; i < pu.length; i++) if (setv.has(pu[i])) { lca = pu[i]; iu = i; break; }
-    const left = pu.slice(0, iu + 1);          // u → … → lca
-    const right = pv.slice(0, setv.get(lca)!).reverse(); // lca → … → v
-    return [...left, ...right];                // u … lca … v
-  };
-
+  // leftover (co-tree) edges = generators (exactly 2 for a torus)
   const gens: number[][] = [];
-  for (const [u, v] of edges) {
-    const k = edgeKey(u, v);
-    if (inPrimalTree.has(k) || inDualTree.has(k)) continue;
-    const path = treePath(v, u);               // v → … → u in the tree
-    gens.push([...path, v]);                    // close with edge u→v: v…u,v
+  for (const k of coTreeEdges(edges, inTree, inDual)) {
+    const [u, v] = edgeEnds(k);
+    gens.push([...treePath(parent, v, u), v]);   // v → … → u in the tree, close with edge u→v
   }
   if (gens.length !== 2) throw new Error(`tree–cotree gave ${gens.length} generators, expected 2`);
   return gens;

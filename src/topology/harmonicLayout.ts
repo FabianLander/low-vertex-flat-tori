@@ -25,6 +25,7 @@
 
 import type { Triangulation } from './triangulation.ts';
 import { edgeKey } from './triangulation.ts';
+import { spanningTree, dualSpanningTree, coTreeEdges } from './trees.ts';
 import { type Vec2, signedArea2 } from '../geometry/vec2.ts';
 
 export type HarmonicTile = { readonly id: number; readonly corners: Vec2[] };
@@ -62,29 +63,14 @@ function solve(A: number[][], b: number[]): number[] {
 
 const sgn = (u: number, v: number) => (u < v ? 1 : -1); // cochain stored for min→max
 
-/** Tree–cotree: primal spanning tree edges + the two H₁ generator edges. */
+/** Tree–cotree: primal spanning tree edges + the two H₁ generator edges (`trees.ts`). */
 function treeCotree(triang: Triangulation): { inT: Set<number>; gens: number[] } {
   const { edges, triangles, edgeToTris, vertexCount } = triang;
-  const adj: number[][] = Array.from({ length: vertexCount }, () => []);
-  for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }
-  const inT = new Set<number>();
-  const seen = new Set([0]); const q = [0];
-  for (let h = 0; h < q.length; h++) for (const v of adj[q[h]]) if (!seen.has(v)) { seen.add(v); inT.add(edgeKey(q[h], v)); q.push(v); }
-  const inDual = new Set<number>();
-  const ts = new Set([0]); const tq = [0];
-  for (let h = 0; h < tq.length; h++) {
-    const t = tq[h]; const tri = triangles[t];
-    for (let s = 0; s < 3; s++) {
-      const k = edgeKey(tri[s], tri[(s + 1) % 3]);
-      if (inT.has(k)) continue;
-      const [tA, tB] = edgeToTris.get(k)!; const nb = tA === t ? tB : tA;
-      if (!ts.has(nb)) { ts.add(nb); inDual.add(k); tq.push(nb); }
-    }
-  }
-  const gens: number[] = [];
-  for (const [u, v] of edges) { const k = edgeKey(u, v); if (!inT.has(k) && !inDual.has(k)) gens.push(k); }
+  const { inTree } = spanningTree(vertexCount, edges);
+  const inDual = dualSpanningTree(triangles, edgeToTris, inTree);
+  const gens = coTreeEdges(edges, inTree, inDual);
   if (gens.length !== 2) throw new Error(`tree–cotree gave ${gens.length} generators, expected 2`);
-  return { inT, gens };
+  return { inT: inTree, gens };
 }
 
 /** Integer cocycle vanishing on T with the given values on the two generators. */

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { tau } from '../../src/constraints/modulus.ts';
-import { modulus } from '../../src/topology/develop.ts';
+import { modulus } from '../../src/moduli/modulus.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 import { RICH } from '../../src/triangulations/index.ts';
 

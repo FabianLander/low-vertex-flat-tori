@@ -27,7 +27,8 @@
 import * as THREE from 'three';
 
 import { RICH } from '../../src/triangulations';
-import { modulus, reduceModulus } from '../../src/topology/develop';
+import { modulus } from '../../src/moduli/modulus';
+import { reduceModulus } from '../../src/moduli/reduce';
 import { maxConeDeficit } from '../../src/constraints/flat';
 import { parseEmbeddings } from '../../src/configuration/csv';
 import type { PaperTorus } from '../../src/configuration/paperTorus.ts';

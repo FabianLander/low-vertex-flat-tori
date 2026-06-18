@@ -3,7 +3,7 @@ import { makeChordLengthSquared } from '../../src/embedding/index';
 import { makeCutOffArea } from '../../src/embedding/index';
 import { makeCellMargin, makeCellBarrier } from '../../src/embedding/index';
 import { minSeparation, minCellGap, linearSize } from '../../src/embedding/index';
-import { totalArea } from '../../src/topology/develop';
+import { totalArea } from '../../src/moduli/develop';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { mulberry32 } from '../../src/sampling/rng';
 import { RICH } from '../../src/triangulations';

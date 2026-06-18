@@ -19,7 +19,7 @@ import type { Triangulation } from './triangulation.ts';
 import { edgeKey, edgeEnds } from './triangulation.ts';
 import { type HarmonicLayout, type HarmonicTile } from './harmonicLayout.ts';
 import type { Vec2 } from '../geometry/vec2.ts';
-import type { DevelopStep } from './develop.ts';
+import type { DevelopStep } from './triangulation.ts';
 
 export type ExactDomainResult = {
   readonly domain: HarmonicTile[];   // one positioned copy of each triangle

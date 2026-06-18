@@ -25,7 +25,8 @@ import { makeTorusView } from '../../src/viewer/TorusView';
 import { paperMaterials } from '../../src/viewer/materials';
 import { slicePlane } from '../../src/viewer/slicePlane';
 import { skyEnvironment } from '../../src/render/stage';
-import { modulus, reduceModulus } from '../../src/topology/develop';
+import { modulus } from '../../src/moduli/modulus';
+import { reduceModulus } from '../../src/moduli/reduce';
 
 // ---------------------------------------------------------------------------
 // Load the square torus (type 3); work in the bbox-centered render frame.

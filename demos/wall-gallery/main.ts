@@ -23,7 +23,8 @@
 import * as THREE from 'three';
 
 import { byId } from '../../src/triangulations';
-import { modulus, reduceModulus } from '../../src/topology/develop';
+import { modulus } from '../../src/moduli/modulus';
+import { reduceModulus } from '../../src/moduli/reduce';
 import { maxConeDeficit } from '../../src/constraints/flat';
 import { minSeparation } from '../../src/embedding/index';
 import { parseEmbeddings } from '../../src/configuration/csv';

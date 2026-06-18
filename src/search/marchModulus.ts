@@ -29,7 +29,8 @@ import { isEmbedded } from '../embedding/index.ts';
 import { project } from '../solvers/project.ts';
 import { flow } from '../solvers/flow.ts';
 import { march } from '../solvers/march.ts';
-import { modulus, reduceModulus } from '../topology/develop.ts';
+import { modulus } from '../moduli/modulus.ts';
+import { reduceModulus } from '../moduli/reduce.ts';
 import { pullHeld, ambientGate } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 

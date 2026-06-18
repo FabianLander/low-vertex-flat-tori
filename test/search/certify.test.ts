@@ -8,7 +8,8 @@ import { makeCellMargin, isEmbedded, clearance } from '../../src/embedding/index
 import { project } from '../../src/solvers/project.ts';
 import { flow } from '../../src/solvers/flow.ts';
 import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { modulus, reduceModulus } from '../../src/topology/develop.ts';
+import { modulus } from '../../src/moduli/modulus.ts';
+import { reduceModulus } from '../../src/moduli/reduce.ts';
 import { byId } from '../../src/triangulations/index.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
 

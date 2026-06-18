@@ -24,7 +24,8 @@
 
 import { byId } from '../../src/triangulations';
 import type { Triangulation } from '../../src/topology/triangulation';
-import { modulus, reduceModulus } from '../../src/topology/develop';
+import { modulus } from '../../src/moduli/modulus';
+import { reduceModulus } from '../../src/moduli/reduce';
 import { project } from '../../src/solvers/project';
 import { flat, maxConeDeficit } from '../../src/constraints/flat';
 import { isEmbedded } from '../../src/embedding/index';
