@@ -19,7 +19,7 @@
  */
 
 import type { Triangulation } from '../topology/triangulation.ts';
-import { totalArea } from '../topology/develop.ts';
+import { totalArea } from '../moduli/develop.ts';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   segmentSegmentDist2, segmentTriangleDist2, triangleTriangleDist2,
@@ -115,19 +115,17 @@ export function minSeparation(triang: Triangulation, p: ArrayLike<number>): Sepa
   return best;
 }
 
-// --- the FATTEN-energy substrate: cell gaps incl. shared-vertex folds (edge midpoints) ---
+// --- the FATTEN-energy substrate: the cell gaps the near-miss energies descend ---
+//
+// For point-like cells (a vertex against a vertex/edge/face, and face↔face) the gap
+// IS the true closest-feature distance (the `*Dist` kernels above). For a cell with an
+// EDGE in it we instead measure from the edge's MIDPOINT: it is a smooth proxy (no
+// closest-feature branch to differentiate through), and for the edge–face pairs that
+// share a vertex it keeps the shared vertex from zeroing the gap (a fold the energy
+// must still repel). So only the edge cases get a dedicated function here.
 
-function vvMid(p: ArrayLike<number>, i: number, j: number): number {
-  return vvDist(p, i, j);
-}
-function veMid(triang: Triangulation, p: ArrayLike<number>, v: number, e: number): number {
-  return veDist(triang, p, v, e);
-}
-function vfMid(triang: Triangulation, p: ArrayLike<number>, v: number, f: number): number {
-  return vfDist(triang, p, v, f);
-}
-/** Edge–edge via each edge's midpoint to the other segment (two gaps) — shared-vertex-safe. */
-function eeMid(triang: Triangulation, p: ArrayLike<number>, e1: number, e2: number): [number, number] {
+/** Edge–edge gap: each edge's midpoint to the other segment (two values). */
+function edgeEdgeMidpointGaps(triang: Triangulation, p: ArrayLike<number>, e1: number, e2: number): [number, number] {
   const [a1, b1] = triang.edges[e1];
   const [a2, b2] = triang.edges[e2];
   const oa1 = 3 * a1, ob1 = 3 * b1, oa2 = 3 * a2, ob2 = 3 * b2;
@@ -137,8 +135,8 @@ function eeMid(triang: Triangulation, p: ArrayLike<number>, e1: number, e2: numb
   const d2 = Math.sqrt(pointSegmentDist2(m2x, m2y, m2z, p[oa1], p[oa1 + 1], p[oa1 + 2], p[ob1], p[ob1 + 1], p[ob1 + 2]));
   return [d1, d2];
 }
-/** Edge midpoint to face — shared-vertex-safe. */
-function efMid(triang: Triangulation, p: ArrayLike<number>, e: number, f: number): number {
+/** Edge–face gap: the edge's midpoint to the filled face (shared-vertex-safe). */
+function edgeFaceMidpointGap(triang: Triangulation, p: ArrayLike<number>, e: number, f: number): number {
   const [a, b] = triang.edges[e];
   const oa = 3 * a, ob = 3 * b;
   const mx = 0.5 * (p[oa] + p[ob]), my = 0.5 * (p[oa + 1] + p[ob + 1]), mz = 0.5 * (p[oa + 2] + p[ob + 2]);
@@ -159,15 +157,15 @@ export function forEachCellGap(
 ): void {
   const invL = 1 / linearSize(triang, p);
   const { vertexVertex, vertexEdge, vertexFace, edgeEdge, edgeFace, faceFace } = cellTables(triang).cellPairs;
-  for (const [i, j] of vertexVertex) visit(vvMid(p, i, j) * invL, 'vv', i, j);
-  for (const [v, e] of vertexEdge) visit(veMid(triang, p, v, e) * invL, 've', v, e);
-  for (const [v, f] of vertexFace) visit(vfMid(triang, p, v, f) * invL, 'vf', v, f);
+  for (const [i, j] of vertexVertex) visit(vvDist(p, i, j) * invL, 'vv', i, j);
+  for (const [v, e] of vertexEdge) visit(veDist(triang, p, v, e) * invL, 've', v, e);
+  for (const [v, f] of vertexFace) visit(vfDist(triang, p, v, f) * invL, 'vf', v, f);
   for (const [e1, e2] of edgeEdge) {
-    const [d1, d2] = eeMid(triang, p, e1, e2);
+    const [d1, d2] = edgeEdgeMidpointGaps(triang, p, e1, e2);
     visit(d1 * invL, 'ee', e1, e2);
     visit(d2 * invL, 'ee', e1, e2);
   }
-  for (const [e, f] of edgeFace) visit(efMid(triang, p, e, f) * invL, 'ef', e, f);
+  for (const [e, f] of edgeFace) visit(edgeFaceMidpointGap(triang, p, e, f) * invL, 'ef', e, f);
   for (const [fa, fb] of faceFace) visit(ffDist(triang, p, fa, fb) * invL, 'ff', fa, fb);
 }
 

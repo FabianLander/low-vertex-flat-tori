@@ -2,7 +2,7 @@
  * cells — the triangle-collision tables behind the embeddedness condition: which
  * non-adjacent cell pairs must be tested (for the gate) and repelled (for the
  * energies). This is EXTRINSIC bookkeeping — it exists only to drive
- * `embedding` (`gate`, `margin`, `energies`), not the intrinsic torus —
+ * `embedding` (`embedded`, `separation`, `energies`), not the intrinsic torus —
  * so it lives here with its sole consumer rather than on the `Triangulation`.
  *
  * Everything is derived from the triangle list and memoized per triangulation (a

@@ -1,7 +1,8 @@
 /**
  * Minimum-distance primitives between the geometric pieces of cells:
- * points, segments, and (filled) triangles. Used by the cell-margin energy
- * to measure how close non-adjacent cells come to touching.
+ * points, segments, and (filled) triangles. Used by the embedding layer
+ * (`separation`/`embedded`/the fatten energies) to measure how close
+ * non-adjacent cells come to touching.
  *
  * Every function returns the SQUARED distance. Squared distance is exact in
  * comparisons (monotone in the true distance, so min/argmin are unaffected)
@@ -10,7 +11,7 @@
  * been resolved on squared values.
  *
  * All routines are allocation-free: coordinates are passed as scalar
- * components, mirroring the style in cutOffArea.ts. Conventions follow
+ * components, the hot-path tier of `geometry/`. Conventions follow
  * Ericson, *Real-Time Collision Detection* (closest-point routines).
  */
 
