@@ -1,228 +1,175 @@
 /**
- * TorusView — a three.js Group that renders one PaperTorus as
- *   faces (flat-shaded mesh) + edges (line segments) + vertices (instanced spheres).
+ * TorusView — the one subject. A factory closed over its triangulation that
+ * assembles the chosen parts (faces · edges · vertices — the 2/1/0-cells) into a
+ * `THREE.Group`; `draw(positions)` streams a realization, `paint{Vertices,Edges,
+ * Faces}` color a cell-domain from a condition's scalar field.
  *
- * Faces are drawn from a non-indexed BufferGeometry (16 tris × 3 unique verts =
- * 48 positions). This lets `setFaceScalars` assign a distinct color per triangle
- * via per-vertex colors that happen to be uniform within each triangle —
- * combined with `flatShading: true`, this reads as a per-face tint.
+ *   const view = makeTorusView(triang, { surface: 'grid', corners: true });
+ *   view.draw(positions);
+ *   view.paintVertices(coneAngleDeficits(triang, positions), DEFICIT_PALETTE);
  *
- * Colors are an orthogonal concern from positions. `sync(torus)` only touches
- * positions. `setVertexScalars` / `setFaceScalars` are the single coloring API.
+ * The triangulation is fixed at construction because the parts' buffers are sized
+ * by V/E/F; positions are the streaming input — the same currency as the search
+ * interior. It is NOT a ConfigSpace and never `pull`s; it consumes already-realized
+ * ℝ³ points. `PaperTorus` is the boundary envelope, destructured by `fromPaper`.
+ *
+ * The view is dumb about meaning: `paint*` take raw values + a palette, the demo
+ * wires `condition → channel`. Material ownership is "creator disposes" (Model A):
+ * the subject frees the materials IT builds; a caller-injected material stays the
+ * caller's. Always REAL geometry ⇒ identical in WebGL + path tracer.
  */
 
 import * as THREE from 'three';
-import type { Triangulation } from '../topology/triangulation';
+import type { Triangulation } from '../topology/triangulation.ts';
 import type { PaperTorus } from '../configuration/paperTorus.ts';
+import type { Vec3 } from '../geometry/vec3.ts';
+import type { Part, CellDomain } from '../mesh/part.ts';
+import { makeFaces } from '../mesh/faces.ts';
+import { makeEdges, type EdgesOptions } from '../mesh/edges.ts';
+import { makeVertices } from '../mesh/vertices.ts';
 import {
-  DEFAULT_VERTEX_COLOR,
-  DEFAULT_FACE_COLOR,
-  DEFAULT_EDGE_COLOR,
-  type ScalarPalette,
-} from './palette';
+  plainSurfaceMaterial, gridSurfaceMaterial, creaseMaterial, vertexMaterial,
+  SURFACE_GOLD, CREASE_DARK, VERTEX_WHITE,
+} from './materials.ts';
+import { colorsFromScalars, type ScalarPalette, DEFICIT_PALETTE } from './palette.ts';
+import type { GridTextureOptions } from './gridTexture.ts';
+
+export interface SurfaceConfig {
+  style?: 'plain' | 'grid';            // default 'grid'
+  material?: THREE.Material;           // caller-owned override
+  color?: THREE.ColorRepresentation;   // base look color (the plain fill). default gold
+  uvRepeat?: number;                   // default 1 (whole torus = one fundamental domain)
+  thickness?: number;                  // solidify into a slab. default 0
+  grid?: GridTextureOptions;
+  roughness?: number;
+}
+export interface EdgesConfig { material?: THREE.Material; color?: THREE.ColorRepresentation; radius?: number; offset?: number; }
+export interface VerticesConfig { material?: THREE.Material; color?: THREE.ColorRepresentation; radius?: number; offset?: number; }
 
 export interface TorusViewOptions {
-  vertexRadius?: number;
+  /** Surface fill (the 2-cells). `true` ⟹ grid; pass a config for plain / overrides. Default true. */
+  surface?: boolean | SurfaceConfig;
+  /** Crease tubes along the edges (the 1-cells). Default false. */
+  creases?: boolean | EdgesConfig;
+  /** Spheres at the vertices (the 0-cells; what `paintVertices` colors). Default false. */
+  corners?: boolean | VerticesConfig;
+  /** Offset geometry so the group's local origin = the torus's bbox center
+   *  (so group.rotation spins about the center). Default true. */
+  center?: boolean;
 }
 
-export class TorusView extends THREE.Group {
-  private readonly triang: Triangulation;
-  private readonly faceCount: number;       // = torus.triangles.length
-  private readonly edgeCount: number;        // = torus.edges.length
-  private readonly vertexCount: number;
-
-  private readonly faceMesh: THREE.Mesh;
-  private readonly faceGeom: THREE.BufferGeometry;
-  private readonly facePositions: Float32Array;
-  private readonly faceColors: Float32Array;
-
-  private readonly edgeLines: THREE.LineSegments;
-  private readonly edgeGeom: THREE.BufferGeometry;
-  private readonly edgePositions: Float32Array;
-
-  private readonly vertexMesh: THREE.InstancedMesh;
-  private readonly vertexMat: THREE.MeshStandardMaterial;
-
-  private readonly _dummy = new THREE.Object3D();
-
-  constructor(triang: Triangulation, opts: TorusViewOptions = {}) {
-    super();
-
-    this.triang = triang;
-    this.faceCount = triang.triangles.length;
-    this.edgeCount = triang.edges.length;
-    this.vertexCount = triang.vertexCount;
-    const FACE_VERTS = this.faceCount * 3;
-    const EDGE_VERTS = this.edgeCount * 2;
-
-    const vertexRadius = opts.vertexRadius ?? 0.06;
-
-    // ---- Faces ----
-    this.facePositions = new Float32Array(FACE_VERTS * 3);
-    this.faceColors = new Float32Array(FACE_VERTS * 3);
-    fillRGB(this.faceColors, DEFAULT_FACE_COLOR);
-    this.faceGeom = new THREE.BufferGeometry();
-    this.faceGeom.setAttribute('position', new THREE.BufferAttribute(this.facePositions, 3));
-    this.faceGeom.setAttribute('color', new THREE.BufferAttribute(this.faceColors, 3));
-    const faceMat = new THREE.MeshStandardMaterial({
-      vertexColors: true,
-      flatShading: true,
-      side: THREE.DoubleSide,
-      roughness: 0.55,
-      metalness: 0.0,
-    });
-    this.faceMesh = new THREE.Mesh(this.faceGeom, faceMat);
-    this.add(this.faceMesh);
-
-    // ---- Edges ----
-    this.edgePositions = new Float32Array(EDGE_VERTS * 3);
-    this.edgeGeom = new THREE.BufferGeometry();
-    this.edgeGeom.setAttribute('position', new THREE.BufferAttribute(this.edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: DEFAULT_EDGE_COLOR });
-    this.edgeLines = new THREE.LineSegments(this.edgeGeom, edgeMat);
-    this.add(this.edgeLines);
-
-    // ---- Vertices ----
-    const sphereGeom = new THREE.SphereGeometry(vertexRadius, 16, 12);
-    this.vertexMat = new THREE.MeshStandardMaterial({ roughness: 0.4 });
-    this.vertexMesh = new THREE.InstancedMesh(sphereGeom, this.vertexMat, this.vertexCount);
-    for (let i = 0; i < this.vertexCount; i++) {
-      this.vertexMesh.setColorAt(i, DEFAULT_VERTEX_COLOR);
-    }
-    if (this.vertexMesh.instanceColor) {
-      this.vertexMesh.instanceColor.needsUpdate = true;
-    }
-    this.add(this.vertexMesh);
-  }
-
-  sync(paper: PaperTorus): void {
-    const p = paper.positions;
-
-    // Faces: splat 3 vertex positions per triangle.
-    for (let t = 0; t < this.faceCount; t++) {
-      const [a, b, c] = this.triang.triangles[t];
-      const base = t * 9;
-      const oa = 3 * a, ob = 3 * b, oc = 3 * c;
-      this.facePositions[base    ] = p[oa];
-      this.facePositions[base + 1] = p[oa + 1];
-      this.facePositions[base + 2] = p[oa + 2];
-      this.facePositions[base + 3] = p[ob];
-      this.facePositions[base + 4] = p[ob + 1];
-      this.facePositions[base + 5] = p[ob + 2];
-      this.facePositions[base + 6] = p[oc];
-      this.facePositions[base + 7] = p[oc + 1];
-      this.facePositions[base + 8] = p[oc + 2];
-    }
-    this.faceGeom.attributes.position.needsUpdate = true;
-    this.faceGeom.computeVertexNormals();
-    this.faceGeom.computeBoundingSphere();
-
-    // Edges: endpoint pairs.
-    for (let e = 0; e < this.edgeCount; e++) {
-      const [i, j] = this.triang.edges[e];
-      const base = e * 6;
-      const oi = 3 * i, oj = 3 * j;
-      this.edgePositions[base    ] = p[oi];
-      this.edgePositions[base + 1] = p[oi + 1];
-      this.edgePositions[base + 2] = p[oi + 2];
-      this.edgePositions[base + 3] = p[oj];
-      this.edgePositions[base + 4] = p[oj + 1];
-      this.edgePositions[base + 5] = p[oj + 2];
-    }
-    this.edgeGeom.attributes.position.needsUpdate = true;
-    this.edgeGeom.computeBoundingSphere();
-
-    // Vertex sphere translations.
-    for (let i = 0; i < this.vertexCount; i++) {
-      this._dummy.position.set(p[3 * i], p[3 * i + 1], p[3 * i + 2]);
-      this._dummy.updateMatrix();
-      this.vertexMesh.setMatrixAt(i, this._dummy.matrix);
-    }
-    this.vertexMesh.instanceMatrix.needsUpdate = true;
-  }
-
-  setVertexScalars(values: ArrayLike<number> | null, palette?: ScalarPalette): void {
-    if (values === null) {
-      for (let i = 0; i < this.vertexCount; i++) {
-        this.vertexMesh.setColorAt(i, DEFAULT_VERTEX_COLOR);
-      }
-    } else {
-      if (values.length !== this.vertexCount) {
-        throw new Error(
-          `setVertexScalars expects ${this.vertexCount} values, got ${values.length}`,
-        );
-      }
-      if (!palette) {
-        throw new Error('setVertexScalars: palette required when values is non-null');
-      }
-      const domain = resolveDomain(values, palette.domain);
-      for (let i = 0; i < this.vertexCount; i++) {
-        const c = palette.color(values[i], domain);
-        this.vertexMesh.setColorAt(i, c);
-      }
-    }
-    if (this.vertexMesh.instanceColor) {
-      this.vertexMesh.instanceColor.needsUpdate = true;
-    }
-  }
-
-  setFaceScalars(values: ArrayLike<number> | null, palette?: ScalarPalette): void {
-    const c = this.faceColors;
-    if (values === null) {
-      fillRGB(c, DEFAULT_FACE_COLOR);
-    } else {
-      if (values.length !== this.faceCount) {
-        throw new Error(
-          `setFaceScalars expects ${this.faceCount} values, got ${values.length}`,
-        );
-      }
-      if (!palette) {
-        throw new Error('setFaceScalars: palette required when values is non-null');
-      }
-      const domain = resolveDomain(values, palette.domain);
-      for (let t = 0; t < this.faceCount; t++) {
-        const col = palette.color(values[t], domain);
-        const base = t * 9;
-        for (let k = 0; k < 3; k++) {
-          c[base + 3 * k    ] = col.r;
-          c[base + 3 * k + 1] = col.g;
-          c[base + 3 * k + 2] = col.b;
-        }
-      }
-    }
-    this.faceGeom.attributes.color.needsUpdate = true;
-  }
-
-  dispose(): void {
-    this.faceGeom.dispose();
-    (this.faceMesh.material as THREE.Material).dispose();
-    this.edgeGeom.dispose();
-    (this.edgeLines.material as THREE.Material).dispose();
-    this.vertexMesh.geometry.dispose();
-    this.vertexMat.dispose();
-  }
+export interface TorusView {
+  readonly group: THREE.Group;
+  /** Stream a realization (bare positions, length 3V). */
+  draw(positions: ArrayLike<number>): void;
+  /** Per-vertex coloring (e.g. cone deficit). null clears. Default palette: DEFICIT. */
+  paintVertices(values: ArrayLike<number> | null, palette?: ScalarPalette): void;
+  /** Per-edge coloring. null clears. */
+  paintEdges(values: ArrayLike<number> | null, palette?: ScalarPalette): void;
+  /** Per-face coloring (e.g. embedded margin). null clears. */
+  paintFaces(values: ArrayLike<number> | null, palette?: ScalarPalette): void;
+  /** Show/hide a part (e.g. toggle the creases). No-op if that part wasn't built. */
+  setVisible(domain: CellDomain, visible: boolean): void;
+  /** Rebuild the crease tubes at a new radius and redraw them. No-op without creases. */
+  setCreaseRadius(radius: number): void;
+  dispose(): void;
 }
 
-function fillRGB(buf: Float32Array, color: THREE.Color): void {
-  const n = buf.length / 3;
-  for (let i = 0; i < n; i++) {
-    buf[3 * i    ] = color.r;
-    buf[3 * i + 1] = color.g;
-    buf[3 * i + 2] = color.b;
+export function makeTorusView(triang: Triangulation, opts: TorusViewOptions = {}): TorusView {
+  const group = new THREE.Group();
+  const doCenter = opts.center ?? true;
+  const parts = new Map<CellDomain, Part>();
+  const owned: THREE.Material[] = [];   // Model A: materials the subject built, it frees
+  const own = <T extends THREE.Material>(m: T): T => { owned.push(m); return m; };
+
+  if (opts.surface ?? true) {
+    const cfg: SurfaceConfig = opts.surface && opts.surface !== true ? opts.surface : {};
+    const style = cfg.style ?? 'grid';
+    const material = cfg.material
+      ?? own(style === 'grid' ? gridSurfaceMaterial(cfg.grid, { roughness: cfg.roughness }) : plainSurfaceMaterial({ roughness: cfg.roughness }));
+    addPart(makeFaces(triang, {
+      material,
+      baseColor: cfg.color ?? (style === 'grid' ? 0xffffff : SURFACE_GOLD),
+      uv: style === 'grid',
+      uvRepeat: cfg.uvRepeat ?? 1,
+      thickness: cfg.thickness,
+    }));
   }
+
+  let edgeBuild: EdgesOptions | null = null;
+  if (opts.creases) {
+    const cfg: EdgesConfig = opts.creases === true ? {} : opts.creases;
+    edgeBuild = { material: cfg.material ?? own(creaseMaterial()), baseColor: cfg.color ?? CREASE_DARK, radius: cfg.radius, offset: cfg.offset };
+    addPart(makeEdges(triang, edgeBuild));
+  }
+
+  if (opts.corners) {
+    const cfg: VerticesConfig = opts.corners === true ? {} : opts.corners;
+    addPart(makeVertices(triang, {
+      material: cfg.material ?? own(vertexMaterial()),
+      baseColor: cfg.color ?? VERTEX_WHITE, radius: cfg.radius, offset: cfg.offset,
+    }));
+  }
+
+  function addPart(part: Part): void { parts.set(part.domain, part); group.add(part.object); }
+
+  let lastPositions: ArrayLike<number> | null = null;
+  function draw(positions: ArrayLike<number>): void {
+    lastPositions = positions;
+    const c = doCenter ? bboxCenter(triang, positions) : null;
+    for (const part of parts.values()) part.draw(positions, c);
+  }
+
+  function paint(domain: CellDomain, values: ArrayLike<number> | null, palette: ScalarPalette): void {
+    const part = parts.get(domain);
+    if (!part) return;
+    if (values !== null && values.length !== part.cellCount) {
+      throw new Error(`paint ${domain}: expected ${part.cellCount} values, got ${values.length}`);
+    }
+    part.setColors(values === null ? null : colorsFromScalars(values, palette));
+  }
+
+  return {
+    group,
+    draw,
+    paintVertices: (v, p = DEFICIT_PALETTE) => paint('vertex', v, p),
+    paintEdges: (v, p = DEFICIT_PALETTE) => paint('edge', v, p),
+    paintFaces: (v, p = DEFICIT_PALETTE) => paint('face', v, p),
+    setVisible(domain, visible) { const part = parts.get(domain); if (part) part.object.visible = visible; },
+    setCreaseRadius(radius) {
+      if (!edgeBuild) return;
+      const old = parts.get('edge');
+      const visible = old ? old.object.visible : true;
+      if (old) { group.remove(old.object); old.dispose(); }
+      edgeBuild = { ...edgeBuild, radius };
+      const part = makeEdges(triang, edgeBuild);
+      part.object.visible = visible;
+      parts.set('edge', part);
+      group.add(part.object);
+      if (lastPositions) part.draw(lastPositions, doCenter ? bboxCenter(triang, lastPositions) : null);
+    },
+    dispose() {
+      for (const part of parts.values()) part.dispose();
+      owned.forEach((m) => m.dispose());
+    },
+  };
 }
 
-function resolveDomain(
-  values: ArrayLike<number>,
-  hint?: [number, number],
-): [number, number] {
-  if (hint) return hint;
-  let lo = Infinity, hi = -Infinity;
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i];
-    if (v < lo) lo = v;
-    if (v > hi) hi = v;
+/** Build a view from the boundary envelope and draw it once. */
+export function fromPaper(paper: PaperTorus, opts: TorusViewOptions = {}): TorusView {
+  const view = makeTorusView(paper.triang, opts);
+  view.draw(paper.positions);
+  return view;
+}
+
+/** Bounding-box center of the V vertex positions. */
+function bboxCenter(triang: Triangulation, p: ArrayLike<number>): Vec3 {
+  let lox = Infinity, loy = Infinity, loz = Infinity, hix = -Infinity, hiy = -Infinity, hiz = -Infinity;
+  for (let i = 0; i < triang.vertexCount; i++) {
+    const x = p[3 * i], y = p[3 * i + 1], z = p[3 * i + 2];
+    if (x < lox) lox = x; if (x > hix) hix = x;
+    if (y < loy) loy = y; if (y > hiy) hiy = y;
+    if (z < loz) loz = z; if (z > hiz) hiz = z;
   }
-  if (!isFinite(lo) || !isFinite(hi)) return [0, 1];
-  return [lo, hi];
+  return [(lox + hix) / 2, (loy + hiy) / 2, (loz + hiz) / 2];
 }

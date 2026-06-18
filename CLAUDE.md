@@ -56,7 +56,7 @@ NOT built or run; its files still import the deleted `src/math/` and are intenti
 
 ### The dependency rule (load-bearing)
 
-Everything outside `render/`, `mesh/`, `viewer/`, `io/` (and the browser entries `demos/`,
+Everything outside `mesh/`, `viewer/`, `render/` (and the browser entries `demos/`,
 `renders/`) is **pure** — no three.js, no DOM — so every algorithm runs headless under `tsx`. The
 extrinsic search stack is **dependency-ordered**, each layer using only the ones below:
 
@@ -92,8 +92,8 @@ A configuration is just `positions` (length 3·V); the `Triangulation` rides in 
 closures, never bundled with the coordinates. There is **no global triangulation singleton, no hidden
 `RICH` default** — thread the `torus` parameter (or close over it in a factory). `PaperTorus`
 (`configuration/paperTorus.ts`) is the explicit `{triang, positions}` **boundary bundle** (a plain
-interface) — the form a configuration takes at the IO / render / certify edge, where it must carry its
-triangulation; not used on the interior hot path.
+interface) — the form a configuration takes at the serialize / render / certify edge, where it must carry
+its triangulation; not used on the interior hot path.
 
 ### Intrinsic: `topology/` (machinery) + `triangulations/` (data)
 
@@ -138,19 +138,38 @@ triangulation; not used on the interior hot path.
   and the recipes `discover` (`held=[flat]`), `wall` (`held=[flat, modulusWall(c)]`) via `flattenFlowEmbed`
   (`seed → project(held) → flow(held, energy, gate=embedded) → certify`), `semiSolution`, `marchModulus`.
 
-### Rendering — two stacks
+### Rendering — one subject, the k-cells realized (`mesh/` + `viewer/` + the `render/` harness)
 
-- **Studio (path-traced), `render/` + `mesh/`** — used by `renders/`. `Studio` wraps one
-  `WebGLRenderer` with a runtime-switchable WebGL ↔ `three-gpu-pathtracer` backend; `styledTorus`/
-  `stage` build the gold graph-paper look; `saveTiled` exceeds GPU limits by tiling the camera.
-- **TorusView (preview), `viewer/`** — the simpler three.js viewer used by interactive `demos/`.
-- `io/embeddings.ts` — `parseEmbeddings(csv, torus)` turns CSV rows into `PaperTorus[]`.
+The impure boundary (three.js, DOM). One shape — **`triang → (positions → three.js)`**, the visual
+sibling of `coneDeficit(triang)`: a viewer **closes over the triangulation** (the parts' buffers are
+sized by V/E/F) and **streams bare positions**. It is NOT a `ConfigSpace` and never `pull`s — it
+consumes already-realized ℝ³ points. `PaperTorus` is only the boundary envelope (`fromPaper`).
+
+- `mesh/` — the geometry **parts**, the triangulation's **k-cells realized in ℝ³**, under one `Part`
+  contract (`part.ts`: `domain` ∈ {vertex,edge,face} + `cellCount`): `vertices` (0-cells → spheres),
+  `edges` (1-cells → tubes) — both via the shared `instanceGroup` scaffolding — and `faces` (2-cells →
+  one non-indexed mesh; flat shading + per-face uv/tint need one geometry). Plus `section` (plane ∩
+  polyhedron → ordered, measurable loops), `obj` (OBJ export), and the pure helpers `orient`/`uv`/`splat`.
+  **All real geometry** (no `LineSegments`/`InstancedMesh`) ⇒ identical in WebGL + path tracer.
+- `viewer/` — `makeTorusView(triang, opts)`, **the one subject** (replaces the old TorusView + TorusMesh):
+  assembles the chosen parts, `draw(positions)` streams, `paint{Vertices,Edges,Faces}(values, palette)`
+  color a cell-domain from a **condition's** scalar field (e.g. `coneAngleDeficits`) — the view stays dumb
+  about meaning, the demo wires `condition → channel`. Plus the decorations (`slicePlane`, `developedSheet`,
+  `modulusCell`) and the appearance (`materials`, `gridTexture`, `normalMap`, `palette`). Material ownership
+  is **Model A** — the creator frees (the subject frees what it builds; injected/shared materials stay the caller's).
+- `render/` — the **harness** only: `Studio` (runtime-switchable WebGL ↔ `three-gpu-pathtracer`;
+  `saveTiled` tiles the camera past GPU limits), `stage` (lights/env/ground), `controls`.
+
+Serialization lives with what it serializes: `configuration/csv.ts` is the bundle's CSV form
+(`positions ⇄ row`: `parseEmbeddings`/`paperFromRow` read, `paperToRow` writes); `mesh/obj.ts` exports
+the polyhedron as OBJ. (The old `io/` folder dissolved into these two homes.)
 
 ## Data format
 
 CSV result files: **one torus per line, 24 comma-separated full-precision floats** —
 `x0,y0,z0, …, x7,y7,z7`. A row **does not record its triangulation type** — interpret it by pairing
-with a chosen `Triangulation` (check `maxConeDeficit`/`isEmbedded`/`modulus` against it).
+with a chosen `Triangulation` (check `maxConeDeficit`/`isEmbedded`/`modulus` against it). The format's
+home is `configuration/csv.ts` (`parseEmbeddings`/`paperFromRow` read, `paperToRow` writes).
 
 ## Docs
 

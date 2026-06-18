@@ -6,7 +6,7 @@
 
 import { RICH } from '../triangulations';
 import { paperTorusFromVec3s, type PaperTorus } from '../configuration/paperTorus.ts';
-import type { Vec3 } from '../topology/triangulation';
+import type { Vec3 } from '../geometry/vec3.ts';
 
 // Rich's canonical ℝ³ coordinates (decimal).
 const RICH_COORDS: readonly Vec3[] = [

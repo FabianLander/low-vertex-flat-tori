@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { RICH } from '../../src/triangulations';
 import { makePaperTorus } from '../../src/configuration/paperTorus.ts';
-import { TorusView } from '../../src/viewer/TorusView';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
 import { SAMPLE_COUNT, SAMPLE_SIZE, SAMPLES_FLAT } from './data';
 
 // 100 samples — 10×10 grid.
@@ -44,12 +44,12 @@ const buf = new Float64Array(SAMPLE_SIZE);
 for (let i = 0; i < SAMPLE_COUNT; i++) {
   for (let k = 0; k < SAMPLE_SIZE; k++) buf[k] = SAMPLES_FLAT[i * SAMPLE_SIZE + k];
   const t = makePaperTorus(RICH, buf);
-  const view = new TorusView(RICH, { vertexRadius: 0.04 });
-  view.sync(t);
+  const view = makeTorusView(RICH, { surface: { style: 'plain' }, creases: true, corners: { radius: 0.04 } });
+  view.draw(t.positions);
   const r = Math.floor(i / GRID);
   const c = i % GRID;
-  view.position.set(c * SPACING, 0, r * SPACING);
-  scene.add(view);
+  view.group.position.set(c * SPACING, 0, r * SPACING);
+  scene.add(view.group);
   views.push(view);
 }
 

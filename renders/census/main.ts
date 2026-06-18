@@ -16,9 +16,9 @@ import { PhysicalSpotLight } from 'three-gpu-pathtracer';
 
 import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { parseEmbeddings } from '../../src/io/embeddings';
-import { styledTorus } from '../../src/render/styledTorus';
-import { paperMaterials } from '../../src/render/paper';
+import { parseEmbeddings } from '../../src/configuration/csv';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { paperMaterials } from '../../src/viewer/materials';
 import { skyEnvironment, backWall } from '../../src/render/stage';
 import { attachRenderControls } from '../../src/render/controls';
 import { Studio } from '../../src/render/studio';
@@ -90,7 +90,7 @@ let papers = parseEmbeddings(Object.values(csvs).join('\n'), CONFIG.torus);
 if (papers.length === 0) papers = [RICH_REFERENCE];
 
 // ---- shared paper materials (per-torus UVs live on the geometry, so it's shared) ----
-const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
+const { surface: faceMaterial, crease: edgeMaterial } = paperMaterials({
   paperColor: CONFIG.torusColor, gridColor: CONFIG.gridColor, gridMinorColor: CONFIG.gridMinorColor,
   roughness: CONFIG.roughness, gridRepeat: CONFIG.gridRepeat, gridSubdivisions: CONFIG.gridSubdivisions,
   gridMinorWidth: CONFIG.gridMinorWidth, gridMajorWidth: CONFIG.gridMajorWidth,
@@ -128,15 +128,21 @@ studio.scene.add(spot, spot.target);
 // ---- subject swap (the arrow keys drive `censusIdx`) ----
 let censusIdx = (() => { const k = Number(url.get('i')); return Number.isInteger(k) && k >= 0 && k < papers.length ? k : 0; })();
 let subject: THREE.Object3D | null = null;
+let curView: TorusView | null = null;
 
 function setSubject(): void {
-  if (subject) {
-    studio.scene.remove(subject);
-    subject.traverse((o) => { (o as THREE.Mesh).geometry?.dispose(); });
-  }
+  if (subject) studio.scene.remove(subject);
+  curView?.dispose();
 
-  const t = styledTorus(papers[censusIdx], { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  t.setEdgesVisible(CONFIG.creases);
+  const paper = papers[censusIdx];
+  const view = makeTorusView(paper.triang, {
+    surface: { material: faceMaterial },
+    creases: { material: edgeMaterial, radius: CONFIG.creaseRadius, offset: 0 },
+  });
+  view.draw(paper.positions);
+  view.setVisible('edge', CONFIG.creases);
+  curView = view;
+  const t = view.group;
   const size = new THREE.Box3().setFromObject(t).getSize(new THREE.Vector3());
   t.scale.setScalar(CONFIG.cell / (Math.max(size.x, size.y, size.z) || 1));
   t.rotation.z = Math.PI / 2;

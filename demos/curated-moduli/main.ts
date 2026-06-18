@@ -19,9 +19,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { byId } from '../../src/triangulations';
-import { paperFromRow } from '../../src/io/embeddings';
-import { styledTorus } from '../../src/render/styledTorus';
-import { paperMaterials } from '../../src/render/paper';
+import { paperFromRow } from '../../src/configuration/csv';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { paperMaterials } from '../../src/viewer/materials';
 import { skyEnvironment } from '../../src/render/stage';
 
 const files = import.meta.glob('./data/*.csv', {
@@ -254,11 +254,12 @@ const insetControls = new OrbitControls(insetCam, insetRenderer.domElement);
 insetControls.enableDamping = true;
 insetControls.enablePan = false;
 
-const { face: insetFace, edge: insetEdge } = paperMaterials({
+const { surface: insetFace } = paperMaterials({
   paperColor: '#dcbf6f', gridColor: '#2435AF', gridMinorColor: '#4e5988',
 });
 
 let insetMesh: THREE.Object3D | null = null;
+let curInset: TorusView | null = null;
 let insetVisible = false;
 
 // position/size the panel for the current viewport, then match the renderer to its gl area
@@ -281,12 +282,13 @@ function layoutPanel(): void {
 }
 
 function showTorus3D(c: Klass, i: number): void {
-  if (insetMesh) {
-    insetScene.remove(insetMesh);
-    insetMesh.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
-  }
+  if (insetMesh) insetScene.remove(insetMesh);
+  curInset?.dispose();
   const paper = paperFromRow(byId(c.type), c.pos[i]);
-  const mesh = styledTorus(paper, { surface: 'grid', faceMaterial: insetFace, edgeMaterial: insetEdge });
+  const view = makeTorusView(paper.triang, { surface: { material: insetFace } });
+  view.draw(paper.positions);
+  curInset = view;
+  const mesh = view.group;
   mesh.updateMatrixWorld(true);
   const center = new THREE.Box3().setFromObject(mesh).getCenter(new THREE.Vector3());
   mesh.position.sub(center);                        // recenter on the origin

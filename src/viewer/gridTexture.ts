@@ -1,16 +1,15 @@
 /**
- * Hierarchical fundamental-domain grid texture.
+ * Fundamental-domain grid textures, drawn on a canvas and tiled with
+ * RepeatWrapping. Combined with the lattice UVs (`mesh/uv`, uv = M⁻¹·P) the square
+ * buffer tiles as the torus's own parallelogram fundamental domain — seamless
+ * across the cut, distortion-free.
  *
- * Draws several nested levels of grid lines (like graph paper): a coarse major
- * grid, then progressively finer subdivisions, each thinner and lighter (lower
- * alpha) than the last. Combined with the lattice UVs (mesh/uv) and
- * RepeatWrapping, the square buffer tiles as the true parallelogram fundamental
- * domain of the torus's modulus — seamless across the cut, distortion-free.
+ *   latticeGridTexture — nested levels of graph-paper lines (major → fine), the
+ *                        whole torus baked into one tile (use uvRepeat: 1).
+ *   graphPaperTexture  — a uniform squares×squares minor grid + heavy tile-boundary
+ *                        line (tile with an INTEGER .repeat to stay seamless).
  *
- * Because the whole flat torus IS one fundamental domain, the full hierarchy is
- * baked into one tile (use uvRepeat: 1): `levels[0]` lines span the torus.
- *
- * `levels` are subdivision counts coarse→fine; each MUST divide the next.
+ * Impure render boundary (three.js + canvas).
  */
 
 import * as THREE from 'three';
@@ -48,30 +47,18 @@ export function latticeGridTexture(opts: GridTextureOptions = {}): THREE.CanvasT
   // Finest → coarsest, so heavier coarse lines paint over lighter fine ones.
   for (let i = levels.length - 1; i >= 0; i--) {
     const div = levels[i];
-    const factor = i > 0 ? div / levels[i - 1] : 0;   // lines at multiples of factor belong to a coarser level
+    const factor = i > 0 ? div / levels[i - 1] : 0;
     const w = Math.max(1, majorWidth * size * widthFalloff ** i);
     ctx.globalAlpha = fadeFalloff ** i;
     for (let k = 0; k < div; k++) {
-      if (factor && k % factor === 0) continue;        // drawn by a coarser level already
+      if (factor && k % factor === 0) continue;
       drawGridLine(ctx, (k / div) * size, w, size);
     }
   }
   ctx.globalAlpha = 1;
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  tex.needsUpdate = true;
-  return tex;
+  return wrapTexture(canvas);
 }
 
-/**
- * Printed graph-paper texture: a uniform `squares × squares` minor grid per tile
- * with a heavier major line at the tile boundary. Tile it with an INTEGER
- * `.repeat` (so it stays seamless across the cut under the lattice UVs) ⟹ a
- * heavier line every `squares` minor squares, like an engineering pad.
- */
 export interface GraphPaperOptions {
   size?: number;
   squares?: number;        // minor squares per tile (= major-line period)
@@ -85,9 +72,9 @@ export interface GraphPaperOptions {
 export function graphPaperTexture(opts: GraphPaperOptions = {}): THREE.CanvasTexture {
   const size = opts.size ?? 1024;
   const squares = opts.squares ?? 5;
-  const bg = opts.bg ?? '#fbfaf4';        // warm paper white
-  const minor = opts.minor ?? '#9fb4d4';  // light blue minor lines
-  const major = opts.major ?? '#5f82b4';  // darker blue major lines
+  const bg = opts.bg ?? '#fbfaf4';
+  const minor = opts.minor ?? '#9fb4d4';
+  const major = opts.major ?? '#5f82b4';
   const minorW = Math.max(1, (opts.minorWidth ?? 0.004) * size);
   const majorW = Math.max(1, (opts.majorWidth ?? 0.010) * size);
 
@@ -107,7 +94,10 @@ export function graphPaperTexture(opts: GraphPaperOptions = {}): THREE.CanvasTex
   const h = majorW / 2;
   ctx.fillRect(0, 0, h, size); ctx.fillRect(size - h, 0, h, size);
   ctx.fillRect(0, 0, size, h); ctx.fillRect(0, size - h, size, h);
+  return wrapTexture(canvas);
+}
 
+function wrapTexture(canvas: HTMLCanvasElement): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -120,7 +110,6 @@ export function graphPaperTexture(opts: GraphPaperOptions = {}): THREE.CanvasTex
 function drawGridLine(ctx: CanvasRenderingContext2D, p: number, w: number, size: number): void {
   const h = w / 2;
   if (p < h) {
-    // straddle the tile boundary: half here, half wrapping from the far edge
     ctx.fillRect(0, 0, h, size);  ctx.fillRect(size - h, 0, h, size);
     ctx.fillRect(0, 0, size, h);  ctx.fillRect(0, size - h, size, h);
   } else {

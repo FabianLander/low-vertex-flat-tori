@@ -104,10 +104,14 @@ Three consequences fix the responsibilities of the layers around it:
   then sees only a dimension, some `Fn`s on `ℝⁿ`, a predicate on `ℝⁿ`, and a metric. No `Triangulation`,
   no embedding, no chart threaded through — which is exactly what makes the sphere/circle toy tests
   *just `ℝⁿ` with some functions, no space at all*. (Code: `solvers/`.)
-- **Visualization rides the same `φ`.** Measuring and drawing share their first step — `push` a point
-  to `ℝ³ⱽ`, then use `T`. Measurement then evaluates an ambient `Fn`; drawing builds a mesh. One path,
-  two leaves. So viz takes the `paperTorus(x)` bundle (and an `Fn` for any scalar field, e.g. cone
-  deficit for coloring); it is a leaf and does **not** mimic the factory pattern.
+- **Visualization closes over `φ` too — as a stateful subject, not a leaf.** A viewer owns GPU buffers
+  sized by V/E/F, so it *does* take the factory shape: `triang → (positions → three.js)`, the visual
+  sibling of `coneDeficit(T)` — fix the triangulation once, stream bare positions. What it shares with
+  measurement is only the *first step* (a realized point in `ℝ³ⱽ`, then use `T`) and that it is **not a
+  `ConfigSpace`** — it never `pull`s; it consumes the already-pushed point. Coloring is a **condition's**
+  scalar field painted on the k-cells (e.g. `coneAngleDeficits` on vertices). `PaperTorus` is just the
+  boundary envelope it is built/fed from (`fromPaper`), for the heterogeneous (mixed-`T`) case. (Code:
+  `mesh/` realizes the k-cells, `viewer/` is the subject.)
 
 ## Interior vs boundary — why a point is sometimes bare, sometimes bundled
 

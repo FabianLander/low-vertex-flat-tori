@@ -14,11 +14,11 @@ import * as THREE from 'three';
 
 import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { parseEmbeddings } from '../../src/io/embeddings';
-import { styledTorus, creaseEdgeMaterial, type StyledTorusOptions } from '../../src/render/styledTorus';
-import { graphPaperTexture } from '../../src/render/grid';
+import { parseEmbeddings } from '../../src/configuration/csv';
+import { makeTorusView, type TorusView, type TorusViewOptions } from '../../src/viewer/TorusView';
+import { graphPaperTexture } from '../../src/viewer/gridTexture';
 import { skyEnvironment, softSpot, backWall } from '../../src/render/stage';
-import { loadNormalMap } from '../../src/render/textures';
+import { loadNormalMap } from '../../src/viewer/normalMap';
 import { attachRenderControls } from '../../src/render/controls';
 import { Studio } from '../../src/render/studio';
 import seed7 from '../../data/explore-from-seeds/seed-7.csv?raw';
@@ -69,7 +69,7 @@ const matBase = { roughness: CONFIG.roughness, metalness: 0.0, flatShading: true
 const paperGrid = new THREE.MeshStandardMaterial({ map: paperTex, ...matBase });
 const paperBlank = new THREE.MeshStandardMaterial({ color: new THREE.Color(CONFIG.paperColor), ...matBase });
 const paperMats = [paperGrid, paperBlank];
-const edgeMat = creaseEdgeMaterial(CONFIG.creaseColor);   // shared across subjects
+const edgeMat = new THREE.MeshStandardMaterial({ color: CONFIG.creaseColor, roughness: 0.5 });   // shared across subjects
 
 // Paper-grain normal map, loaded from assets/textures by name (CONFIG.normalMapFile).
 const normalTex = loadNormalMap(CONFIG.normalMapFile, { repeat: CONFIG.normalRepeat }, () => studio.notifyMaterialsChanged());
@@ -82,10 +82,11 @@ if (normalTex) {
 }
 
 // ---- styles × moduli (surface defaults to 'grid' ⟹ lattice UVs for both map + normal) ----
-const STYLES: { label: string; opts: StyledTorusOptions }[] = [
-  { label: 'blank paper + creases', opts: { edges: true,  faceMaterial: paperBlank, edgeMaterial: edgeMat, edgeRadius: CONFIG.creaseRadius } },
-  { label: 'graph paper',           opts: { edges: false, faceMaterial: paperGrid } },
-  { label: 'graph paper + creases', opts: { edges: true,  faceMaterial: paperGrid,  edgeMaterial: edgeMat, edgeRadius: CONFIG.creaseRadius } },
+const CREASE = { material: edgeMat, radius: CONFIG.creaseRadius, offset: 0 };
+const STYLES: { label: string; opts: TorusViewOptions }[] = [
+  { label: 'blank paper + creases', opts: { surface: { material: paperBlank }, creases: CREASE } },
+  { label: 'graph paper',           opts: { surface: { material: paperGrid }, creases: false } },
+  { label: 'graph paper + creases', opts: { surface: { material: paperGrid }, creases: CREASE } },
 ];
 const moduli = [RICH_REFERENCE, ...parseEmbeddings(seed7, RICH)];
 
@@ -98,16 +99,18 @@ const idx = (v: string | null, def: number, n: number) => {
 let styleIdx = idx(params.get('style'), 2, STYLES.length);   // grid + creases
 let modIdx = idx(params.get('mod'), 0, moduli.length);       // Rich's reference
 let subject: THREE.Object3D | null = null;
+let curView: TorusView | null = null;
 
 function setSubject(): void {
-  if (subject) {
-    studio.scene.remove(subject);
-    // dispose only geometry — materials/textures are shared across moduli
-    subject.traverse((o) => { (o as THREE.Mesh).geometry?.dispose(); });
-  }
+  if (subject) studio.scene.remove(subject);
+  curView?.dispose();   // frees this subject's geometry (shared materials are injected ⟹ kept)
 
-  // centered TorusMesh ⟹ rotation rolls about its own center
-  const s = styledTorus(moduli[modIdx], STYLES[styleIdx].opts);
+  // centered view ⟹ rotation rolls about its own center
+  const paper = moduli[modIdx];
+  const view = makeTorusView(paper.triang, STYLES[styleIdx].opts);
+  view.draw(paper.positions);
+  curView = view;
+  const s = view.group;
   s.rotation.z = Math.PI / 2;   // stand on the long side
   s.traverse((o: THREE.Object3D) => { o.castShadow = true; o.receiveShadow = true; });
   subject = s;

@@ -31,7 +31,6 @@
 
 export type Tri = readonly [number, number, number];
 export type Edge = readonly [number, number];
-export type Vec3 = readonly [number, number, number];
 
 /** Radix for packing an undirected edge {u,v} into one integer key. Fixed and
  *  decoupled from the vertex count, so `edgeKey`/`edgeEnds` stay exact inverses

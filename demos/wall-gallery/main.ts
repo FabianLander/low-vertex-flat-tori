@@ -26,10 +26,11 @@ import { byId } from '../../src/triangulations';
 import { modulus, reduceModulus } from '../../src/topology/develop';
 import { maxConeDeficit } from '../../src/conditions/flat';
 import { minMargin } from '../../src/conditions/embedded/index';
-import { parseEmbeddings } from '../../src/io/embeddings';
+import { parseEmbeddings } from '../../src/configuration/csv';
 import type { PaperTorus } from '../../src/configuration/paperTorus.ts';
-import { styledTorus } from '../../src/render/styledTorus';
-import { paperMaterials } from '../../src/render/paper';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { modulusCell, type ModulusCell } from '../../src/viewer/modulusCell';
+import { paperMaterials } from '../../src/viewer/materials';
 import { skyEnvironment } from '../../src/render/stage';
 import { Studio } from '../../src/render/studio';
 
@@ -83,15 +84,11 @@ for (const path of Object.keys(csvFiles).sort()) {
 if (entries.length === 0) throw new Error('wall-gallery: no embeddings — run scripts/curate-wall-gallery.mjs first');
 
 // ---- shared materials ----
-const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
+const { surface: faceMaterial, crease: edgeMaterial } = paperMaterials({
   paperColor: CONFIG.torusColor, gridColor: CONFIG.gridColor, gridMinorColor: CONFIG.gridMinorColor,
   roughness: CONFIG.roughness, gridRepeat: CONFIG.gridRepeat, gridSubdivisions: CONFIG.gridSubdivisions,
   gridMinorWidth: CONFIG.gridMinorWidth, gridMajorWidth: CONFIG.gridMajorWidth,
   normalMapFile: CONFIG.normalMapFile, normalRepeat: CONFIG.normalRepeat, normalScale: CONFIG.normalScale,
-});
-const cellLineMaterial = new THREE.MeshBasicMaterial({ color: CONFIG.cellColor });
-const cellFillMaterial = new THREE.MeshBasicMaterial({
-  color: CONFIG.cellColor, transparent: true, opacity: CONFIG.cellFillOpacity, side: THREE.DoubleSide,
 });
 
 function fitInPlace(obj: THREE.Object3D, size: number): number {
@@ -103,46 +100,26 @@ function fitInPlace(obj: THREE.Object3D, size: number): number {
   return k;
 }
 
-/** a tube between two XY-plane points (cylinder's native axis is +Y) */
-function tube(a: THREE.Vector3, b: THREE.Vector3, r: number): THREE.Mesh {
-  const dir = new THREE.Vector3().subVectors(b, a);
-  const len = dir.length() || 1e-6;
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len + 2 * r, 12), cellLineMaterial);
-  m.position.copy(a).addScaledVector(dir, 0.5);
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-  return m;
-}
-
-/** modulus cell: parallelogram with lattice edge vectors v1, v2 (XY units),
- *  centered on the origin — outline tubes + faint fill. */
-function modulusCell(v1: THREE.Vector2, v2: THREE.Vector2): THREE.Group {
-  const g = new THREE.Group();
-  const c = new THREE.Vector3((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, 0);   // centroid
-  const O = new THREE.Vector3(0, 0, 0).sub(c);
-  const A = new THREE.Vector3(v1.x, v1.y, 0).sub(c);
-  const B = new THREE.Vector3(v2.x, v2.y, 0).sub(c);
-  const AB = new THREE.Vector3(v1.x + v2.x, v1.y + v2.y, 0).sub(c);
-  const r = CONFIG.cellLineRadius;
-  g.add(tube(O, A, r), tube(A, AB, r), tube(AB, B, r), tube(B, O, r));
-  const shape = new THREE.Shape();
-  shape.moveTo(O.x, O.y); shape.lineTo(A.x, A.y); shape.lineTo(AB.x, AB.y); shape.lineTo(B.x, B.y); shape.closePath();
-  g.add(new THREE.Mesh(new THREE.ShapeGeometry(shape), cellFillMaterial));
-  return g;
-}
-
 // ---- the single-subject view ----
 let subject: THREE.Object3D | null = null;
 let torusPivot: THREE.Object3D | null = null;
+let curView: TorusView | null = null, curCell: ModulusCell | null = null;
 let idx = (() => { const k = Number(url.get('i')); return Number.isInteger(k) && k >= 0 && k < entries.length ? k : 0; })();
 
 function buildSubject(reframe: boolean): void {
-  if (subject) { studio.scene.remove(subject); subject.traverse((o) => (o as THREE.Mesh).geometry?.dispose()); }
-  const { paper, tau } = entries[idx];
+  if (subject) studio.scene.remove(subject);
+  curView?.dispose(); curCell?.dispose();
+  const { paper } = entries[idx];
   const group = new THREE.Group();
 
   // folded torus, hovering above, in a center pivot (drag to spin)
-  const triang = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  triang.setEdgesVisible(CONFIG.creases);
+  const view = makeTorusView(paper.triang, {
+    surface: { material: faceMaterial },
+    creases: CONFIG.creases ? { material: edgeMaterial, radius: CONFIG.creaseRadius } : false,
+  });
+  view.draw(paper.positions);
+  curView = view;
+  const triang = view.group;
   triang.rotation.z = Math.PI / 2;
   fitInPlace(triang, CONFIG.torusSize);
   triang.position.y += CONFIG.torusLift;
@@ -153,11 +130,15 @@ function buildSubject(reframe: boolean): void {
   torusPivot.add(triang);
   group.add(torusPivot);
 
-  // modulus cell on the ground: unit-area lattice basis 1, τ̂ ⟹
-  //   v1 = (1/√Im, 0), v2 = (Re/√Im, √Im).  Built in raw lattice units, then
-  //   scaled uniformly for display (preserves the parallelogram shape / aspect).
-  const root = Math.sqrt(tau[1]);
-  const cell = modulusCell(new THREE.Vector2(1 / root, 0), new THREE.Vector2(tau[0] / root, root));
+  // modulus cell on the ground: the reduced lattice parallelogram (unit-area v₁,v₂
+  // from τ̂), scaled uniformly for display (preserves its shape / aspect).
+  const cellDeco = modulusCell(paper.triang, {
+    lineColor: CONFIG.cellColor, fillColor: CONFIG.cellColor,
+    fillOpacity: CONFIG.cellFillOpacity, lineRadius: CONFIG.cellLineRadius,
+  });
+  cellDeco.draw(paper.positions);
+  curCell = cellDeco;
+  const cell = cellDeco.group;
   fitInPlace(cell, CONFIG.cellSize);
   cell.rotation.x = -Math.PI / 2;
   group.add(cell);

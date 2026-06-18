@@ -4,8 +4,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RICH } from '../../src/triangulations';
 import { coneAngleAt, coneAngleDeficits } from '../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { TorusView } from '../../src/viewer/TorusView';
+import { makeTorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE, HIGHLIGHT_PALETTE, oneHot } from '../../src/viewer/palette';
+import { downloadObj } from '../../src/mesh/obj';
 
 const TWO_PI = Math.PI * 2;
 
@@ -42,15 +43,20 @@ scene.add(fill);
 
 // ---- Triangulation + view ----
 const triang = RICH_REFERENCE;
-const view = new TorusView(RICH, { vertexRadius: 0.05 });
-view.sync(triang);
+const view = makeTorusView(RICH, {
+  surface: { style: 'plain' }, creases: true, corners: { radius: 0.05 },
+});
+view.draw(triang.positions);
 
 const absDeficits = new Float32Array(RICH.vertexCount);
 const refDeficits = coneAngleDeficits(RICH, triang.positions);
 for (let i = 0; i < RICH.vertexCount; i++) absDeficits[i] = Math.abs(refDeficits[i]);
-view.setVertexScalars(absDeficits, DEFICIT_PALETTE);
+view.paintVertices(absDeficits, DEFICIT_PALETTE);
 
-scene.add(view);
+scene.add(view.group);
+
+// press 'o' to download the realization as an OBJ polyhedron (Blender, slicers, …)
+window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') downloadObj(triang, 'rich-torus.obj'); });
 
 function animate(): void {
   controls.update();
@@ -113,10 +119,10 @@ for (let i = 0; i < RICH.vertexCount; i++) {
   row.append(label, angle, deficit);
 
   row.addEventListener('mouseenter', () => {
-    view.setVertexScalars(oneHot(RICH.vertexCount, i), HIGHLIGHT_PALETTE);
+    view.paintVertices(oneHot(RICH.vertexCount, i), HIGHLIGHT_PALETTE);
   });
   row.addEventListener('mouseleave', () => {
-    view.setVertexScalars(absDeficits, DEFICIT_PALETTE);
+    view.paintVertices(absDeficits, DEFICIT_PALETTE);
   });
 
   list.appendChild(row);

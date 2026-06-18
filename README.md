@@ -94,7 +94,9 @@ Dependency-ordered, each layer using only the ones below:
   src/search/          composition & measurement: certify (raw τ AND reduced τ̂), collect, the recipes,
                        pull (pull conditions into a coordinate system).
 
-src/mesh|render|viewer|io   three.js geometry, the path-traced Studio, the preview viewer, CSV ⇄ PaperTorus
+src/mesh             three.js: the triangulation's k-cells realized in ℝ³ (one `Part`) + section/obj
+src/viewer           the one subject `makeTorusView` (factory, streams positions) + decorations + look
+src/render           the path-traced `Studio` harness (WebGL ↔ three-gpu-pathtracer) + stage/controls
 demos/ renders/      browser entry points (interactive demos; path-traced figures)
 scripts/             headless CLI runners (the search drivers); scripts/legacy/ is a read-only archive
 data/                CSV result sets (one torus per row, 24 floats)

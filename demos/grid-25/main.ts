@@ -7,7 +7,7 @@ import { coneAngleDeficits } from '../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { perturb } from '../../src/sampling/perturb';
 import { mulberry32 } from '../../src/sampling/rng';
-import { TorusView } from '../../src/viewer/TorusView';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE } from '../../src/viewer/palette';
 
 const GRID = 5;
@@ -53,15 +53,15 @@ function renderGrid(embeddings: readonly PaperTorus[]): TorusView[] {
   const deficits = new Float32Array(RICH.vertexCount);
   for (let i = 0; i < embeddings.length; i++) {
     const t = embeddings[i];
-    const view = new TorusView(RICH, { vertexRadius: 0.05 });
-    view.sync(t);
+    const view = makeTorusView(RICH, { surface: { style: 'plain' }, creases: true, corners: { radius: 0.05 } });
+    view.draw(t.positions);
     const defs = coneAngleDeficits(RICH, t.positions);
     for (let v = 0; v < RICH.vertexCount; v++) deficits[v] = Math.abs(defs[v]);
-    view.setVertexScalars(deficits, DEFICIT_PALETTE);
+    view.paintVertices(deficits, DEFICIT_PALETTE);
     const r = Math.floor(i / GRID);
     const c = i % GRID;
-    view.position.set(c * SPACING, 0, r * SPACING);
-    scene.add(view);
+    view.group.position.set(c * SPACING, 0, r * SPACING);
+    scene.add(view.group);
     views.push(view);
   }
   return views;

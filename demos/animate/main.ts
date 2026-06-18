@@ -7,7 +7,7 @@ import { coneAngleDeficits } from '../../src/conditions/flat.ts';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { perturb } from '../../src/sampling/perturb';
 import { mulberry32 } from '../../src/sampling/rng';
-import { TorusView } from '../../src/viewer/TorusView';
+import { makeTorusView } from '../../src/viewer/TorusView';
 import { DEFICIT_PALETTE } from '../../src/viewer/palette';
 
 // ---- Three.js boilerplate ----
@@ -64,14 +64,16 @@ function smoothstep(x: number): number {
   return c * c * (3 - 2 * c);
 }
 
-const view = new TorusView(RICH, { vertexRadius: 0.05 });
-scene.add(view);
+const view = makeTorusView(RICH, {
+  surface: { style: 'plain' }, creases: true, corners: { radius: 0.05 }, center: false,
+});
+scene.add(view.group);
 
 const deficitBuf = new Float32Array(RICH.vertexCount);
 function refreshColors(): void {
   const defs = coneAngleDeficits(RICH, current.positions);
   for (let i = 0; i < RICH.vertexCount; i++) deficitBuf[i] = Math.abs(defs[i]);
-  view.setVertexScalars(deficitBuf, DEFICIT_PALETTE);
+  view.paintVertices(deficitBuf, DEFICIT_PALETTE);
 }
 
 // ---- Loop ----
@@ -89,7 +91,7 @@ function animate(): void {
   const tParam = Math.min(phase / lerpDuration, 1);
   lerpEmbedding(tParam);
 
-  view.sync(current);
+  view.draw(current.positions);
   refreshColors();
 
   controls.update();

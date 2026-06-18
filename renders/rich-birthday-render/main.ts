@@ -14,9 +14,9 @@ import { PhysicalSpotLight } from 'three-gpu-pathtracer';
 
 import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { parseEmbeddings } from '../../src/io/embeddings';
-import { styledTorus } from '../../src/render/styledTorus';
-import { paperMaterials } from '../../src/render/paper';
+import { parseEmbeddings } from '../../src/configuration/csv';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { paperMaterials } from '../../src/viewer/materials';
 import { skyEnvironment, backWall } from '../../src/render/stage';
 import { attachRenderControls } from '../../src/render/controls';
 import { Studio } from '../../src/render/studio';
@@ -104,7 +104,7 @@ if (papers.length === 0) papers = [RICH_REFERENCE];
 papers = papers.slice(0, CONFIG.maxTori);
 
 // ---- shared paper material (per-torus UVs live on the geometry, so it's shared) ----
-const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
+const { surface: faceMaterial, crease: edgeMaterial } = paperMaterials({
   surface: CONFIG.surface,
   paperColor: CONFIG.torusColor, gridColor: CONFIG.gridColor, gridMinorColor: CONFIG.gridMinorColor,
   roughness: CONFIG.roughness, gridRepeat: CONFIG.gridRepeat, gridSubdivisions: CONFIG.gridSubdivisions,
@@ -116,17 +116,19 @@ const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
 const cols = Math.ceil(Math.sqrt(papers.length));
 const rows = Math.ceil(papers.length / cols);
 const grid = new THREE.Group();
-const tori = papers.map((paper, i) => {
+const tori: TorusView[] = papers.map((paper, i) => {
   // edges are always built so V can reveal them; CONFIG.creases sets the initial visibility
-  const t = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  t.setEdgesVisible(CONFIG.creases);
+  const view = makeTorusView(paper.triang, { surface: { material: faceMaterial }, creases: { material: edgeMaterial, radius: CONFIG.creaseRadius, offset: 0 } });
+  view.draw(paper.positions);
+  view.setVisible('edge', CONFIG.creases);
+  const t = view.group;
   const size = new THREE.Box3().setFromObject(t).getSize(new THREE.Vector3());
   t.scale.setScalar(CONFIG.cell / (Math.max(size.x, size.y, size.z) || 1));
   t.rotation.z = Math.PI / 2;
   const c = i % cols, r = Math.floor(i / cols);
   t.position.set((c - (cols - 1) / 2) * CONFIG.spacing, ((rows - 1) / 2 - r) * CONFIG.spacing, 0);
   grid.add(t);
-  return t;
+  return view;
 });
 grid.traverse((o) => { o.castShadow = true; o.receiveShadow = true; });
 studio.add(grid);
@@ -208,7 +210,7 @@ function updateForMode(mode: 'webgl' | 'pathtracing'): void {
 let edgesShown = CONFIG.creases;
 function toggleEdges(): void {
   edgesShown = !edgesShown;
-  for (const t of tori) t.setEdgesVisible(edgesShown);
+  for (const v of tori) v.setVisible('edge', edgesShown);
   studio.notifySceneChanged();
   studio.resetAccumulation();
 }

@@ -23,6 +23,8 @@
  * Pure module: no three.js, no DOM.
  */
 
+import type { Vec3 } from '../geometry/vec3.ts';
+
 // This canonical-pose scheme is specific to the 8-vertex torus: it pins anchors
 // v0,v1,v2 and unrolls the free data as v3..v7 (REDUCED_DIM = 17). It is pure
 // rigid-motion algebra on the 24-coordinate array — no combinatorics — so the
@@ -33,8 +35,6 @@ export const FULL_DIM = N;           // 24
 export const REDUCED_DIM = N - 7;    // 17
 /** The vertices whose positions are pinned by the convention. */
 export const ANCHOR_VERTICES = [0, 1, 2] as const;
-
-type Vec3 = [number, number, number];
 
 const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: Vec3, b: Vec3): Vec3 => [

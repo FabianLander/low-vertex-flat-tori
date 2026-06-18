@@ -18,11 +18,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
-import { makePaperTorus } from '../../src/configuration/paperTorus.ts';
 import { RICH } from '../../src/triangulations';
 import { normalize } from '../../src/configuration/gauge';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { TorusView } from '../../src/viewer/TorusView';
+import { makeTorusView } from '../../src/viewer/TorusView';
 
 const DIM = RICH.vertexCount * 3;
 const FACE_COUNT = RICH.triangles.length;
@@ -111,13 +110,13 @@ type Tagged = { anchor: THREE.Vector3; text: string };
 const tags: Tagged[] = [];
 
 function addTorus(p24: Float64Array, x: number, y: number, colHex: number): void {
-  const view = new TorusView(RICH, { vertexRadius: 0.05 });
-  view.sync(makePaperTorus(RICH, p24));
+  const view = makeTorusView(RICH, { surface: { style: 'plain' }, creases: true, corners: { radius: 0.05 }, center: false });
+  view.draw(p24);
   const col = new THREE.Color(colHex);
-  view.setFaceScalars(new Array(FACE_COUNT).fill(0), { color: () => col.clone() });
-  view.setVertexScalars(anchorScalars, anchorPalette);
-  view.position.set(x, y, 0);
-  scene.add(view);
+  view.paintFaces(new Array(FACE_COUNT).fill(0), { color: () => col.clone() });
+  view.paintVertices(anchorScalars, anchorPalette);
+  view.group.position.set(x, y, 0);
+  scene.add(view.group);
 }
 
 items.forEach((item, i) => {

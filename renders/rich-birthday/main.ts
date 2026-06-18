@@ -15,10 +15,10 @@ import * as THREE from 'three';
 import { RICH } from '../../src/triangulations';
 import { RICH_REFERENCE } from '../../src/sampling/reference';
 import { modulus } from '../../src/topology/develop';
-import { parseEmbeddings } from '../../src/io/embeddings';
-import { styledTorus, creaseEdgeMaterial } from '../../src/render/styledTorus';
-import { developedSheet } from '../../src/render/developedSheet';
-import { paperMaterials } from '../../src/render/paper';
+import { parseEmbeddings } from '../../src/configuration/csv';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { developedSheet, type DevelopedSheet } from '../../src/viewer/developedSheet';
+import { paperMaterials } from '../../src/viewer/materials';
 import { skyEnvironment } from '../../src/render/stage';
 import { Studio } from '../../src/render/studio';
 
@@ -90,13 +90,14 @@ if (papers.length === 0) papers = [RICH_REFERENCE];
 papers = papers.slice(0, CONFIG.maxTori);
 
 // ---- shared paper material (per-torus UVs live on the geometry, so it's shared) ----
-const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
+const { surface: faceMaterial, crease: edgeMaterial } = paperMaterials({
   paperColor: CONFIG.torusColor, gridColor: CONFIG.gridColor, gridMinorColor: CONFIG.gridMinorColor,
   roughness: CONFIG.roughness, gridRepeat: CONFIG.gridRepeat, gridSubdivisions: CONFIG.gridSubdivisions,
   gridMinorWidth: CONFIG.gridMinorWidth, gridMajorWidth: CONFIG.gridMajorWidth,
   normalMapFile: CONFIG.normalMapFile, normalRepeat: CONFIG.normalRepeat, normalScale: CONFIG.normalScale,
 });   // 3D torus creases match the paper (edge defaults to paperColor)
-const foldLineMaterial = creaseEdgeMaterial(CONFIG.foldLineColor);   // flat-net fold lines: thin dark gray
+const creaseCfg = CONFIG.creases ? { material: edgeMaterial, radius: CONFIG.creaseRadius, offset: 0 } : false;
+const foldLineMaterial = new THREE.MeshStandardMaterial({ color: CONFIG.foldLineColor, roughness: 0.5 });   // flat-net fold lines: thin dark gray
 
 // ---- build the grid (same layout as rich-birthday-render) ----
 const cols = Math.ceil(Math.sqrt(papers.length));
@@ -104,8 +105,9 @@ const rows = Math.ceil(papers.length / cols);
 const grid = new THREE.Group();
 const pivots: THREE.Object3D[] = [];   // one center-pivot per torus (the rotatable handle)
 papers.forEach((paper, i) => {
-  const t = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  t.setEdgesVisible(CONFIG.creases);
+  const view = makeTorusView(paper.triang, { surface: { material: faceMaterial }, creases: creaseCfg });
+  view.draw(paper.positions);
+  const t = view.group;
   const size = new THREE.Box3().setFromObject(t).getSize(new THREE.Vector3());
   t.scale.setScalar(CONFIG.cell / (Math.max(size.x, size.y, size.z) || 1));
   t.rotation.z = Math.PI / 2;
@@ -197,6 +199,7 @@ const NET_SIZE = 2.6;      // developed sheet, on the ground
 const TORUS_LIFT = 1.6;    // gap between the ground net and the torus
 let single: THREE.Object3D | null = null;
 let soloPivot: THREE.Object3D | null = null;   // center-pivot of the lifted torus (the rotatable handle in individual mode)
+let soloView: TorusView | null = null, soloSheet: DevelopedSheet | null = null;
 let soloIdx = (() => { const k = Number(url.get('i')); return Number.isInteger(k) && k >= 0 && k < papers.length ? k : 0; })();
 
 /** Scale obj so its largest extent = size, then recenter it on its local origin. */
@@ -208,12 +211,16 @@ function fitInPlace(obj: THREE.Object3D, size: number): void {
 }
 
 function buildSubject(reframe: boolean): void {
-  if (single) { studio.scene.remove(single); single.traverse((o) => (o as THREE.Mesh).geometry?.dispose()); }
+  if (single) studio.scene.remove(single);
+  soloView?.dispose(); soloSheet?.dispose();
   const group = new THREE.Group();
 
   // folded torus, hovering above the ground
-  const torus = styledTorus(papers[soloIdx], { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  torus.setEdgesVisible(CONFIG.creases);
+  const paper = papers[soloIdx];
+  const view = makeTorusView(paper.triang, { surface: { material: faceMaterial }, creases: creaseCfg });
+  view.draw(paper.positions);
+  soloView = view;
+  const torus = view.group;
   torus.rotation.z = Math.PI / 2;
   fitInPlace(torus, TORUS_SIZE);
   torus.position.y += TORUS_LIFT;
@@ -227,7 +234,10 @@ function buildSubject(reframe: boolean): void {
 
   // developed net, laid flat on the "ground" (rotate its XY plane down into XZ).
   // Fold lines stay ON here (the dark net edges) even though the 3D tori are edgeless.
-  const sheet = developedSheet(papers[soloIdx], { faceMaterial, edgeMaterial: foldLineMaterial, edgeRadius: CONFIG.foldLineRadius });
+  const sheetDeco = developedSheet(paper.triang, { faceMaterial, foldMaterial: foldLineMaterial, foldRadius: CONFIG.foldLineRadius });
+  sheetDeco.draw(paper.positions);
+  soloSheet = sheetDeco;
+  const sheet = sheetDeco.group;
   fitInPlace(sheet, NET_SIZE);
   sheet.rotation.x = -Math.PI / 2;
   group.add(sheet);

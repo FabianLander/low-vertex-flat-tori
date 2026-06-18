@@ -21,10 +21,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { byId } from '../../src/triangulations';
-import { paperFromRow } from '../../src/io/embeddings';
-import { styledTorus } from '../../src/render/styledTorus';
-import { developedSheet } from '../../src/render/developedSheet';
-import { paperMaterials } from '../../src/render/paper';
+import { paperFromRow } from '../../src/configuration/csv';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { developedSheet, type DevelopedSheet } from '../../src/viewer/developedSheet';
+import { paperMaterials } from '../../src/viewer/materials';
 import { skyEnvironment } from '../../src/render/stage';
 
 // data/ = committed curated examples; live/ = gitignored symlinks into samples/
@@ -280,12 +280,13 @@ insetControls.enablePan = true;
 // elsewhere orbits the scene; two fingers pan/zoom the scene (OrbitControls owns the
 // multi-touch). Mouse: right-drag pans, scroll zooms.
 
-const { face: insetFace } = paperMaterials({
+const { surface: insetFace } = paperMaterials({
   paperColor: '#dcbf6f', gridColor: '#2435AF', gridMinorColor: '#4e5988',
 });
 const NET_EDGE = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5 });   // black, very-thin fold-line tubes
 
 let insetMesh: THREE.Object3D | null = null;
+let curView: TorusView | null = null, curSheet: DevelopedSheet | null = null;
 let torusPivot: THREE.Object3D | null = null;   // the folded torus; drag it to spin in place
 let insetVisible = false;
 
@@ -309,10 +310,8 @@ function layoutPanel(): void {
 }
 
 function showTorus3D(c: Klass, i: number): void {
-  if (insetMesh) {
-    insetScene.remove(insetMesh);
-    insetMesh.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
-  }
+  if (insetMesh) insetScene.remove(insetMesh);
+  curView?.dispose(); curSheet?.dispose();
   const paper = paperFromRow(byId(c.type), c.pos[i]);
 
   // The folded paper torus (NO edges; drag it to spin) floating above its UNFOLDED
@@ -321,7 +320,10 @@ function showTorus3D(c: Klass, i: number): void {
   const group = new THREE.Group();
 
   // folded torus: grid face, no edges, centered in a spin pivot
-  const triang = styledTorus(paper, { surface: 'grid', edges: false, faceMaterial: insetFace });
+  const view = makeTorusView(paper.triang, { surface: { material: insetFace } });
+  view.draw(paper.positions);
+  curView = view;
+  const triang = view.group;
   triang.updateMatrixWorld(true);
   const tbox = new THREE.Box3().setFromObject(triang);
   const tr = tbox.getBoundingSphere(new THREE.Sphere()).radius || 1;
@@ -331,7 +333,10 @@ function showTorus3D(c: Klass, i: number): void {
   torusPivot = pivot;
 
   // developed net: grid face + black very-thin tube fold lines
-  const sheet = developedSheet(paper, { faceMaterial: insetFace, edgeMaterial: NET_EDGE, edgeRadius: 0.0015 });
+  const sheetDeco = developedSheet(paper.triang, { faceMaterial: insetFace, foldMaterial: NET_EDGE, foldRadius: 0.0015 });
+  sheetDeco.draw(paper.positions);
+  curSheet = sheetDeco;
+  const sheet = sheetDeco.group;
   sheet.rotation.x = -Math.PI / 2;                  // lay the net flat on the ground
 
   // stack: torus hovering above, net on the ground below

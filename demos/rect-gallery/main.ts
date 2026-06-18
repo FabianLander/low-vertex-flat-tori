@@ -29,11 +29,12 @@ import * as THREE from 'three';
 import { RICH } from '../../src/triangulations';
 import { modulus, reduceModulus } from '../../src/topology/develop';
 import { maxConeDeficit } from '../../src/conditions/flat';
-import { parseEmbeddings } from '../../src/io/embeddings';
+import { parseEmbeddings } from '../../src/configuration/csv';
 import type { PaperTorus } from '../../src/configuration/paperTorus.ts';
-import { styledTorus, creaseEdgeMaterial } from '../../src/render/styledTorus';
-import { developedSheet } from '../../src/render/developedSheet';
-import { paperMaterials } from '../../src/render/paper';
+import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { developedSheet, type DevelopedSheet } from '../../src/viewer/developedSheet';
+import { modulusCell, type ModulusCell } from '../../src/viewer/modulusCell';
+import { paperMaterials } from '../../src/viewer/materials';
 import { skyEnvironment } from '../../src/render/stage';
 import { Studio } from '../../src/render/studio';
 
@@ -116,17 +117,13 @@ entries.sort((a, b) => a.tau[1] - b.tau[1]);   // gallery order: thinnest → ta
 if (entries.length === 0) throw new Error(`rect-gallery: no embeddings in ${dataFile}`);
 
 // ---- shared materials ----
-const { face: faceMaterial, edge: edgeMaterial } = paperMaterials({
+const { surface: faceMaterial, crease: edgeMaterial } = paperMaterials({
   paperColor: CONFIG.torusColor, gridColor: CONFIG.gridColor, gridMinorColor: CONFIG.gridMinorColor,
   roughness: CONFIG.roughness, gridRepeat: CONFIG.gridRepeat, gridSubdivisions: CONFIG.gridSubdivisions,
   gridMinorWidth: CONFIG.gridMinorWidth, gridMajorWidth: CONFIG.gridMajorWidth,
   normalMapFile: CONFIG.normalMapFile, normalRepeat: CONFIG.normalRepeat, normalScale: CONFIG.normalScale,
 });
-const foldLineMaterial = creaseEdgeMaterial(CONFIG.foldLineColor);
-const rectLineMaterial = new THREE.MeshBasicMaterial({ color: CONFIG.rectColor });
-const rectFillMaterial = new THREE.MeshBasicMaterial({
-  color: CONFIG.rectColor, transparent: true, opacity: CONFIG.rectFillOpacity, side: THREE.DoubleSide,
-});
+const foldLineMaterial = new THREE.MeshStandardMaterial({ color: CONFIG.foldLineColor, roughness: 0.5 });
 
 /** Scale obj so its largest extent = size, recenter on the origin; returns the scale. */
 function fitInPlace(obj: THREE.Object3D, size: number): number {
@@ -138,38 +135,26 @@ function fitInPlace(obj: THREE.Object3D, size: number): number {
   return k;
 }
 
-/** The modulus rectangle in the XY plane: W × H centered on the origin —
- *  outline tubes + a faint fill. */
-function modulusRectangle(W: number, H: number): THREE.Group {
-  const g = new THREE.Group();
-  const r = CONFIG.rectLineRadius;
-  const seg = (len: number, horizontal: boolean, x: number, y: number): THREE.Mesh => {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len + 2 * r, 12), rectLineMaterial);
-    if (horizontal) m.rotation.z = Math.PI / 2;
-    m.position.set(x, y, 0);
-    return m;
-  };
-  g.add(
-    seg(W, true, 0, H / 2), seg(W, true, 0, -H / 2),
-    seg(H, false, W / 2, 0), seg(H, false, -W / 2, 0),
-    new THREE.Mesh(new THREE.PlaneGeometry(W, H), rectFillMaterial),
-  );
-  return g;
-}
-
-// ---- the single-subject view: torus above, net + modulus rectangle on the ground ----
+// ---- the single-subject view: torus above, net + modulus cell on the ground ----
 let subject: THREE.Object3D | null = null;
 let torusPivot: THREE.Object3D | null = null;
+let curView: TorusView | null = null, curSheet: DevelopedSheet | null = null, curCell: ModulusCell | null = null;
 let idx = (() => { const k = Number(url.get('i')); return Number.isInteger(k) && k >= 0 && k < entries.length ? k : 0; })();
 
 function buildSubject(reframe: boolean): void {
-  if (subject) { studio.scene.remove(subject); subject.traverse((o) => (o as THREE.Mesh).geometry?.dispose()); }
+  if (subject) studio.scene.remove(subject);
+  curView?.dispose(); curSheet?.dispose(); curCell?.dispose();
   const { paper, tau } = entries[idx];
   const group = new THREE.Group();
 
   // folded torus, hovering above the ground, in a center pivot (drag to spin)
-  const triang = styledTorus(paper, { surface: 'grid', edges: true, faceMaterial, edgeMaterial, edgeRadius: CONFIG.creaseRadius });
-  triang.setEdgesVisible(CONFIG.creases);
+  const view = makeTorusView(RICH, {
+    surface: { material: faceMaterial },
+    creases: CONFIG.creases ? { material: edgeMaterial, radius: CONFIG.creaseRadius } : false,
+  });
+  view.draw(paper.positions);
+  curView = view;
+  const triang = view.group;
   triang.rotation.z = Math.PI / 2;
   fitInPlace(triang, CONFIG.torusSize);
   triang.position.y += CONFIG.torusLift;
@@ -180,19 +165,28 @@ function buildSubject(reframe: boolean): void {
   torusPivot.add(triang);
   group.add(torusPivot);
 
-  // developed net — keep its scale factor so the rectangle shares it
-  const sheet = developedSheet(paper, { faceMaterial, edgeMaterial: foldLineMaterial, edgeRadius: CONFIG.foldLineRadius });
+  // developed net — keep its scale factor so the cell shares it
+  const sheetDeco = developedSheet(RICH, { faceMaterial, foldMaterial: foldLineMaterial, foldRadius: CONFIG.foldLineRadius });
+  sheetDeco.draw(paper.positions);
+  curSheet = sheetDeco;
+  const sheet = sheetDeco.group;
   const planeScale = fitInPlace(sheet, CONFIG.netSize);
   sheet.rotation.x = -Math.PI / 2;
   sheet.updateMatrixWorld(true);
   const netW = new THREE.Box3().setFromObject(sheet).getSize(new THREE.Vector3()).x;
 
-  // modulus rectangle: the reduced lattice cell. Unit area ⟹ sides 1/√Im × √Im
-  // in developing-plane units; same planeScale as the net ⟹ equal areas on screen.
-  const W = (1 / Math.sqrt(tau[1])) * planeScale;
-  const H = Math.sqrt(tau[1]) * planeScale;
-  const rect = modulusRectangle(W, H);
+  // modulus cell: the reduced lattice parallelogram, at the net's display scale ⟹
+  // equal areas on screen (unit-area cell × planeScale; line radius pre-scaled).
+  const cellDeco = modulusCell(RICH, {
+    lineColor: CONFIG.rectColor, fillColor: CONFIG.rectColor,
+    fillOpacity: CONFIG.rectFillOpacity, lineRadius: CONFIG.rectLineRadius / planeScale,
+  });
+  cellDeco.draw(paper.positions);
+  curCell = cellDeco;
+  const rect = cellDeco.group;
+  rect.scale.setScalar(planeScale);
   rect.rotation.x = -Math.PI / 2;
+  const W = (1 / Math.sqrt(tau[1])) * planeScale;
 
   // side by side on the ground, the pair centered on x = 0
   const total = netW + CONFIG.groundGap + W;

@@ -20,9 +20,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { byId } from '../../src/triangulations';
-import { paperFromRow } from '../../src/io/embeddings';
-import { styledTorus } from '../../src/render/styledTorus';
-import { paperMaterials } from '../../src/render/paper';
+import { paperFromRow } from '../../src/configuration/csv';
+import { makeTorusView } from '../../src/viewer/TorusView';
+import { paperMaterials } from '../../src/viewer/materials';
+import { slicePlane } from '../../src/viewer/slicePlane';
 import { skyEnvironment } from '../../src/render/stage';
 import { modulus, reduceModulus } from '../../src/topology/develop';
 
@@ -80,17 +81,17 @@ scene.add(key);
 
 const cam = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, maxR * 0.02, maxR * 40);
 
-// translucent torus in a pivot at the origin (rotate + z-slide)
-const { face } = paperMaterials({ paperColor: '#dcbf6f', gridColor: '#2435AF', gridMinorColor: '#4e5988' });
+// translucent torus; its own group is the pivot (rotate + z-slide)
+const { surface: face } = paperMaterials({ paperColor: '#dcbf6f', gridColor: '#2435AF', gridMinorColor: '#4e5988' });
 face.transparent = true; face.opacity = 0.4;
-const triang = styledTorus(paper, { surface: 'grid', edges: false, faceMaterial: face });
-const pivot = new THREE.Group();
-pivot.add(triang);
+const view = makeTorusView(torusDef, { surface: { material: face } });
+view.draw(paper.positions);
+const pivot = view.group;
 scene.add(pivot);
 
 // frame the FIXED camera on the torus's actual bounds (a slightly-elevated 3/4 view)
 pivot.updateMatrixWorld(true);
-const tbox = new THREE.Box3().setFromObject(triang);
+const tbox = new THREE.Box3().setFromObject(pivot);
 const tcenter = tbox.getCenter(new THREE.Vector3());
 const trad = tbox.getBoundingSphere(new THREE.Sphere()).radius || maxR;
 const cdist = (trad / Math.sin((cam.fov * Math.PI / 180) / 2)) * 1.6;
@@ -104,59 +105,25 @@ controls.enableDamping = true;
 controls.target.copy(tcenter);
 controls.update();
 
-// world-fixed slice plane at z = 0
-const planeSize = maxR * 2.4;
-const plane = new THREE.Mesh(
-  new THREE.PlaneGeometry(planeSize, planeSize),
-  new THREE.MeshStandardMaterial({ color: 0x4488ff, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }),
-);
-scene.add(plane);
+// world-fixed slice plane at z = 0 + the live section, via the slicePlane decoration.
+const planeZ0 = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const slicer = slicePlane(torusDef, { planeSize: maxR * 2.4, curveColor: 0x166534 });
+scene.add(slicer.group);
 
-// the section polygon in 3-D
-// transparent so it renders in the transparent pass (after the translucent plane
-// + torus), with high renderOrder + depthTest off → the section always draws on top.
-const sliceMat = new THREE.LineBasicMaterial({ color: 0x166534, depthTest: false, transparent: true });
-const sliceGeo = new THREE.BufferGeometry();
-const sliceBuf = new Float32Array(torusDef.triangles.length * 2 * 3);
-sliceGeo.setAttribute('position', new THREE.BufferAttribute(sliceBuf, 3));
-const slice = new THREE.LineSegments(sliceGeo, sliceMat);
-slice.renderOrder = 10;
-slice.frustumCulled = false;
-scene.add(slice);
-
-let sliceVerts = 0;                 // number of vertices written to sliceBuf (2 per segment)
+// Section: the fixed plane z = 0 ∩ the torus. The torus's world positions are its
+// centered coords rotated by the pivot and z-shifted by pivot.position.z; the slicer
+// measures plane ∩ those.
+const V = torusDef.vertexCount;
+const worldPos = new Float64Array(V * 3);
 const tmp = new THREE.Vector3();
-
-/** Section: the fixed plane z = 0 ∩ the torus (rotated by pivot, z-shifted by pivot.position.z). */
 function updateSlice(): void {
   const q = pivot.quaternion;
   const pz = pivot.position.z;
-  let n = 0;
-  for (const t of torusDef.triangles) {
-    const W: number[][] = [];
-    for (let k = 0; k < 3; k++) {
-      const v = t[k];
-      tmp.set(cpos[3 * v], cpos[3 * v + 1], cpos[3 * v + 2]).applyQuaternion(q);
-      W.push([tmp.x, tmp.y, tmp.z + pz]);
-    }
-    const d = [W[0][2], W[1][2], W[2][2]];   // signed distance to z = 0
-    const cross: number[][] = [];
-    for (let e = 0; e < 3; e++) {
-      const i = e, j = (e + 1) % 3;
-      if ((d[i] < 0) !== (d[j] < 0)) {
-        const s = d[i] / (d[i] - d[j]);
-        cross.push([W[i][0] + s * (W[j][0] - W[i][0]), W[i][1] + s * (W[j][1] - W[i][1]), 0]);
-      }
-    }
-    if (cross.length === 2) {
-      sliceBuf[n++] = cross[0][0]; sliceBuf[n++] = cross[0][1]; sliceBuf[n++] = cross[0][2];
-      sliceBuf[n++] = cross[1][0]; sliceBuf[n++] = cross[1][1]; sliceBuf[n++] = cross[1][2];
-    }
+  for (let v = 0; v < V; v++) {
+    tmp.set(cpos[3 * v], cpos[3 * v + 1], cpos[3 * v + 2]).applyQuaternion(q);
+    worldPos[3 * v] = tmp.x; worldPos[3 * v + 1] = tmp.y; worldPos[3 * v + 2] = tmp.z + pz;
   }
-  sliceVerts = n / 3;
-  sliceGeo.setDrawRange(0, sliceVerts);
-  sliceGeo.attributes.position.needsUpdate = true;
-  sliceGeo.computeBoundingSphere();
+  slicer.draw(worldPos, planeZ0);
 }
 
 // ---------------------------------------------------------------------------
@@ -264,11 +231,12 @@ function draw2d(): void {
   // the polygon
   p2d.strokeStyle = '#166534'; p2d.lineWidth = 2; p2d.lineCap = 'round';
   p2d.beginPath();
-  for (let s = 0; s < sliceVerts; s += 2) {
-    const ax = sliceBuf[s * 3], ay = sliceBuf[s * 3 + 1];
-    const bx = sliceBuf[(s + 1) * 3], by = sliceBuf[(s + 1) * 3 + 1];
-    p2d.moveTo(ox + ax * pxPerUnit, oy - ay * pxPerUnit);
-    p2d.lineTo(ox + bx * pxPerUnit, oy - by * pxPerUnit);
+  for (const loop of slicer.loops()) {
+    for (let i = 0; i < loop.length; i++) {
+      const a = loop[i], b = loop[(i + 1) % loop.length];
+      p2d.moveTo(ox + a.x * pxPerUnit, oy - a.y * pxPerUnit);
+      p2d.lineTo(ox + b.x * pxPerUnit, oy - b.y * pxPerUnit);
+    }
   }
   p2d.stroke();
   p2d.fillStyle = 'rgba(20,20,20,0.5)'; p2d.font = '11px ui-monospace,monospace';

@@ -1,10 +1,9 @@
 /**
  * Texture assets, kept out of the demo folders. Drop image files in
- * `assets/textures/` (repo root) and load them by name from any render demo.
+ * `assets/textures/` (repo root) and load them by name. Vite needs a static,
+ * file-relative glob — from `src/viewer/` the assets dir is `../../assets/textures`.
  *
- * Vite needs a static, file-relative glob — from src/render/ the assets dir is
- * `../../assets/textures`. (Demos under renders/<name>/ are also two levels deep,
- * but loading goes through this module so the path lives in exactly one place.)
+ * Impure render boundary (three.js).
  */
 
 import * as THREE from 'three';
@@ -20,7 +19,7 @@ export function textureUrl(filename: string): string | undefined {
   return ASSET_URLS[`../../assets/textures/${filename}`];
 }
 
-/** Names of all available texture assets (for listing / fallbacks). */
+/** Names of all available texture assets. */
 export function textureNames(): string[] {
   return Object.keys(ASSET_URLS).map((p) => p.split('/').pop()!);
 }
@@ -31,10 +30,10 @@ export interface NormalMapOptions {
 }
 
 /**
- * Load a tileable normal map from assets/textures by filename. Returns the
- * Texture immediately (it fills in once decoded); `onLoad` fires after — use it
- * to e.g. notify the path tracer. Set up correctly for normal maps: RepeatWrapping
- * + linear color space (NOT sRGB). Returns null + warns if the file is missing.
+ * Load a tileable normal map from assets/textures by filename. Returns the Texture
+ * immediately (it fills in once decoded); `onLoad` fires after — use it to e.g.
+ * notify the path tracer. RepeatWrapping + linear color space (NOT sRGB). Returns
+ * null + warns if the file is missing.
  */
 export function loadNormalMap(
   filename: string,
@@ -43,7 +42,7 @@ export function loadNormalMap(
 ): THREE.Texture | null {
   const url = textureUrl(filename);
   if (!url) {
-    console.warn(`[textures] no asset "assets/textures/${filename}" (have: ${textureNames().join(', ')})`);
+    console.warn(`[normalMap] no asset "assets/textures/${filename}" (have: ${textureNames().join(', ')})`);
     return null;
   }
   const repeat = opts.repeat ?? 1;
