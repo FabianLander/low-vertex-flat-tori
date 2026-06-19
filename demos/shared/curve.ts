@@ -1,15 +1,36 @@
 /**
- * Parametric plane curves with arclength queries.
+ * Parametric plane curves with arclength queries — a demo-side construct.
  *
  * A curve is discretized ONCE into a dense polyline with a cumulative-arclength
  * table; every query (point-at-arclength, uniform resampling, nearest-point
  * projection) runs off that table. So the same type serves both a parametric
  * function t↦(x,y) and a hand-listed polyline, open or closed.
  *
+ * Lives here, not in `@core/geometry`: unlike geometry's stateless coordinate
+ * kernels, this is a CONSTRUCTED object (polyline + arclength table + methods),
+ * ℝ²-only, used solely by the demos (`curve-cloud`, `moduli-trace`). It builds on
+ * `geometry/vec2`'s vector algebra; `projectToSegment` (which only `project` needs)
+ * came along with it.
+ *
  * Pure: no DOM, no three.js.
  */
 
-import { type Vec2, dist, lerp, projectToSegment } from './vec2.ts';
+import { type Vec2, dist, lerp } from '@core/geometry/vec2.ts';
+
+/**
+ * Foot of the perpendicular from `p` to the segment [a,b], clamped to the
+ * segment. Returns the clamped parameter `t ∈ [0,1]`, the foot point, and the
+ * squared distance. A degenerate (zero-length) segment measures to `a`.
+ */
+function projectToSegment(p: Vec2, a: Vec2, b: Vec2): { t: number; foot: Vec2; dist2: number } {
+  const abx = b[0] - a[0], aby = b[1] - a[1];
+  const ab2 = abx * abx + aby * aby;
+  let t = ab2 < 1e-30 ? 0 : ((p[0] - a[0]) * abx + (p[1] - a[1]) * aby) / ab2;
+  if (t < 0) t = 0; else if (t > 1) t = 1;
+  const foot: Vec2 = [a[0] + t * abx, a[1] + t * aby];
+  const dx = p[0] - foot[0], dy = p[1] - foot[1];
+  return { t, foot, dist2: dx * dx + dy * dy };
+}
 
 export interface PlaneCurve {
   readonly length: number;

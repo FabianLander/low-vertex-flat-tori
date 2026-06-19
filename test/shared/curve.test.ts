@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { makeCurve, makePolyline } from '@core/geometry/curve.ts';
+import { makeCurve, makePolyline } from '../../demos/shared/curve.ts';
 import type { Vec2 } from '@core/geometry/vec2.ts';
 
 describe('PlaneCurve', () => {

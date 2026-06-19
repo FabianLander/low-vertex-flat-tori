@@ -33,7 +33,7 @@
 
 import type { Triangulation, DevelopStep } from '@core/topology/triangulation.ts';
 import { edgeKey, edgeEnds } from '@core/topology/triangulation.ts';
-import { type Vec2, cross } from '@core/geometry/vec2.ts';
+import { type Vec2, det2 } from '@core/geometry/vec2.ts';
 import { triangleArea } from '@core/geometry/triangle.ts';
 
 // ─── complex arithmetic on Vec2 (a Vec2 is a complex number) ──────────────────
@@ -310,6 +310,6 @@ export function tauFromNet(triang: Triangulation, net: DevelopedNet): Vec2 {
   };
   let v1 = holo(plan.loops[0]);
   let v2 = holo(plan.loops[1]);
-  if (cross(v1, v2) < 0) [v1, v2] = [v2, v1];
+  if (det2(v1, v2) < 0) [v1, v2] = [v2, v1];
   return cdiv(v2, v1);
 }

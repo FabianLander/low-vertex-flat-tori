@@ -26,7 +26,8 @@
 import type { Triangulation } from './triangulation.ts';
 import { edgeKey } from './triangulation.ts';
 import { spanningTree, dualSpanningTree, coTreeEdges } from './trees.ts';
-import { type Vec2, signedArea2 } from '@core/geometry/vec2.ts';
+import type { Vec2 } from '@core/geometry/vec2.ts';
+import { signedArea2 } from '@core/geometry/triangle.ts';
 
 export type HarmonicTile = { readonly id: number; readonly corners: Vec2[] };
 
@@ -187,7 +188,10 @@ export function harmonicLayout(triang: Triangulation): HarmonicLayout {
   tiles = develop();
 
   // orient positively: if the triangles develop clockwise, mirror in y
-  const totalArea2 = tiles.reduce((s, t) => s + signedArea2(t.corners[0], t.corners[1], t.corners[2]), 0);
+  const totalArea2 = tiles.reduce((s, t) => {
+    const [c0, c1, c2] = t.corners;
+    return s + signedArea2(c0[0], c0[1], c1[0], c1[1], c2[0], c2[1]);
+  }, 0);
   if (totalArea2 < 0) {
     vertexPos = vertexPos.map(([x, y]): Vec2 => [x, -y]);
     V1 = [V1[0], -V1[1]]; V2 = [V2[0], -V2[1]];

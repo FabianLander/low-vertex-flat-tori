@@ -13,9 +13,24 @@
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import type { ScalarFn } from '@core/functions/types.ts';
 import { fdScalar } from '@core/functions/compose.ts';
-import { triTriChord } from '@core/geometry/intersectionChord.ts';
-import { planeCutRatio } from '@core/geometry/triangle.ts';
+import { triTriChord, planeCutRatio, type ChordResult } from '@core/geometry/intersection.ts';
 import { cellTables } from '../cells.ts';
+
+/** Buffer adapter: the intersection chord of faces `tA`,`tB`, reading their corners
+ *  out of `p` for the coordinates-only `triTriChord`. */
+function pairChord(
+  triangles: readonly (readonly number[])[],
+  p: ArrayLike<number>,
+  tA: number,
+  tB: number,
+): ChordResult | null {
+  const A = triangles[tA], B = triangles[tB];
+  const a0 = 3 * A[0], a1 = 3 * A[1], a2 = 3 * A[2], b0 = 3 * B[0], b1 = 3 * B[1], b2 = 3 * B[2];
+  return triTriChord(
+    p[a0], p[a0 + 1], p[a0 + 2], p[a1], p[a1 + 1], p[a1 + 2], p[a2], p[a2 + 1], p[a2 + 2],
+    p[b0], p[b0 + 1], p[b0 + 2], p[b1], p[b1 + 1], p[b1 + 2], p[b2], p[b2 + 1], p[b2 + 2],
+  );
+}
 
 /** Σ of squared intersection-chord lengths over non-adjacent triangle pairs. */
 export function makeChordLengthSquared(triang: Triangulation): ScalarFn {
@@ -24,13 +39,11 @@ export function makeChordLengthSquared(triang: Triangulation): ScalarFn {
   return fdScalar('chord length²', triang.vertexCount * 3, (positions) => {
     let E = 0;
     for (const [tA, tB] of disjointTrianglePairs) {
-      const A = tris[tA], B = tris[tB];
-      const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
+      const c = pairChord(tris, positions, tA, tB);
       if (c) E += c.length * c.length;
     }
     for (const pair of sharedVertexTrianglePairs) {
-      const A = tris[pair.a], B = tris[pair.b];
-      const c = triTriChord(positions, 3 * A[0], 3 * A[1], 3 * A[2], 3 * B[0], 3 * B[1], 3 * B[2]);
+      const c = pairChord(tris, positions, pair.a, pair.b);
       if (c) E += c.length * c.length;
     }
     return E;
@@ -41,8 +54,6 @@ function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, t
   const A = triang.triangles[tA], B = triang.triangles[tB];
   const oa0 = 3 * A[0], oa1 = 3 * A[1], oa2 = 3 * A[2];
   const ob0 = 3 * B[0], ob1 = 3 * B[1], ob2 = 3 * B[2];
-  const c = triTriChord(positions, oa0, oa1, oa2, ob0, ob1, ob2);
-  if (!c) return 0;
 
   const a0x = positions[oa0], a0y = positions[oa0 + 1], a0z = positions[oa0 + 2];
   const a1x = positions[oa1], a1y = positions[oa1 + 1], a1z = positions[oa1 + 2];
@@ -50,6 +61,12 @@ function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, t
   const b0x = positions[ob0], b0y = positions[ob0 + 1], b0z = positions[ob0 + 2];
   const b1x = positions[ob1], b1y = positions[ob1 + 1], b1z = positions[ob1 + 2];
   const b2x = positions[ob2], b2y = positions[ob2 + 1], b2z = positions[ob2 + 2];
+
+  const c = triTriChord(
+    a0x, a0y, a0z, a1x, a1y, a1z, a2x, a2y, a2z,
+    b0x, b0y, b0z, b1x, b1y, b1z, b2x, b2y, b2z,
+  );
+  if (!c) return 0;
 
   // Raw (un-normalized) plane normal of each face — the cut ratio is scale-invariant
   // in it, so we skip the normalize that the unit-normal `triangleNormal` would add.

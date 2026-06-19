@@ -12,7 +12,7 @@
  * Controls:  ←/→ switch shape · ↑/↓ point count · [ / ] tube radius · r reseed
  */
 
-import { makeCurve, type PlaneCurve } from '@core/geometry/curve.ts';
+import { makeCurve, type PlaneCurve } from '../shared/curve.ts';
 import { sampleAlongCurve, type CloudPoint, type Match } from './curveCloudSample.ts';
 import type { Vec2 } from '@core/geometry/vec2.ts';
 

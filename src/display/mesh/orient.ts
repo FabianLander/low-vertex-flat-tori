@@ -12,8 +12,8 @@
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
-import type { Vec3 } from '@core/geometry/vec3.ts';
-import { triangleNormal, signedVolume6 } from '@core/geometry/triangle.ts';
+import { type Vec3, det3 } from '@core/geometry/vec3.ts';
+import { triangleNormal } from '@core/geometry/triangle.ts';
 
 /** Unit normal of triangle t, (b−a)×(c−a) normalized (orientation as authored). */
 export function faceNormal(
@@ -35,15 +35,16 @@ export function faceNormal(
 /**
  * +1 if the authored triangle winding makes (b−a)×(c−a) point OUTWARD, −1 if
  * inward. From the signed volume V = (1/6)Σ a·(b×c): V>0 ⟺ outward (right-hand).
+ * Each triangle's term is `det3(a,b,c)` = 6× the signed volume of tetra(O,a,b,c).
  */
 export function outwardSign(triang: Triangulation, p: ArrayLike<number>): number {
   let v6 = 0;
   for (const [a, b, c] of triang.triangles) {
     const oa = 3 * a, ob = 3 * b, oc = 3 * c;
-    v6 += signedVolume6(
-      p[oa], p[oa + 1], p[oa + 2],
-      p[ob], p[ob + 1], p[ob + 2],
-      p[oc], p[oc + 1], p[oc + 2],
+    v6 += det3(
+      [p[oa], p[oa + 1], p[oa + 2]],
+      [p[ob], p[ob + 1], p[ob + 2]],
+      [p[oc], p[oc + 1], p[oc + 2]],
     );
   }
   return v6 >= 0 ? 1 : -1;

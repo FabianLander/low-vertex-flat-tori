@@ -1,10 +1,11 @@
 /**
  * `Vec2` — a point/vector in ℝ² as a plain 2-tuple `[x, y]`, with the 2D vector
- * ops. The one ℝ² coordinate type for the whole codebase: the developed net and
- * harmonic layout in `topology/`, the modulus τ, certificates, the plane curves.
+ * algebra. The one ℝ² coordinate type for the whole codebase: the developed net and
+ * harmonic layout in `topology/`, the modulus τ, certificates.
  *
- * Mirrors `vec3.ts`. Tuple ops allocate, so they're for cold code; hot kernels
- * (`distance`, the intersection predicates) stay on raw scalar components.
+ * Mirrors `vec3.ts`. Tuple ops allocate, so they're for cold code; the hot kernels
+ * (`distance`, the `intersection` predicates) stay on raw scalar components and inline
+ * these where needed.
  */
 
 export type Vec2 = [number, number];
@@ -20,24 +21,7 @@ export const dist2 = (a: Vec2, b: Vec2): number => {
   return dx * dx + dy * dy;
 };
 export const lerp = (a: Vec2, b: Vec2, t: number): Vec2 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-/** 2D scalar cross product a×b = aₓbᵧ − aᵧbₓ (signed; >0 ⟺ b is CCW from a). */
-export const cross = (a: Vec2, b: Vec2): number => a[0] * b[1] - a[1] * b[0];
-/** Twice the signed area of triangle (a,b,c) = (b−a)×(c−a); >0 ⟺ CCW. */
-export const signedArea2 = (a: Vec2, b: Vec2, c: Vec2): number =>
-  (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-
-/**
- * Foot of the perpendicular from `p` to the segment [a,b], clamped to the
- * segment. Returns the clamped parameter `t ∈ [0,1]`, the foot point, and the
- * squared distance. A degenerate (zero-length) segment measures to `a`.
- * (2D analogue of `../distance.ts` `pointSegmentDist2`, but it also returns t/foot.)
- */
-export function projectToSegment(p: Vec2, a: Vec2, b: Vec2): { t: number; foot: Vec2; dist2: number } {
-  const abx = b[0] - a[0], aby = b[1] - a[1];
-  const ab2 = abx * abx + aby * aby;
-  let t = ab2 < 1e-30 ? 0 : ((p[0] - a[0]) * abx + (p[1] - a[1]) * aby) / ab2;
-  if (t < 0) t = 0; else if (t > 1) t = 1;
-  const foot: Vec2 = [a[0] + t * abx, a[1] + t * aby];
-  const dx = p[0] - foot[0], dy = p[1] - foot[1];
-  return { t, foot, dist2: dx * dx + dy * dy };
-}
+/** The 2×2 determinant det[a; b] = aₓbᵧ − aᵧbₓ — the signed area of the parallelogram
+ *  (a,b); >0 ⟺ b is CCW from a. (The "2D cross product"; signed-triangle-area and
+ *  orientation tests are this on edge vectors.) */
+export const det2 = (a: Vec2, b: Vec2): number => a[0] * b[1] - a[1] * b[0];

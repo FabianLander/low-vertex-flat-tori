@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  cornerAngle, cornerAngleGrad, triangleNormal, triangleArea,
-  triangleSignedArea2, signedVolume6, planeCutRatio,
+  cornerAngle, cornerAngleGrad, triangleNormal, triangleArea, signedArea2,
 } from '@core/geometry/triangle.ts';
 import type { Vec3 } from '@core/geometry/vec3.ts';
 
@@ -59,28 +58,9 @@ describe('triangleArea', () => {
   });
 });
 
-describe('triangleSignedArea2', () => {
+describe('signedArea2', () => {
   it('CCW positive, CW negative, magnitude = 2·area', () => {
-    expect(triangleSignedArea2(0, 0, 1, 0, 0, 1)).toBeCloseTo(1, 12);   // 2·(½) = 1
-    expect(triangleSignedArea2(0, 0, 0, 1, 1, 0)).toBeCloseTo(-1, 12);  // reversed winding
-  });
-});
-
-describe('signedVolume6', () => {
-  it('= a·(b×c); unit box corner gives 1', () => {
-    expect(signedVolume6(1, 0, 0, 0, 1, 0, 0, 0, 1)).toBeCloseTo(1, 12);
-  });
-});
-
-describe('planeCutRatio', () => {
-  it('plane through a median splits a triangle (ratio in (0, 0.5])', () => {
-    // triangle (0,0,0),(2,0,0),(0,2,0); plane x = 1 (normal +x, ref (1,0,0)) cuts it
-    const r = planeCutRatio(0, 0, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 1, 0, 0);
-    expect(r).toBeGreaterThan(0);
-    expect(r).toBeLessThanOrEqual(0.5);
-  });
-  it('is 0 when the plane misses the triangle (all vertices one side)', () => {
-    const r = planeCutRatio(0, 0, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, -1, 0, 0); // plane x = −1
-    expect(r).toBe(0);
+    expect(signedArea2(0, 0, 1, 0, 0, 1)).toBeCloseTo(1, 12);   // 2·(½) = 1
+    expect(signedArea2(0, 0, 0, 1, 1, 0)).toBeCloseTo(-1, 12);  // reversed winding
   });
 });

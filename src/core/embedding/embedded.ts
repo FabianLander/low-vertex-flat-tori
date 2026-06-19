@@ -4,7 +4,7 @@
  *
  * A realization is embedded iff no two non-adjacent triangle interiors cross — and
  * *which* pairs cross is a function of the ORIENTATION signs of the vertices
- * (`geometry/triangleIntersect`), so the gate is sign-only and robust on near-flat
+ * (`geometry/intersection`), so the gate is sign-only and robust on near-flat
  * tori. `clearance` is the SAME condition read continuously: the min, over exactly
  * the pairs the gate tests, of the true distance to a crossing, normalized by √area
  * (scale-free, 0 exactly on ∂Ω). So **gate = sign(clearance)** and clearance is its
@@ -20,10 +20,34 @@
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
-import { segmentTriangleIntersect, triangleTriangleIntersect } from '@core/geometry/triangleIntersect.ts';
+import { segmentTriangleIntersect, triangleTriangleIntersect } from '@core/geometry/intersection.ts';
 import { segmentTriangleDist2, triangleTriangleDist2 } from '@core/geometry/distance.ts';
 import { cellTables } from './cells.ts';
 import { linearSize } from './separation.ts';
+
+// ─── buffer adapters: read a face/edge's corners from `positions` and feed a
+//     coordinates-only geometry kernel (the gate's twins of faceFaceDist2/edgeFaceDist2) ──
+
+/** Do the interiors of faces `fa`, `fb` cross? (the gate's tri-tri test) */
+function faceFaceIntersect(triang: Triangulation, p: ArrayLike<number>, fa: number, fb: number): boolean {
+  const [a0, a1, a2] = triang.triangles[fa];
+  const [b0, b1, b2] = triang.triangles[fb];
+  const A0 = 3 * a0, A1 = 3 * a1, A2 = 3 * a2, B0 = 3 * b0, B1 = 3 * b1, B2 = 3 * b2;
+  return triangleTriangleIntersect(
+    p[A0], p[A0 + 1], p[A0 + 2], p[A1], p[A1 + 1], p[A1 + 2], p[A2], p[A2 + 1], p[A2 + 2],
+    p[B0], p[B0 + 1], p[B0 + 2], p[B1], p[B1 + 1], p[B1 + 2], p[B2], p[B2 + 1], p[B2 + 2],
+  );
+}
+
+/** Does the edge (u,w) pierce face `f`'s interior? (the gate's edge-tri test) */
+function edgeFaceIntersect(triang: Triangulation, p: ArrayLike<number>, u: number, w: number, f: number): boolean {
+  const [c0, c1, c2] = triang.triangles[f];
+  const ou = 3 * u, ow = 3 * w, o0 = 3 * c0, o1 = 3 * c1, o2 = 3 * c2;
+  return segmentTriangleIntersect(
+    p[ou], p[ou + 1], p[ou + 2], p[ow], p[ow + 1], p[ow + 2],
+    p[o0], p[o0 + 1], p[o0 + 2], p[o1], p[o1 + 1], p[o1 + 2], p[o2], p[o2 + 1], p[o2 + 2],
+  );
+}
 
 // ─── the gate (the topological truth) ────────────────────────────────────────
 
@@ -41,18 +65,13 @@ export function isEmbedded(triang: Triangulation, positions: ArrayLike<number>):
 
 /** The first crossing found, or null if embedded. */
 export function firstViolation(triang: Triangulation, positions: ArrayLike<number>): EmbeddingViolation | null {
-  const { triangles } = triang;
   const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
   for (const [t1, t2] of disjointTrianglePairs) {
-    const a = triangles[t1], b = triangles[t2];
-    if (triangleTriangleIntersect(positions, a[0], a[1], a[2], b[0], b[1], b[2])) {
-      return { kind: 'tri-tri', t1, t2 };
-    }
+    if (faceFaceIntersect(triang, positions, t1, t2)) return { kind: 'tri-tri', t1, t2 };
   }
   for (const pair of sharedVertexTrianglePairs) {
-    const t1 = triangles[pair.a], t2 = triangles[pair.b];
-    if (segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2])
-      || segmentTriangleIntersect(positions, pair.bOpp[0], pair.bOpp[1], t1[0], t1[1], t1[2])) {
+    if (edgeFaceIntersect(triang, positions, pair.aOpp[0], pair.aOpp[1], pair.b)
+      || edgeFaceIntersect(triang, positions, pair.bOpp[0], pair.bOpp[1], pair.a)) {
       return { kind: 'edge-tri', t1: pair.a, t2: pair.b };
     }
   }
@@ -61,19 +80,14 @@ export function firstViolation(triang: Triangulation, positions: ArrayLike<numbe
 
 /** Every crossing (for diagnostics / painting). */
 export function allViolations(triang: Triangulation, positions: ArrayLike<number>): EmbeddingViolation[] {
-  const { triangles } = triang;
   const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
   const out: EmbeddingViolation[] = [];
   for (const [t1, t2] of disjointTrianglePairs) {
-    const a = triangles[t1], b = triangles[t2];
-    if (triangleTriangleIntersect(positions, a[0], a[1], a[2], b[0], b[1], b[2])) {
-      out.push({ kind: 'tri-tri', t1, t2 });
-    }
+    if (faceFaceIntersect(triang, positions, t1, t2)) out.push({ kind: 'tri-tri', t1, t2 });
   }
   for (const pair of sharedVertexTrianglePairs) {
-    const t1 = triangles[pair.a], t2 = triangles[pair.b];
-    const hit = segmentTriangleIntersect(positions, pair.aOpp[0], pair.aOpp[1], t2[0], t2[1], t2[2])
-      || segmentTriangleIntersect(positions, pair.bOpp[0], pair.bOpp[1], t1[0], t1[1], t1[2]);
+    const hit = edgeFaceIntersect(triang, positions, pair.aOpp[0], pair.aOpp[1], pair.b)
+      || edgeFaceIntersect(triang, positions, pair.bOpp[0], pair.bOpp[1], pair.a);
     if (hit) out.push({ kind: 'edge-tri', t1: pair.a, t2: pair.b });
   }
   return out;

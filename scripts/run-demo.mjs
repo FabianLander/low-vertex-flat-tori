@@ -15,7 +15,10 @@ function listViews() {
   for (const base of BASE_DIRS) {
     const dir = resolve(root, base);
     if (!existsSync(dir)) continue;
-    for (const d of readdirSync(dir, { withFileTypes: true })) if (d.isDirectory()) out.push({ base, name: d.name });
+    // only folders with a main.ts are runnable entries (skips shared-helper dirs like demos/shared/)
+    for (const d of readdirSync(dir, { withFileTypes: true })) {
+      if (d.isDirectory() && existsSync(resolve(dir, d.name, 'main.ts'))) out.push({ base, name: d.name });
+    }
   }
   return out;
 }

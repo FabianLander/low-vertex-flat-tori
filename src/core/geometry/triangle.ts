@@ -59,7 +59,7 @@ export function cornerAngleGrad(
   return true;
 }
 
-// ─── area / normal / orientation ─────────────────────────────────────────────
+// ─── area / normal / signed area ─────────────────────────────────────────────
 
 /** Unit normal of triangle (a,b,c): (b−a)×(c−a) normalized (orientation by the
  *  given winding). A degenerate triangle yields a zero vector. Writes into `out`. */
@@ -89,63 +89,11 @@ export function triangleArea(
 }
 
 /** Twice the signed area of triangle (a,b,c) in the plane = (b−a)×(c−a); >0 ⟺ CCW.
- *  (Scalar/component form of `vec2.signedArea2`, for callers reading a buffer.) */
-export function triangleSignedArea2(
+ *  The scalar form of `vec2.det2` on the edge vectors (for hot callers reading a buffer). */
+export function signedArea2(
   ax: number, ay: number,
   bx: number, by: number,
   cx: number, cy: number,
 ): number {
   return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-}
-
-/** Scalar triple product a·(b×c) = 6× the signed volume of tetra (origin,a,b,c).
- *  Summed over a closed mesh's triangles it gives 6× the enclosed signed volume
- *  (its sign is the outward/inward orientation of the authored winding). */
-export function signedVolume6(
-  ax: number, ay: number, az: number,
-  bx: number, by: number, bz: number,
-  cx: number, cy: number, cz: number,
-): number {
-  return ax * (by * cz - bz * cy) + ay * (bz * cx - bx * cz) + az * (bx * cy - by * cx);
-}
-
-// ─── plane cut ───────────────────────────────────────────────────────────────
-
-const EPS = 1e-12;
-
-/**
- * Ratio (smaller piece area / triangle area) ∈ [0, 0.5] of triangle (a,b,c) cut by
- * the plane through `(rx,ry,rz)` with normal `(nx,ny,nz)` (the normal need not be
- * unit — the ratio is scale-invariant in it). Zero if the plane doesn't divide the
- * triangle. Both "two vertices on one side" and "one vertex on the plane" reduce to
- * min(t₁·t₂, 1 − t₁·t₂) on the cut parameters.
- */
-export function planeCutRatio(
-  ax: number, ay: number, az: number,
-  bx: number, by: number, bz: number,
-  cx: number, cy: number, cz: number,
-  nx: number, ny: number, nz: number,
-  rx: number, ry: number, rz: number,
-): number {
-  const d0 = (ax - rx) * nx + (ay - ry) * ny + (az - rz) * nz;
-  const d1 = (bx - rx) * nx + (by - ry) * ny + (bz - rz) * nz;
-  const d2 = (cx - rx) * nx + (cy - ry) * ny + (cz - rz) * nz;
-  if (d0 > EPS && d1 > EPS && d2 > EPS) return 0;
-  if (d0 < -EPS && d1 < -EPS && d2 < -EPS) return 0;
-
-  const s0 = d0 < -EPS ? -1 : 1, s1 = d1 < -EPS ? -1 : 1, s2 = d2 < -EPS ? -1 : 1;
-  const numPos = (s0 > 0 ? 1 : 0) + (s1 > 0 ? 1 : 0) + (s2 > 0 ? 1 : 0);
-  if (numPos === 0 || numPos === 3) return 0;
-
-  const singleIsPos = numPos === 1;
-  let dS: number, dO1: number, dO2: number;
-  if ((s0 > 0) === singleIsPos)      { dS = d0; dO1 = d1; dO2 = d2; }
-  else if ((s1 > 0) === singleIsPos) { dS = d1; dO1 = d2; dO2 = d0; }
-  else                                { dS = d2; dO1 = d0; dO2 = d1; }
-
-  const denom1 = dS - dO1, denom2 = dS - dO2;
-  if (Math.abs(denom1) < EPS || Math.abs(denom2) < EPS) return 0;
-  let prod = (dS / denom1) * (dS / denom2);
-  if (prod < 0) prod = 0; else if (prod > 1) prod = 1;
-  return Math.min(prod, 1 - prod);
 }

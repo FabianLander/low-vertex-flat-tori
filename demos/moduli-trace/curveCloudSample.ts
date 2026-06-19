@@ -17,7 +17,7 @@
  */
 
 import { type Vec2, dist2 } from '@core/geometry/vec2.ts';
-import type { PlaneCurve } from '@core/geometry/curve.ts';
+import type { PlaneCurve } from '../shared/curve.ts';
 
 export type CloudPoint<T> = { p: Vec2; payload: T };
 

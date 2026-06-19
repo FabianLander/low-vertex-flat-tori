@@ -21,7 +21,7 @@
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
-import { type Vec2, cross } from '@core/geometry/vec2.ts';
+import { type Vec2, det2 } from '@core/geometry/vec2.ts';
 import { framePlan, developFrames, canonicalShape, cmul, cdiv, totalArea, type Frames } from './develop.ts';
 
 export type Modulus = {
@@ -55,7 +55,7 @@ export function modulus(triang: Triangulation, p: ArrayLike<number>): Modulus {
   const frames = developFrames(triang, p);
   let v1 = loopHolonomy(frames, plan.loops[0]);
   let v2 = loopHolonomy(frames, plan.loops[1]);
-  if (cross(v1, v2) < 0) [v1, v2] = [v2, v1];   // orient so τ ∈ ℍ (consistent across dataset)
+  if (det2(v1, v2) < 0) [v1, v2] = [v2, v1];   // orient so τ ∈ ℍ (consistent across dataset)
 
   // rotDefect: the rotational holonomy mismatch at each cut edge (frame data, no positions).
   let rotDefect = 0;
@@ -71,7 +71,7 @@ export function modulus(triang: Triangulation, p: ArrayLike<number>): Modulus {
     v1, v2,
     tau: cdiv(v2, v1),
     area: totalArea(triang, p),
-    covolume: Math.abs(cross(v1, v2)),
+    covolume: Math.abs(det2(v1, v2)),
     rotDefect,
   };
 }
@@ -184,7 +184,7 @@ export function tauJacobian(triang: Triangulation, p: ArrayLike<number>, out: Fl
   };
   let v1 = holo(plan.loops[0]);
   let v2 = holo(plan.loops[1]);
-  if (cross([v1.re, v1.im], [v2.re, v2.im]) < 0) { const tmp = v1; v1 = v2; v2 = tmp; }
+  if (det2([v1.re, v1.im], [v2.re, v2.im]) < 0) { const tmp = v1; v1 = v2; v2 = tmp; }
   const tau = cdivC(v2, v1, n);
   for (let i = 0; i < n; i++) { out[i] = tau.gre[i]; out[n + i] = tau.gim[i]; }
 }

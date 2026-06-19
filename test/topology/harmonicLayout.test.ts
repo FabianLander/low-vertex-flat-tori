@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { ALL_TORI, RICH } from '@core/triangulations';
 import { harmonicLayout } from '@core/topology/harmonicLayout';
 import { windingNet } from '@core/topology/fundamentalDomain';
-import { signedArea2 } from '@core/geometry/vec2';
+import { signedArea2 } from '@core/geometry/triangle';
+
+// 2× signed area of a developed tile (its corners are Vec2 tuples).
+const tileArea2 = (c: readonly (readonly number[])[]): number =>
+  signedArea2(c[0][0], c[0][1], c[1][0], c[1][1], c[2][0], c[2][1]);
 
 describe('harmonic winding develop net (abstract net, all tori)', () => {
   for (const torus of ALL_TORI) {
@@ -16,7 +20,7 @@ describe('harmonic winding develop net (abstract net, all tori)', () => {
         if (i > 0) expect(net.steps[i].parent).toBeGreaterThanOrEqual(0);
       });
       // non-degenerate triangles
-      for (const tile of net.tiles) expect(Math.abs(signedArea2(tile.corners[0], tile.corners[1], tile.corners[2]))).toBeGreaterThan(1e-9);
+      for (const tile of net.tiles) expect(Math.abs(tileArea2(tile.corners))).toBeGreaterThan(1e-9);
     });
   }
 });
@@ -26,7 +30,7 @@ describe('harmonic lattice-patch embedding', () => {
     for (const torus of ALL_TORI) {
       const L = harmonicLayout(torus);
       expect(L.tiles).toHaveLength(16);
-      const areas = L.tiles.map((t) => signedArea2(t.corners[0], t.corners[1], t.corners[2]));
+      const areas = L.tiles.map((t) => tileArea2(t.corners));
       expect(areas.every((a) => a > 1e-9)).toBe(true); // positively oriented, non-degenerate
     }
   });

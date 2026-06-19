@@ -11,12 +11,12 @@
  */
 
 import type { Fn } from '@core/functions/types.ts';
-import { triangleSignedArea2 } from '@core/geometry/triangle.ts';
+import { signedArea2 as triSignedArea2 } from '@core/geometry/triangle.ts';
 
 /** Twice the signed area of (Pi, Pj, Pk) in the XY-plane; zero iff collinear. */
 export function signedArea2(p: ArrayLike<number>, i: number, j: number, k: number): number {
   const oi = 3 * i, oj = 3 * j, ok = 3 * k;
-  return triangleSignedArea2(p[oi], p[oi + 1], p[oj], p[oj + 1], p[ok], p[ok + 1]);
+  return triSignedArea2(p[oi], p[oi + 1], p[oj], p[oj + 1], p[ok], p[ok + 1]);
 }
 
 /**

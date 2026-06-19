@@ -25,6 +25,13 @@ export const cross = (a: Vec3, b: Vec3): Vec3 => [
   a[2] * b[0] - a[0] * b[2],
   a[0] * b[1] - a[1] * b[0],
 ];
+/** The 3×3 determinant det[a; b; c] = a·(b×c) — the scalar triple product / signed
+ *  volume of the parallelepiped (a,b,c). Signed tetra volume and the orient3d
+ *  predicate are this on position/edge vectors. */
+export const det3 = (a: Vec3, b: Vec3, c: Vec3): number =>
+  a[0] * (b[1] * c[2] - b[2] * c[1]) +
+  a[1] * (b[2] * c[0] - b[0] * c[2]) +
+  a[2] * (b[0] * c[1] - b[1] * c[0]);
 export const len = (a: Vec3): number => Math.hypot(a[0], a[1], a[2]);
 export const dist = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 /** Unit vector in a's direction; a zero vector returns itself (length floored to 1). */
