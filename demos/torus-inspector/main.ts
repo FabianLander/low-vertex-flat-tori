@@ -143,6 +143,35 @@ controls.enableDamping = true;
 controls.target.copy(tcenter);
 controls.update();
 
+// ---------------------------------------------------------------------------
+// Generator loops on the folded torus (toggle, off by default). Each loop is a
+// vertex cycle; we draw it as a tube polyline through the centered vertex
+// positions (same `cpos` frame as the mesh), added to the pivot so it spins
+// with the torus. α blue, β red — matching the universal-cover panel.
+// ---------------------------------------------------------------------------
+function tubeLoop(loop: readonly number[], color: number, radius: number): THREE.Group {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0 });
+  const Y = new THREE.Vector3(0, 1, 0);
+  for (let k = 0; k + 1 < loop.length; k++) {
+    const a = loop[k], b = loop[k + 1];
+    const pa = new THREE.Vector3(cpos[3 * a], cpos[3 * a + 1], cpos[3 * a + 2]);
+    const pb = new THREE.Vector3(cpos[3 * b], cpos[3 * b + 1], cpos[3 * b + 2]);
+    const dir = new THREE.Vector3().subVectors(pb, pa);
+    const len = dir.length() || 1e-9;
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, len, 12), mat);
+    cyl.position.copy(pa).addScaledVector(dir, 0.5);
+    cyl.quaternion.setFromUnitVectors(Y, dir.clone().normalize());
+    g.add(cyl);
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(radius, 12, 8), mat).translateX(pa.x).translateY(pa.y).translateZ(pa.z));
+  }
+  return g;
+}
+const loopsA = tubeLoop(loopA, 0x1d4ed8, maxR * 0.013);   // α blue
+const loopsB = tubeLoop(loopB, 0xdc2626, maxR * 0.013);   // β red
+loopsA.visible = false; loopsB.visible = false;
+pivot.add(loopsA, loopsB);
+
 // world-fixed slice plane at z = 0
 const planeSize = maxR * 2.4;
 const plane = new THREE.Mesh(
@@ -258,11 +287,27 @@ ui.innerHTML =
   + `</div>`
   + `<div style="margin-top:6px;opacity:.6">drag torus to spin · drag outside to orbit · scroll zoom</div>`
   + `<div style="margin-top:8px">slide torus · z = <span id="zv">0.000</span><br>`
-  + `<input id="z" type="range" min="${-maxR}" max="${maxR}" step="${maxR / 300}" value="0" style="width:100%"></div>`;
+  + `<input id="z" type="range" min="${-maxR}" max="${maxR}" step="${maxR / 300}" value="0" style="width:100%"></div>`
+  + `<div style="margin-top:8px">show loops:&nbsp;`
+  +   `<label style="cursor:pointer;user-select:none;margin-right:8px"><input id="loopA" type="checkbox" style="vertical-align:middle"> <span style="color:#1d4ed8;font-weight:700">α</span></label>`
+  +   `<label style="cursor:pointer;user-select:none;margin-right:8px"><input id="loopB" type="checkbox" style="vertical-align:middle"> <span style="color:#dc2626;font-weight:700">β</span></label>`
+  +   `<label style="cursor:pointer;user-select:none"><input id="loopBoth" type="checkbox" style="vertical-align:middle"> both</label></div>`;
 document.body.appendChild(ui);
 const zEl = ui.querySelector<HTMLInputElement>('#z')!;
 const zv = ui.querySelector<HTMLSpanElement>('#zv')!;
 zEl.addEventListener('input', () => { pivot.position.z = parseFloat(zEl.value); zv.textContent = pivot.position.z.toFixed(3); });
+// three toggles: α and β independent, "both" a master that mirrors them.
+const aEl = ui.querySelector<HTMLInputElement>('#loopA')!;
+const bEl = ui.querySelector<HTMLInputElement>('#loopB')!;
+const bothEl = ui.querySelector<HTMLInputElement>('#loopBoth')!;
+function syncLoops(): void {
+  loopsA.visible = aEl.checked;
+  loopsB.visible = bEl.checked;
+  bothEl.checked = aEl.checked && bEl.checked;
+}
+aEl.addEventListener('change', syncLoops);
+bEl.addEventListener('change', syncLoops);
+bothEl.addEventListener('change', () => { aEl.checked = bEl.checked = bothEl.checked; syncLoops(); });
 
 // ---------------------------------------------------------------------------
 // Mini 2-D view: only the section polygon, with pan (drag) + zoom (scroll)
