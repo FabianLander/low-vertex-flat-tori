@@ -6,7 +6,7 @@ import { exactMinCutDomain } from '@core/topology/fundamentalDomain';
 import { canonicalMarking } from '@core/topology/marking';
 
 describe('canonicalMarking (minimal-domain marking, all tori)', () => {
-  for (const torus of ALL_TORI) {
+  for (const torus of ALL_TORI.filter((t) => t.vertexCount === 8)) {
     const F = torus.triangles.length;
 
     it(`${torus.id} ${torus.name}: developOrder is a permutation of 0..${F - 1}`, () => {

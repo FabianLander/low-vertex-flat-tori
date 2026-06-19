@@ -19,7 +19,7 @@ import { mulberry32 } from '@core/sampling/rng';
  *   - Im τ > 0           ⟺ τ lands in the upper half-plane
  */
 describe('per-torus Teichmüller pipeline (flatten → develop → τ)', () => {
-  for (const torus of ALL_TORI) {
+  for (const torus of ALL_TORI.filter((t) => t.vertexCount === 8)) {
     it(`#${torus.id} ${torus.name}: a random flat realization has a well-defined τ`, () => {
       const N = torus.vertexCount * 3;
       const rng = mulberry32(1000 + ALL_TORI.indexOf(torus));

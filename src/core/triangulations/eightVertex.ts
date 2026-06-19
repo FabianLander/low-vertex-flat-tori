@@ -2,6 +2,7 @@
  * The seven combinatorial types of 8-vertex torus triangulation, as data.
  * Sources: types 1–6 from F. Lutz, The Manifold Page (0-indexed, coherently
  * oriented); type 7 (Rich) in Rich Schwartz's historical labeling.
+ *   https://www3.math.tu-berlin.de/IfM/Nachrufe/Frank_Lutz/stellar/surfaces.html
  *
  * Each entry is just an id and its triangle list (a `TriangulationData`); the
  * registry joins it with its precomputed marking and builds a `Triangulation`.

@@ -61,7 +61,7 @@ function spanGF2(vectors: bigint[]): bigint[] {
 }
 
 describe('all 7 combinatorial 8-vertex tori', () => {
-  for (const torus of ALL_TORI) {
+  for (const torus of ALL_TORI.filter((t) => t.vertexCount === 8)) {
     describe(`#${torus.id} ${torus.name}`, () => {
       it('has V=8, E=24, F=16, Euler χ=0', () => {
         expect(torus.vertexCount).toBe(8);

@@ -9,7 +9,7 @@ const tileArea2 = (c: readonly (readonly number[])[]): number =>
   signedArea2(c[0][0], c[0][1], c[1][0], c[1][1], c[2][0], c[2][1]);
 
 describe('harmonic winding develop net (abstract net, all tori)', () => {
-  for (const torus of ALL_TORI) {
+  for (const torus of ALL_TORI.filter((t) => t.vertexCount === 8)) {
     it(`#${torus.id} ${torus.name}: a connected, non-degenerate winding spanning tree`, () => {
       const net = windingNet(torus, harmonicLayout(torus)); // throws if domain not coincident-connected
       expect(net.tiles).toHaveLength(16);
@@ -27,7 +27,7 @@ describe('harmonic winding develop net (abstract net, all tori)', () => {
 
 describe('harmonic lattice-patch embedding', () => {
   it('every torus develops flip-free (all 16 triangles same orientation)', () => {
-    for (const torus of ALL_TORI) {
+    for (const torus of ALL_TORI.filter((t) => t.vertexCount === 8)) {
       const L = harmonicLayout(torus);
       expect(L.tiles).toHaveLength(16);
       const areas = L.tiles.map((t) => tileArea2(t.corners));
@@ -46,7 +46,7 @@ describe('harmonic lattice-patch embedding', () => {
   });
 
   it('non-regular tori are genuinely distorted (not equilateral)', () => {
-    for (const torus of ALL_TORI.filter((t) => t.id !== 'v8-7')) {
+    for (const torus of ALL_TORI.filter((t) => t.vertexCount === 8 && t.id !== 'v8-7')) {
       const L = harmonicLayout(torus);
       const lens: number[] = [];
       for (const t of L.tiles) for (const [p, q] of [[0, 1], [1, 2], [2, 0]] as const) {

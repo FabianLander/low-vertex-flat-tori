@@ -39,9 +39,9 @@ Two kinds of derived data, and the split is load-bearing:
   homology generators and the canonical marking are read off of.
 - `marking.ts` — `canonicalMarking(combinatorics)`: computes the canonical marking
   (cut + develop order + cut-aligned H₁ generators). The **expensive** derivation
-  (~0.1s+ per triangulation); run **offline** by `scripts/compute-markings`, which
-  writes `triangulations/markings.generated.ts`. The runtime loads that table and
-  never calls this. Built on the two planar-layout helpers below.
+  (~0.1s+ per triangulation); run **offline** by `scripts/compute-markings`, which writes
+  one `triangulations/<census>.markings.generated.ts` per census. The runtime loads those
+  tables and never calls this. Built on the two planar-layout helpers below.
 - `harmonicLayout.ts` — `harmonicLayout`: the flat-torus harmonic (Tutte) embedding
   of any triangulation (tree–cotree → integer period cocycles → harmonic solve →
   whiten); gives lattice vertex positions + each edge's integer period `jump`. Also
