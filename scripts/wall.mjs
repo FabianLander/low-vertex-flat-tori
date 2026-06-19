@@ -39,7 +39,7 @@ import { makeCutOffArea } from '@core/embedding/index.ts';
 import { makeChordLengthSquared } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
-const triang = byId(a.num('--type', 7));
+const triang = byId('v8-' + a.num('--type', 7));
 const N = triang.vertexCount * 3;
 const c = a.num('--c', 0);
 const seed = a.num('--seed', Date.now() >>> 0);

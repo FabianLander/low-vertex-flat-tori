@@ -13,7 +13,7 @@ import { reduceModulus } from '@core/moduli/reduce.ts';
 import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
-const torus = byId(7);
+const torus = byId('v8-7');
 
 describe('certify', () => {
   it('agrees with the underlying primitives on a flat embedded torus', () => {

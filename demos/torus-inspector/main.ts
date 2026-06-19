@@ -54,7 +54,7 @@ let raw: Float64Array;
     raw = Float64Array.from(Object.values(csv)[0].trim().split('\n')[0].split(',').slice(0, 24), Number);
   }
 }
-const torusDef = byId(typeNum);
+const torusDef = byId('v8-' + typeNum);
 // Full certificate for the stats panel: embeddedness, the reduced + raw modulus,
 // and the flatness/clearance residuals (cone deficit, rotation defect, margin).
 const cert = certify(torusDef, raw);
@@ -65,7 +65,7 @@ const tauHat = cert.tauHat;                       // reduced into the fundamenta
 // Develop the flat torus into the plane and read off the two generator loops as
 // lifted edge-paths; their net displacements are the lattice generators v₁, v₂.
 const net = developNet(torusDef, raw);
-const genLoops = torusDef.marking.generatorLoops;
+const genLoops = torusDef.marking.loops;
 // Re-root both loops at a shared vertex so the straight generators share a
 // basepoint. (For type 3 the loops are 6→2→1→6 and 4→2→1→4, sharing 2 and 1.)
 function rerootLoop(loop: readonly number[], base: number): number[] {

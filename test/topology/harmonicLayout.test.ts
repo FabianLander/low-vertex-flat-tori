@@ -46,7 +46,7 @@ describe('harmonic lattice-patch embedding', () => {
   });
 
   it('non-regular tori are genuinely distorted (not equilateral)', () => {
-    for (const torus of ALL_TORI.filter((t) => t.id !== 7)) {
+    for (const torus of ALL_TORI.filter((t) => t.id !== 'v8-7')) {
       const L = harmonicLayout(torus);
       const lens: number[] = [];
       for (const t of L.tiles) for (const [p, q] of [[0, 1], [1, 2], [2, 0]] as const) {

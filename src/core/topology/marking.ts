@@ -1,70 +1,53 @@
 /**
- * marking — choosing a triangulation's canonical MARKING: a basis of H₁(T²,ℤ), as
- * two oriented vertex edge-loops. This is the Teichmüller marking — its holonomy
- * under the developing map gives τ.
+ * marking — computing a triangulation's canonical MARKING: the developing chart
+ * (`loops` + `cut` + `developOrder`), a deterministic function of the combinatorics.
  *
- * `canonicalDecoration` is the single pass that picks it: a planar harmonic layout
- * of the triangulation → the minimal cut → {develop order ∥ cut-aligned generators}.
- * The cut is the shared root — the fundamental domain owns it; the marking reads it
- * to align its generators. The pass returns the triple `{ cut, developOrder,
- * generatorLoops }`, which `defineTriangulation` splits into the triangulation's two
- * decorations (`fundamentalDomain`, `marking`).
+ * `canonicalMarking(combinatorics)` is the single pass: a planar harmonic layout of the
+ * triangulation → the minimal cut → {develop order ∥ cut-aligned generators}. It is the
+ * EXPENSIVE step (harmonic layout + the exact min-cut search), so it is run OFFLINE by
+ * `scripts/compute-markings` and its result stored in the marking file; the runtime loads
+ * that file and never calls this. The loops give τ (their holonomy under the developing map).
  *
- * It uses the planar-drawing helpers `harmonicLayout` (harmonic embedding) +
- * `fundamentalDomain` (exact minimal-cut domain), so it is heavier than the rest of
- * the builder — the registry runs it once per triangulation when building `ALL_TORI`
- * (~0.1s each for the 8-vertex census). Deterministic and memoized; no cached file.
+ * It needs only the cheap `Combinatorics` (edges, faces, adjacency), not a built
+ * `Triangulation` — so the generator builds combinatorics, marks, and stores, with no
+ * cycle back through `makeTriangulation`.
  *
  * Pure: no DOM/three.js.
  */
 
-import type { Triangulation } from './triangulation.ts';
+import type { Combinatorics, Marking } from './triangulation.ts';
 import { edgeEnds, homologyGenerators } from './triangulation.ts';
 import { spanningTree, treePath } from './trees.ts';
 import { harmonicLayout, type HarmonicLayout } from './harmonicLayout.ts';
 import { exactMinCutDomain, windingDevelop } from './fundamentalDomain.ts';
 
-/** The savable canonical decoration — the cache shape. `attach` is re-derived. */
-export type SavedMarking = {
-  developOrder: number[];
-  generatorLoops: number[][];
-  cut: number[];
-};
-
-const cache = new WeakMap<Triangulation, SavedMarking>();
-
 /**
- * The canonical decoration (the triple: cut + unfold order + cut-aligned H₁ basis;
- * `attach` is re-derived from these at construction). The EXPENSIVE step (harmonic
- * layout + exact min-cut) — the registry calls it once per triangulation when
- * building `ALL_TORI`. Deterministic and memoized.
+ * The canonical marking of a triangulation, in readable vertex/edge/face numbers:
+ * the two cut-aligned H₁ generator loops, the minimal cut (as vertex pairs), and a
+ * centered-spiral develop order. The EXPENSIVE step (harmonic layout + exact min-cut) —
+ * run offline by the marking generator, never at runtime. Deterministic and memo-free.
  */
-export function canonicalDecoration(triang: Triangulation): SavedMarking {
-  const hit = cache.get(triang);
-  if (hit) return hit;
-  const layout = harmonicLayout(triang);
-  const { domain, cut } = exactMinCutDomain(triang, layout);
-  // Order the SAME minimal domain as a centered spiral (root nearest the
-  // centroid, outward) rather than exactMinCutDomain's raw BFS-from-0 — same
-  // domain, but central triangles develop first.
-  const { order: developOrder } = windingDevelop(triang, domain);
-  const generatorLoops = cutGenerators(triang, layout, cut) ?? homologyGenerators(triang.triangles);
-  const decoration: SavedMarking = { cut, developOrder, generatorLoops };
-  cache.set(triang, decoration);
-  return decoration;
+export function canonicalMarking(c: Combinatorics): Marking {
+  const layout = harmonicLayout(c);
+  const { domain, cut } = exactMinCutDomain(c, layout);          // cut = edgeKeys
+  // Order the same minimal domain as a centered spiral (root nearest the centroid,
+  // outward) rather than exactMinCutDomain's raw BFS-from-0 — same domain, but central
+  // triangles develop first.
+  const { order: developOrder } = windingDevelop(c, domain);
+  const loops = cutGenerators(c, layout, cut) ?? homologyGenerators(c.triangles);
+  return { loops, cut: cut.map((k) => edgeEnds(k) as [number, number]), developOrder };
 }
 
 /**
- * Two H₁ generators from the minimal cut. Build a primal spanning tree that
- * AVOIDS the cut edges, so each cut edge, closed by the tree path between its
- * ends, is a non-trivial loop. A loop's class in the lattice (V₁,V₂) basis is
- * Σ jump over its directed edges (the cocycle pairing). Return the first pair
- * whose class vectors are unimodular — |det| = 1 ⟺ unit-index basis ⟺ covolume
- * = area. Null if the cut disconnects the vertices or no unimodular pair exists
- * (caller falls back to the tree–cotree basis).
+ * Two H₁ generators from the minimal cut. Build a primal spanning tree that AVOIDS the
+ * cut edges, so each cut edge, closed by the tree path between its ends, is a non-trivial
+ * loop. A loop's class in the lattice (V₁,V₂) basis is Σ jump over its directed edges (the
+ * cocycle pairing). Return the first pair whose class vectors are unimodular — |det| = 1
+ * ⟺ unit-index basis ⟺ covolume = area. Null if the cut disconnects the vertices or no
+ * unimodular pair exists (caller falls back to the tree–cotree basis).
  */
-function cutGenerators(triang: Triangulation, layout: HarmonicLayout, cut: number[]): number[][] | null {
-  const { edges, vertexCount } = triang;
+function cutGenerators(c: Combinatorics, layout: HarmonicLayout, cut: number[]): number[][] | null {
+  const { edges, vertexCount } = c;
   const cutSet = new Set(cut);
 
   // primal spanning tree over the NON-cut edges; if it doesn't reach every vertex,

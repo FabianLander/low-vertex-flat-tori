@@ -22,7 +22,7 @@ import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 import { perturb } from '@core/sampling/perturb.ts';
 import { mulberry32 } from '@core/sampling/rng.ts';
 
-const torus = byId(7);
+const torus = byId('v8-7');
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];
 
 function area2(p: ArrayLike<number>, i: number, j: number, k: number): number {

@@ -37,13 +37,13 @@ import { makeCutOffArea } from '@core/embedding/index.ts';
 import { makeChordLengthSquared } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
-const triang = byId(a.num('--type', 7));
+const triang = byId('v8-' + a.num('--type', 7));
 const N = triang.vertexCount * 3;
 const seed = a.num('--seed', Date.now() >>> 0);
 const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);
 
 const mode = a.flag('--seed-mode') ?? 'rich';
-if (mode === 'rich' && triang.id !== 7) { console.error('--seed-mode rich needs Rich (#7); use --seed-mode uniform'); process.exit(1); }
+if (mode === 'rich' && triang.id !== 'v8-7') { console.error('--seed-mode rich needs Rich (v8-7); use --seed-mode uniform'); process.exit(1); }
 const sMin = a.num('--sigma-min', 0.005), sMax = a.num('--sigma-max', 0.15);
 const sigma = (a.flag('--sigma-dist') ?? 'log') === 'uniform' ? uniformSigma(sMin, sMax, rng) : logSigma(sMin, sMax, rng);
 const drawSeed = mode === 'uniform'

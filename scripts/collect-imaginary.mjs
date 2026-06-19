@@ -36,7 +36,7 @@ import { isEmbedded } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
 const TYPE = a.num('--type', 7);
-const triang = byId(TYPE);                 // 7 = RICH, the degree-6-regular triangulation
+const triang = byId('v8-' + TYPE);                 // 7 = RICH, the degree-6-regular triangulation
 const N = triang.vertexCount * 3;
 const seedFile = resolve(a.flag('--seed-file') ?? `data/curated/rectangular-t${TYPE}.csv`);
 const IM_MIN = a.num('--im-min', 1.0);

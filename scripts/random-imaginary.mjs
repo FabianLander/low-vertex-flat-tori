@@ -33,7 +33,7 @@ import { makeRng } from '@core/sampling/rng.ts';
 
 const a = makeArgs(process.argv);
 const TYPE = a.num('--type', 7);
-const triang = byId(TYPE);
+const triang = byId('v8-' + TYPE);
 const N = triang.vertexCount * 3;
 const T = a.num('--im', 1.0);                 // target Im τ̂ (square torus i = 1.0)
 const SIGMA = a.num('--sigma', 0.15);

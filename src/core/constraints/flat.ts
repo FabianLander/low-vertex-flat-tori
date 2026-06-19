@@ -14,6 +14,7 @@
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import type { Fn } from '@core/functions/types.ts';
+import type { Constraint } from './types.ts';
 import { cornerAngle } from '@core/geometry/triangle.ts';
 
 const TWO_PI = Math.PI * 2;
@@ -121,26 +122,27 @@ export function coneDeficit(triang: Triangulation): Fn {
 // ─── the constraint ─────────────────────────────────────────────────────────
 
 /**
- * Flatness as a closed condition: every cone-angle deficit = 0. **codim = V−1.**
+ * Flatness as a closed condition: every cone-angle deficit = 0 (target 0). **codim = V−1.**
  *
  * Gauss–Bonnet forces Σ deficits ≡ 0, so the flat locus is codim V−1, not V — the V-th
- * deficit is `−(sum of the others)`. So `flat` emits the **first V−1** deficit rows
+ * deficit is `−(sum of the others)`. So `flat`'s `fn` emits the **first V−1** deficit rows
  * directly (the one redundancy removed at the source), and the solver drives them all —
  * no rank annotation needed. The full V-deficit *measurement* stays in `coneAngleDeficits`
  * / `maxConeDeficit` (certificate / acceptance), and ‖the V−1 driven rows‖∞ → 0 forces all
  * V → 0 (the dropped deficit is `−Σ(others)`), so convergence still controls every vertex.
  */
-export function flat(triang: Triangulation): Fn {
+export function flat(triang: Triangulation): Constraint {
   const cd = coneDeficit(triang);                 // the full V-row map
   const m = triang.vertexCount - 1;               // drive V−1 (drop the redundant last row)
   const n = triang.vertexCount * 3;
   const fullV = new Float64Array(triang.vertexCount);
   const fullJ = new Float64Array(triang.vertexCount * n);
-  return {
+  const fn: Fn = {
     label: 'flat',
     inDim: n,
     outDim: m,
     value: (c, out) => { cd.value(c, fullV); for (let i = 0; i < m; i++) out[i] = fullV[i]; },
     jacobian: (c, out) => { cd.jacobian(c, fullJ); out.set(fullJ.subarray(0, m * n)); },
   };
+  return { fn };                                  // target absent ⟺ 0
 }

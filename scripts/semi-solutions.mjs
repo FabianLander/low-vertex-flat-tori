@@ -28,7 +28,7 @@ import { collect } from '@core/search/collect.ts';
 import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '@core/search/semiSolution.ts';
 
 const a = makeArgs(process.argv);
-const triang = byId(7); // the DS construction is the degree-6-regular #7 torus
+const triang = byId('v8-7'); // the DS construction is the degree-6-regular #7 torus
 const seed = a.num('--seed', Date.now() >>> 0);
 const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);
 

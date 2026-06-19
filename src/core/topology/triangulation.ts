@@ -1,30 +1,27 @@
 /**
- * Triangulation descriptor + `defineTriangulation` builder.
+ * The combinatorial torus: stored data (`TriangulationData` = id + triangle list) plus
+ * the builder `makeTriangulation`, which turns that data + a precomputed `Marking` into a
+ * fully-derived `Triangulation`.
  *
- * A `Triangulation` bundles ONE triangulation of the torus with everything derivable
- * from it (vertex count, edges, oriented vertex links, dual adjacency, degree
- * sequence, the unfolding attachment tree) plus the small amount of data that
- * is genuinely a choice (the developing order and the two homology generators)
- * — and even those are auto-derived if you don't supply them. So you can grab
- * any new triangulation and `defineTriangulation({ triangles })` to get a fully working
- * torus; nothing here is hard-wired to a particular vertex/edge/face count.
+ * Two kinds of derived data:
+ *   - CHEAP combinatorics (`deriveCombinatorics`): vertex count, edges, oriented vertex
+ *     links, dual adjacency, degree sequence — fast pure functions of the triangle list,
+ *     computed at build, never stored.
+ *   - the EXPENSIVE marking (the developing chart: loops + cut + develop order) — also a
+ *     deterministic function of the triangle list, but costly, so it is PRECOMPUTED
+ *     (`marking.ts`'s `canonicalMarking`, run offline) and SUPPLIED to `makeTriangulation`.
+ *     Hence this module never imports `marking.ts`.
  *
- * Every triangulation is a value you pass around (no global singleton). The seven
- * 8-vertex combinatorial types live as data in `triangulations/eightVertex.ts`
- * (`EIGHT_VERTEX`); the registry `triangulations/index.ts` maps each through
- * `defineTriangulation`, computing its canonical marking on load (`canonicalDecoration`).
+ * A `Triangulation` is one value you pass around (no global singleton). The combinatorial
+ * types live as data in `triangulations/` (e.g. `eightVertex.ts`); their markings live in
+ * the generated marking file; the registry `triangulations/index.ts` joins them by id.
  *
  * Pure data/combinatorics — no three.js, no DOM, no metric (3D coords).
  *
- * Each triangulation carries two decorations — a `FundamentalDomain` (how to
- * unfold it) and a `Marking` (its H₁ basis) — supplied by the registry (from
- * `canonicalDecoration`) via the spec, or a layout-free fallback when the spec omits
- * them; see `buildDecoration`.
- *
- * NB: degree is NEVER assumed — among the 8-vertex types only Rich's (#7) is
- * degree-6-regular; the rest mix degree 5/7. Every count is derived/validated
- * from the triangle list (Euler characteristic V−E+F = 0 for the torus), so a
- * triangulation of any size drops in cleanly.
+ * NB degree is NEVER assumed — among the 8-vertex types only Rich's is degree-6-regular;
+ * the rest mix degree 5/7. Every count is derived/validated from the triangle list (Euler
+ * V−E+F = 0, manifold edges, single-cycle links, coherent orientation), so a triangulation
+ * of any size drops in cleanly.
  */
 
 
@@ -64,51 +61,33 @@ export type DevelopStep = {
   readonly edge: readonly [number, number];
 };
 
-/** Specification of a torus: just the triangulation, plus optional choices. The
- *  triangle list is the only required field — everything else is derived (or
- *  auto-derived, for the develop order / generators) when omitted, so a brand
- *  new triangulation needs only `defineTriangulation({ triangles })`. */
-export type TriangulationSpec = {
-  /** Stable id for the registry; defaults to 0 for ad-hoc/one-off tori. */
-  readonly id?: number;
-  /** Display name; defaults to `torus-<F>f`. */
-  readonly name?: string;
+/** A triangulation as stored DATA — the irreducible input: an id and its triangle
+ *  list (vertices are the implicit range 0..V−1, coherently oriented). `label` is an
+ *  optional human nickname. Everything else (edges, links, marking) is derived. */
+export type TriangulationData = {
+  readonly id: string;
   readonly triangles: readonly Tri[];
-  /** Saved canonical marking (from the cache), injected by the registry. Omit
-   *  and a layout-free fallback (BFS order + tree–cotree generators) is derived. */
-  readonly cut?: readonly number[];
-  readonly developOrder?: readonly number[];
-  readonly generatorLoops?: readonly (readonly number[])[];
+  readonly label?: string;
 };
 
 /**
- * The DEVELOPING CHART: how to cut this triangulation open and unfold it into the
- * plane. A presentation choice — it does NOT affect the modulus τ; we take the
- * most compact one (minimal cut).
- */
-export type FundamentalDomain = {
-  /** edgeKeys of the minimal cut — the domain boundary. */
-  readonly cut: readonly number[];
-  /** Unfolding order: a permutation of 0..F−1, root first, traversing the glued
-   *  (non-cut) complement — each non-root triangle non-cut-adjacent to an earlier one. */
-  readonly developOrder: readonly number[];
-  /** The gluing tree (parent + shared edge per triangle), along non-cut edges. */
-  readonly attach: readonly Attach[];
-};
-
-/**
- * The MARKING: a basis of H₁(T²,ℤ), as two oriented vertex edge-loops. This is the
- * Teichmüller marking — the holonomy of these loops under the developing map gives
- * τ; forgetting it (the SL(2,ℤ) quotient) drops to moduli.
+ * A MARKING — the developing chart, written in readable vertex/edge/face numbers (the
+ * form `canonicalMarking` computes and the marking file stores):
+ *   - `loops`: the two oriented generator cycles (closed vertex walks) — the H₁ basis
+ *     whose holonomy under the developing map gives τ;
+ *   - `cut`: the edges (as vertex pairs) sliced to unfold the torus into a flat polygon;
+ *   - `developOrder`: the order to lay the triangles down (a permutation of face indices).
+ * It is a deterministic function of the triangle list (precomputed, not hand-authored).
  */
 export type Marking = {
-  readonly generatorLoops: readonly (readonly number[])[];
+  readonly loops: readonly (readonly number[])[];
+  readonly cut: readonly (readonly [number, number])[];
+  readonly developOrder: readonly number[];
 };
 
-/** Fully derived torus: the spec plus every combinatorial table. */
-export type Triangulation = {
-  readonly id: number;
-  readonly name: string;
+/** The cheap combinatorial tables derived from a triangle list — everything that is
+ *  NOT the (expensive, precomputed) marking. `canonicalMarking` needs exactly this. */
+export type Combinatorics = {
   readonly vertexCount: number;
   readonly triangles: readonly Tri[];
   readonly edges: readonly Edge[];
@@ -118,10 +97,14 @@ export type Triangulation = {
   readonly degreeSequence: readonly number[];
   /** edgeKey(u,v) → the two triangles sharing that edge, ascending. */
   readonly edgeToTris: ReadonlyMap<number, readonly [number, number]>;
-  /** How to unfold it — the developing chart (cut + order + gluing tree). */
-  readonly fundamentalDomain: FundamentalDomain;
-  /** The H₁ basis decorating it — gives τ. */
-  readonly marking: Marking;
+};
+
+/** A fully-built torus, as ONE object: its data (id/name) + the derived combinatorics +
+ *  its marking (the stored `Marking` plus the derived gluing tree `attach`). */
+export type Triangulation = Combinatorics & {
+  readonly id: string;
+  readonly name: string;
+  readonly marking: Marking & { readonly attach: readonly Attach[] };
 };
 
 /** Symmetric integer key for an undirected edge {u,v}. */
@@ -218,7 +201,7 @@ function deriveEdgeToTris(triangles: readonly Tri[]): Map<number, readonly [numb
 function deriveAttach(
   triangles: readonly Tri[],
   developOrder: readonly number[],
-  edgeToTris: Map<number, readonly [number, number]>,
+  edgeToTris: ReadonlyMap<number, readonly [number, number]>,
   cut?: readonly number[],
 ): Attach[] {
   // When the minimal cut is known, those edges are the domain BOUNDARY — never
@@ -252,55 +235,43 @@ function deriveAttach(
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Build — the cheap combinatorics (gated), and the coherent-orientation check
+// ---------------------------------------------------------------------------
+
 /**
- * Decorate a triangulation with its fundamental domain + marking: the canonical
- * decoration if the spec supplies it (the registry computes it via `canonicalDecoration`),
- * else a layout-free fallback — a BFS develop order and a tree–cotree H₁ basis with no
- * minimal cut. `attach` is always re-derived here.
+ * The cheap combinatorial tables of a triangle list — edges, links, degrees,
+ * edgeToTris — with the structural gates: Euler V−E+F=0, each edge in exactly two
+ * triangles (`deriveEdgeToTris`), each vertex link a single cycle (`deriveVertexLinks`),
+ * and a coherent orientation. This is everything `canonicalMarking` needs, and the base
+ * of a built `Triangulation`. Degree is never assumed.
  */
-function buildDecoration(
-  spec: TriangulationSpec,
-  triangles: readonly Tri[],
-  edgeToTris: Map<number, readonly [number, number]>,
-  name: string,
-): { fundamentalDomain: FundamentalDomain; marking: Marking } {
-  const cut = spec.cut ?? [];
-  const developOrder = spec.developOrder ?? autoDevelopOrder(triangles);
-  const generatorLoops = spec.generatorLoops ?? homologyGenerators(triangles);
-  checkDevelopOrder(developOrder, triangles.length, name);
-  checkGeneratorLoops(generatorLoops, edgeToTris, name);
-  const attach = deriveAttach(triangles, developOrder, edgeToTris, cut);
-  return {
-    fundamentalDomain: { cut, developOrder, attach },
-    marking: { generatorLoops },
-  };
+export function deriveCombinatorics(triangles: readonly Tri[]): Combinatorics {
+  const vertexCount = vertexCountOf(triangles);
+  const edges = deriveEdges(triangles);
+  const V = vertexCount, E = edges.length, F = triangles.length;
+  if (V - E + F !== 0) {
+    throw new Error(`V−E+F = ${V}−${E}+${F} = ${V - E + F} ≠ 0 — not a torus triangulation`);
+  }
+  checkCoherentOrientation(triangles);
+  const vertexLinks = deriveVertexLinks(triangles, vertexCount);
+  const edgeToTris = deriveEdgeToTris(triangles);
+  const degreeSequence = vertexLinks.map((l) => l.length).slice().sort((a, b) => a - b);
+  return { vertexCount, triangles, edges, vertexLinks, degreeSequence, edgeToTris };
 }
 
-// ---------------------------------------------------------------------------
-// Auto-derivation helpers (valid defaults to hand-override per torus)
-// ---------------------------------------------------------------------------
-
-/**
- * A valid develop order: BFS spanning tree of the dual graph rooted at triangle
- * `root`. Every non-root triangle appears after an edge-adjacent neighbor, so
- * `deriveAttach` always resolves. Hand-authored orders give nicer nets; this is
- * the fallback / starting point.
- */
-export function autoDevelopOrder(triangles: readonly Tri[], root = 0): number[] {
-  const edgeToTris = deriveEdgeToTris(triangles);
-  const order: number[] = [root];
-  const seen = new Set<number>([root]);
-  for (let head = 0; head < order.length; head++) {
-    const t = order[head];
-    const tri = triangles[t];
-    for (let s = 0; s < 3; s++) {
-      const [a, b] = [tri[s], tri[(s + 1) % 3]];
-      const [tA, tB] = edgeToTris.get(edgeKey(a, b))!;
-      const nbr = tA === t ? tB : tA;
-      if (!seen.has(nbr)) { seen.add(nbr); order.push(nbr); }
+/** Each undirected edge must be traversed in OPPOSITE directions by its two triangles
+ *  (a coherent orientation) — so a directed edge u→v never appears twice. The developing
+ *  map and τ assume this; we validate it (cheap) so imported data can't break them silently. */
+function checkCoherentOrientation(triangles: readonly Tri[]): void {
+  const dir = new Set<number>();
+  for (const [a, b, c] of triangles) {
+    for (const [p, q] of [[a, b], [b, c], [c, a]] as const) {
+      const k = p * KEY_RADIX + q;   // DIRECTED key (≠ the reverse q→p)
+      if (dir.has(k)) throw new Error(`directed edge ${p}→${q} appears twice — triangles are not coherently oriented`);
+      dir.add(k);
     }
   }
-  return order;
 }
 
 /**
@@ -342,7 +313,7 @@ function checkDevelopOrder(developOrder: readonly number[], faceCount: number, n
 
 function checkGeneratorLoops(
   loops: readonly (readonly number[])[],
-  edgeToTris: Map<number, readonly [number, number]>,
+  edgeToTris: ReadonlyMap<number, readonly [number, number]>,
   name: string,
 ): void {
   if (loops.length !== 2) throw new Error(`[${name}] expected 2 generator loops, got ${loops.length}`);
@@ -359,44 +330,23 @@ function checkGeneratorLoops(
 }
 
 // ---------------------------------------------------------------------------
-// Builder
+// makeTriangulation — stored data + its (precomputed) marking → one torus
 // ---------------------------------------------------------------------------
 
-export function defineTriangulation(spec: TriangulationSpec): Triangulation {
-  const { triangles } = spec;
-  const id = spec.id ?? 0;
-  const name = spec.name ?? `torus-${triangles.length}f`;
-
-  // Derive every count from the triangle list — nothing is hard-wired.
-  const vertexCount = vertexCountOf(triangles);
-  const edges = deriveEdges(triangles);            // each edge in exactly 2 triangles (manifold)
-  const V = vertexCount, E = edges.length, F = triangles.length;
-  // The torus has Euler characteristic 0: V − E + F = 0. This (with the
-  // manifold/single-cycle-link checks in the derivations) is the only structural
-  // gate — replacing the old hard-coded V=8, E=24, F=16 asserts.
-  if (V - E + F !== 0) {
-    throw new Error(`[${name}] V−E+F = ${V}−${E}+${F} = ${V - E + F} ≠ 0 — not a torus triangulation`);
-  }
-
-  const vertexLinks = deriveVertexLinks(triangles, vertexCount);
-  const edgeToTris = deriveEdgeToTris(triangles);
-  const degreeSequence = vertexLinks.map((l) => l.length).slice().sort((a, b) => a - b);
-
-  // Decorate with the fundamental domain + marking: the canonical decoration when
-  // the spec supplies it (registry → canonicalDecoration), else a layout-free
-  // fallback. attach is re-derived.
-  const { fundamentalDomain, marking } = buildDecoration(spec, triangles, edgeToTris, name);
-
-  return {
-    id,
-    name,
-    vertexCount,
-    triangles,
-    edges,
-    vertexLinks,
-    degreeSequence,
-    edgeToTris,
-    fundamentalDomain,
-    marking,
-  };
+/**
+ * Build the full triangulation from its stored data and its marking: derive the cheap
+ * combinatorics, validate the marking against them, derive the gluing tree `attach`
+ * (from `developOrder` + `cut`), and return one object. The marking is SUPPLIED
+ * (precomputed by `canonicalMarking`, loaded from the marking file) — never computed here,
+ * which is why this stays cheap and `topology` does not depend on `marking.ts`.
+ */
+export function makeTriangulation(data: TriangulationData, marking: Marking): Triangulation {
+  const { id, triangles } = data;
+  const name = data.label ?? id;
+  const c = deriveCombinatorics(triangles);
+  checkDevelopOrder(marking.developOrder, triangles.length, name);
+  checkGeneratorLoops(marking.loops, c.edgeToTris, name);
+  const cutKeys = marking.cut.map(([u, v]) => edgeKey(u, v));
+  const attach = deriveAttach(triangles, marking.developOrder, c.edgeToTris, cutKeys);
+  return { ...c, id, name, marking: { ...marking, attach } };
 }

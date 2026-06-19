@@ -35,7 +35,7 @@ import { makeChordLengthSquared } from '@core/embedding/index.ts';
 import { makeCellMargin } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
-const triang = byId(7);
+const triang = byId('v8-7');
 const c = a.num('--c', 0);
 const seed = a.num('--seed', Date.now() >>> 0);
 const rng = makeRng(a.flag('--rng') ?? 'xoshiro', seed);

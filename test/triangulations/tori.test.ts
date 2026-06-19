@@ -30,14 +30,14 @@ describe('#7 (Rich) reference combinatorics', () => {
 
 // Published degree sequences of the 7 combinatorial 8-vertex torus types
 // (sorted ascending). Only #7 is degree-6-regular.
-const DEGREE_SEQUENCES: Record<number, number[]> = {
-  1: [3, 6, 6, 6, 6, 7, 7, 7],
-  2: [4, 5, 5, 6, 7, 7, 7, 7],
-  3: [4, 6, 6, 6, 6, 6, 7, 7],
-  4: [5, 5, 6, 6, 6, 6, 7, 7],
-  5: [5, 5, 5, 6, 6, 7, 7, 7],
-  6: [5, 5, 6, 6, 6, 6, 7, 7],
-  7: [6, 6, 6, 6, 6, 6, 6, 6],
+const DEGREE_SEQUENCES: Record<string, number[]> = {
+  'v8-1': [3, 6, 6, 6, 6, 7, 7, 7],
+  'v8-2': [4, 5, 5, 6, 7, 7, 7, 7],
+  'v8-3': [4, 6, 6, 6, 6, 6, 7, 7],
+  'v8-4': [5, 5, 6, 6, 6, 6, 7, 7],
+  'v8-5': [5, 5, 5, 6, 6, 7, 7, 7],
+  'v8-6': [5, 5, 6, 6, 6, 6, 7, 7],
+  'v8-7': [6, 6, 6, 6, 6, 6, 6, 6],
 };
 
 /** GF(2) row-reduce; returns whether `v` lies in the span of `basis` rows. */
@@ -83,11 +83,11 @@ describe('all 7 combinatorial 8-vertex tori', () => {
       });
 
       it('developOrder is a permutation of 0..15 forming a spanning tree', () => {
-        expect([...torus.fundamentalDomain.developOrder].sort((a, b) => a - b)).toEqual(
+        expect([...torus.marking.developOrder].sort((a, b) => a - b)).toEqual(
           Array.from({ length: 16 }, (_, i) => i),
         );
         // root has parent -1; every other triangle has a valid placed parent
-        const roots = torus.fundamentalDomain.attach.filter((a) => a.parent < 0);
+        const roots = torus.marking.attach.filter((a) => a.parent < 0);
         expect(roots).toHaveLength(1);
       });
 
@@ -112,8 +112,8 @@ describe('all 7 combinatorial 8-vertex tori', () => {
         const B = spanGF2(faceVecs);
         expect(B).toHaveLength(15);
 
-        const c1 = loopVec(torus.marking.generatorLoops[0]);
-        const c2 = loopVec(torus.marking.generatorLoops[1]);
+        const c1 = loopVec(torus.marking.loops[0]);
+        const c2 = loopVec(torus.marking.loops[1]);
         // each loop is a 1-cycle (∂ = 0): its vector lies in the cycle space —
         // necessary check is that it's a closed walk (already asserted above).
         // Independence in H₁(;ℤ/2): neither class, nor their sum, is a boundary.

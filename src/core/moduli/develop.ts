@@ -157,7 +157,7 @@ const planCache = new WeakMap<Triangulation, FramePlan>();
 export function framePlan(triang: Triangulation): FramePlan {
   const hit = planCache.get(triang);
   if (hit) return hit;
-  const { developOrder: order, attach } = triang.fundamentalDomain;
+  const { developOrder: order, attach } = triang.marking;
   const root = order[0];
   const treeKeys = new Set<number>();
   const steps: FrameStep[] = [];
@@ -171,7 +171,7 @@ export function framePlan(triang: Triangulation): FramePlan {
     });
     treeKeys.add(edgeKey(su, sv));
   }
-  const loops: LoopRead[][] = triang.marking.generatorLoops.map((loop) => {
+  const loops: LoopRead[][] = triang.marking.loops.map((loop) => {
     const reads: LoopRead[] = [];
     for (let k = 0; k + 1 < loop.length; k++) {
       const a = loop[k], b = loop[k + 1];

@@ -40,7 +40,7 @@ function xCoord(s: number): Fn {
 }
 const circleFamily: Family = {
   param: (c) => c[0],
-  held: (_c, s) => [circle, xCoord(s)],
+  held: (_c, s) => [{ fn: circle }, { fn: xCoord(s) }],
 };
 // region: upper part of the circle, x₁ ≥ floor.
 const upperHalf = (floor: number): Region => ({ contains: (c) => c[1] >= floor });
@@ -67,7 +67,7 @@ describe('continuation — toy: tracking a point along the unit circle', () => {
 
 describe('continuation — real: tracking the modulus wall, staying embedded', () => {
   it('continues |Re τ̂| from a flat embedded torus to a target, landing flat+embedded', () => {
-    const torus = byId(7);
+    const torus = byId('v8-7');
     const seed = RICH_REFERENCE.positions.slice();
     project(seed, [flat(torus)]); // land flat
     const start = Math.abs(reduceModulus(modulus(torus, seed).tau)[0]);

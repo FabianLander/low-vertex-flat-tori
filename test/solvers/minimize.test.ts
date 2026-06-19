@@ -43,7 +43,7 @@ describe('minimize — toy: linear energy on the unit sphere', () => {
     const target = [-a[0] / norm, -a[1] / norm, -a[2] / norm];
 
     const x = new Float64Array([0.5, 0.5, 0.5]); // off the sphere; minimize lands first
-    const r = minimize(x, [sphere], linearEnergy(a), {
+    const r = minimize(x, [{ fn: sphere }], linearEnergy(a), {
       stepSize: 0.05, maxIters: 5000, gradientTol: 1e-8,
       energyTol: -Infinity, // linear energy is unbounded below; stop on the tangent gradient, not E
     });
@@ -62,9 +62,9 @@ describe('minimize — toy: linear energy on the unit sphere', () => {
 describe('minimize — soft path: descend leastSquares(condition) to its zeros', () => {
   it('leastSquares ∘ stack combines conditions: ½‖stack(a,b)‖² = ½(‖a‖² + b²)', () => {
     // The combine (stack) + soften (leastSquares) composition, checked numerically.
-    const torus = byId(7);
+    const torus = byId('v8-7');
     const pos = RICH_REFERENCE.positions;
-    const cd = coneDeficit(torus), col = collinear(1, 2, 3, 3 * torus.vertexCount);
+    const cd = coneDeficit(torus), col = collinear(1, 2, 3, 3 * torus.vertexCount).fn;
     const cdv = new Float64Array(cd.outDim); cd.value(pos, cdv);
     const colv = new Float64Array(1); col.value(pos, colv);
     let expected = colv[0] * colv[0];
@@ -74,7 +74,7 @@ describe('minimize — soft path: descend leastSquares(condition) to its zeros',
   });
 
   it('minimize([], leastSquares(coneDeficit)) re-flattens — the soft analogue of project[flat]', () => {
-    const torus = byId(7);
+    const torus = byId('v8-7');
     const pos = RICH_REFERENCE.positions.slice();
     for (let i = 0; i < pos.length; i++) pos[i] += 0.03 * Math.sin(i * 1.7); // deterministic kick off flat
     const before = maxConeDeficit(torus, pos);
@@ -91,7 +91,7 @@ describe('minimize — soft path: descend leastSquares(condition) to its zeros',
 
 describe('minimize — real: honest descent ALONG [flat]', () => {
   it('cell-margin descent stays exactly on the flat manifold and lowers the energy', () => {
-    const torus = byId(7);
+    const torus = byId('v8-7');
     const pos = RICH_REFERENCE.positions.slice();
     const energy = makeCellMargin(torus, { epsilon: 0.3 }); // ε large → energy active
 

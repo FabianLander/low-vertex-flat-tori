@@ -23,7 +23,7 @@
  * Pure: no DOM, no three.js.
  */
 
-import type { Triangulation } from './triangulation.ts';
+import type { Combinatorics } from './triangulation.ts';
 import { edgeKey } from './triangulation.ts';
 import { spanningTree, dualSpanningTree, coTreeEdges } from './trees.ts';
 import type { Vec2 } from '@core/geometry/vec2.ts';
@@ -65,7 +65,7 @@ function solve(A: number[][], b: number[]): number[] {
 const sgn = (u: number, v: number) => (u < v ? 1 : -1); // cochain stored for min→max
 
 /** Tree–cotree: primal spanning tree edges + the two H₁ generator edges (`trees.ts`). */
-function treeCotree(triang: Triangulation): { inT: Set<number>; gens: number[] } {
+function treeCotree(triang: Combinatorics): { inT: Set<number>; gens: number[] } {
   const { edges, triangles, edgeToTris, vertexCount } = triang;
   const { inTree } = spanningTree(vertexCount, edges);
   const inDual = dualSpanningTree(triangles, edgeToTris, inTree);
@@ -75,7 +75,7 @@ function treeCotree(triang: Triangulation): { inT: Set<number>; gens: number[] }
 }
 
 /** Integer cocycle vanishing on T with the given values on the two generators. */
-function cocycle(triang: Triangulation, inT: Set<number>, gens: number[], gVals: [number, number]): Map<number, number> {
+function cocycle(triang: Combinatorics, inT: Set<number>, gens: number[], gVals: [number, number]): Map<number, number> {
   const { edges, triangles } = triang;
   const unk: number[] = [];
   const idx = new Map<number, number>();
@@ -128,7 +128,7 @@ function invSqrt2x2(a: number, b: number, d: number): [number, number, number, n
 }
 
 /** Develop a torus into a flat-torus harmonic embedding (see module doc). */
-export function harmonicLayout(triang: Triangulation): HarmonicLayout {
+export function harmonicLayout(triang: Combinatorics): HarmonicLayout {
   const { edges, triangles, vertexCount } = triang;
   const { inT, gens } = treeCotree(triang);
   const al = cocycle(triang, inT, gens, [1, 0]);

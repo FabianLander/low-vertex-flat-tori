@@ -3,31 +3,31 @@ import { ALL_TORI } from '@core/triangulations';
 import { edgeKey } from '@core/topology/triangulation';
 import { harmonicLayout } from '@core/topology/harmonicLayout';
 import { exactMinCutDomain } from '@core/topology/fundamentalDomain';
-import { canonicalDecoration } from '@core/topology/marking';
+import { canonicalMarking } from '@core/topology/marking';
 
-describe('canonicalDecoration (minimal-domain marking, all tori)', () => {
+describe('canonicalMarking (minimal-domain marking, all tori)', () => {
   for (const torus of ALL_TORI) {
     const F = torus.triangles.length;
 
-    it(`#${torus.id} ${torus.name}: developOrder is a permutation of 0..${F - 1}`, () => {
-      const { developOrder } = canonicalDecoration(torus);
+    it(`${torus.id} ${torus.name}: developOrder is a permutation of 0..${F - 1}`, () => {
+      const { developOrder } = canonicalMarking(torus);
       expect(developOrder).toHaveLength(F);
       expect([...developOrder].sort((a, b) => a - b)).toEqual(Array.from({ length: F }, (_, i) => i));
     });
 
-    it(`#${torus.id}: domain is provably minimal (exterior = 10, cut = 5)`, () => {
+    it(`${torus.id}: domain is provably minimal (exterior = 10, cut = 5)`, () => {
       const ex = exactMinCutDomain(torus, harmonicLayout(torus));
       expect(ex.exterior).toBe(10);
       expect(ex.cut).toHaveLength(5);
     });
 
-    it(`#${torus.id}: generatorLoops are closed edge-walks forming a unit-index H₁ basis`, () => {
+    it(`${torus.id}: loops are closed edge-walks forming a unit-index H₁ basis`, () => {
       const layout = harmonicLayout(torus);
-      const { generatorLoops } = canonicalDecoration(torus);
-      expect(generatorLoops).toHaveLength(2);
+      const { loops } = canonicalMarking(torus);
+      expect(loops).toHaveLength(2);
 
       // closed walks along genuine edges
-      for (const loop of generatorLoops) {
+      for (const loop of loops) {
         expect(loop[0]).toBe(loop[loop.length - 1]);
         for (let k = 0; k + 1 < loop.length; k++) {
           expect(torus.edgeToTris.has(edgeKey(loop[k], loop[k + 1]))).toBe(true);
@@ -35,7 +35,7 @@ describe('canonicalDecoration (minimal-domain marking, all tori)', () => {
       }
 
       // each loop's class in the period basis = Σ jump; |det| = 1 ⟺ unit index
-      const cls = generatorLoops.map((loop) => {
+      const cls = loops.map((loop) => {
         let n = 0, m = 0;
         for (let k = 0; k + 1 < loop.length; k++) { const [a, b] = layout.jump(loop[k], loop[k + 1]); n += a; m += b; }
         return [n, m] as const;
@@ -44,11 +44,11 @@ describe('canonicalDecoration (minimal-domain marking, all tori)', () => {
       expect(Math.abs(det)).toBe(1);
     });
 
-    it(`#${torus.id}: the triangulation carries its canonical marking (computed on load)`, () => {
-      const deco = canonicalDecoration(torus);
-      expect([...torus.fundamentalDomain.developOrder]).toEqual(deco.developOrder);
-      expect([...torus.fundamentalDomain.cut]).toEqual(deco.cut);
-      expect(torus.marking.generatorLoops).toEqual(deco.generatorLoops);
+    it(`${torus.id}: the loaded marking equals the freshly-computed canonical one`, () => {
+      const fresh = canonicalMarking(torus);
+      expect([...torus.marking.developOrder]).toEqual(fresh.developOrder);
+      expect(torus.marking.cut).toEqual(fresh.cut);
+      expect(torus.marking.loops).toEqual(fresh.loops);
     });
   }
 });

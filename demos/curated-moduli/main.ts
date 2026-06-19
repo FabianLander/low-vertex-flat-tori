@@ -284,7 +284,7 @@ function layoutPanel(): void {
 function showTorus3D(c: Klass, i: number): void {
   if (insetMesh) insetScene.remove(insetMesh);
   curInset?.dispose();
-  const paper = paperFromRow(byId(c.type), c.pos[i]);
+  const paper = paperFromRow(byId('v8-' + c.type), c.pos[i]);
   const view = makeTorusView(paper.triang, { surface: { material: insetFace } });
   view.draw(paper.positions);
   curInset = view;

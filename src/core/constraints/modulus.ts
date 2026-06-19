@@ -1,13 +1,17 @@
 /**
  * modulus — the modulus condition, as a clean grid: pin the modulus to a LOCUS in either
- * SPACE. Every constraint here is
+ * SPACE. A locus is itself a `Constraint`, but living on ℍ — a measurement of τ equated to a
+ * value (`point`/`verticalLine`/`circle`, below). Pinning pulls that locus back through the
+ * chart∘tau measurement, carrying its target unchanged:
  *
- *     constraint = compose(locus, chart ∘ tau)
+ *     pin(locus) = { fn: compose(locus.fn, chart ∘ tau),  target: locus.target }
  *
- * - `tau` (config → τ ∈ ℍ) is the same analytic measurement `Fn` (from `moduli/modulus`);
+ * - `tau` (config → τ ∈ ℍ) is the analytic measurement `Fn` (from `moduli/modulus`);
  * - the CHART (ℍ → ℍ) picks the space: identity for **Teichmüller** (raw τ), the frozen
  *   reduction Möbius `mobiusMap(m)` for **moduli** (reduced τ̂; `m` frozen at a seed);
- * - the LOCUS (ℍ → ℝᵏ) picks the shape: `point` (codim 2) / `verticalLine` / `circle` (codim 1).
+ * - the LOCUS (a `Constraint` on ℍ) picks the shape: `point` (codim 2) / `verticalLine` /
+ *   `circle` (codim 1). Composing on the INNER (domain) side never touches the target — a
+ *   reparameterization of where the measurement reads, not of the value it must equal.
  *
  * So the family is a 2 × 3 grid (`pinTeichmuller`/`pinModuli` × `point`/`verticalLine`/`circle`),
  * with the common cells named (`fixedModulus`, `modulusWall`). The other cells are spelled
@@ -30,6 +34,7 @@ import { reduceModulusWithMatrix, applyMobius, type Sl2z } from '@core/moduli/re
 import type { Vec2 } from '@core/geometry/vec2.ts';
 import { affine, compose } from '@core/functions/compose.ts';
 import type { Fn } from '@core/functions/types.ts';
+import type { Constraint } from './types.ts';
 
 // ─── the measurement ────────────────────────────────────────────────────────
 
@@ -51,22 +56,25 @@ export function tau(triang: Triangulation): Fn {
   };
 }
 
-// ─── loci: the shape a modulus constraint cuts out of ℍ (an `Fn` ℍ → ℝᵏ, inDim 2) ─
+// ─── loci: a shape in ℍ as a `Constraint` (measurement of z ∈ ℍ = a target value) ─
 
-/** Pin to the point z₀ ∈ ℍ — codim 2 (`z − z₀`). */
-export const point = (z0: Vec2): Fn => affine([1, 0, 0, 1], [-z0[0], -z0[1]], 'point');
+/** The point z₀ ∈ ℍ — codim 2: measure z (identity), target z₀. */
+export const point = (z0: Vec2): Constraint => ({ fn: affine([1, 0, 0, 1], [0, 0], 'id₂'), target: z0 });
 
-/** Pin to the vertical line Re z = c — codim 1 (`Re z − c`). */
-export const verticalLine = (c: number): Fn => affine([1, 0], [-c], 'verticalLine');
+/** The vertical line Re z = c — codim 1: measure Re z, target c. */
+export const verticalLine = (c: number): Constraint => ({ fn: affine([1, 0], [0], 'Re'), target: [c] });
 
-/** Pin to the circle |z − center| = r — codim 1. Squared form `|z−center|² − r²`, so it is
- *  analytic everywhere (no √); its zero set is the circle, derivative `2(z − center)`. */
-export const circle = (center: Vec2, r: number): Fn => ({
-  label: 'circle',
-  inDim: 2,
-  outDim: 1,
-  value: (x, out) => { const dx = x[0] - center[0], dy = x[1] - center[1]; out[0] = dx * dx + dy * dy - r * r; },
-  jacobian: (x, out) => { out[0] = 2 * (x[0] - center[0]); out[1] = 2 * (x[1] - center[1]); },
+/** The circle |z − center| = r — codim 1: measure the squared distance `|z−center|²` (so it
+ *  is analytic everywhere, no √; derivative `2(z − center)`), target r². */
+export const circle = (center: Vec2, r: number): Constraint => ({
+  fn: {
+    label: 'dist²-to-center',
+    inDim: 2,
+    outDim: 1,
+    value: (x, out) => { const dx = x[0] - center[0], dy = x[1] - center[1]; out[0] = dx * dx + dy * dy; },
+    jacobian: (x, out) => { out[0] = 2 * (x[0] - center[0]); out[1] = 2 * (x[1] - center[1]); },
+  },
+  target: [r * r],
 });
 
 // ─── the chart: which space (the only difference between the two columns) ─────
@@ -108,8 +116,8 @@ function frozen(triang: Triangulation, seed: ArrayLike<number>): { m: Sl2z; tauH
 }
 
 /** Moduli constraint with the chart matrix already chosen: pin τ̂ = applyMobius(m, τ) to `locus`. */
-function moduliWith(triang: Triangulation, m: Sl2z, locus: Fn): Fn {
-  return compose(locus, compose(mobiusMap(m), tau(triang), 'frozenModulus'));
+function moduliWith(triang: Triangulation, m: Sl2z, locus: Constraint): Constraint {
+  return { fn: compose(locus.fn, compose(mobiusMap(m), tau(triang), 'frozenModulus')), target: locus.target };
 }
 
 // ─── the two charts (the columns of the grid) ─────────────────────────────────
@@ -118,22 +126,22 @@ function moduliWith(triang: Triangulation, m: Sl2z, locus: Fn): Fn {
  * Teichmüller-space constraint: pin the RAW τ to `locus`. Identity chart — no seed,
  * globally smooth. The target lives in the current marking (raw τ, not the SL(2,ℤ)-class).
  */
-export function pinTeichmuller(triang: Triangulation, locus: Fn): Fn {
-  return compose(locus, tau(triang));
+export function pinTeichmuller(triang: Triangulation, locus: Constraint): Constraint {
+  return { fn: compose(locus.fn, tau(triang)), target: locus.target };
 }
 
 /**
  * Moduli-space constraint: pin the REDUCED τ̂ to `locus`. The reduction chart is frozen at
  * `seed` (holds in its SL(2,ℤ) chamber; `march` re-freezes per substep).
  */
-export function pinModuli(triang: Triangulation, seed: ArrayLike<number>, locus: Fn): Fn {
+export function pinModuli(triang: Triangulation, seed: ArrayLike<number>, locus: Constraint): Constraint {
   return moduliWith(triang, frozen(triang, seed).m, locus);
 }
 
 // ─── named conveniences (the common cells of the grid) ────────────────────────
 
 /** { τ̂ = τ̂₀ } — a moduli point (the square i, hexagonal ρ, …). codim 2, chart frozen at seed. */
-export function fixedModulus(triang: Triangulation, seed: ArrayLike<number>, tauHat0: Vec2): Fn {
+export function fixedModulus(triang: Triangulation, seed: ArrayLike<number>, tauHat0: Vec2): Constraint {
   return pinModuli(triang, seed, point(tauHat0));
 }
 
@@ -142,7 +150,7 @@ export function fixedModulus(triang: Triangulation, seed: ArrayLike<number>, tau
  * `Fn`. BOTH the chart `m` and the SIGN of Re τ̂ are frozen at `seed`, so it targets the
  * vertical line Re τ̂ = sgn·c in the seed's chamber.
  */
-export function modulusWall(triang: Triangulation, seed: ArrayLike<number>, c: number): Fn {
+export function modulusWall(triang: Triangulation, seed: ArrayLike<number>, c: number): Constraint {
   const { m, tauHat } = frozen(triang, seed);
   const sgn = tauHat[0] >= 0 ? 1 : -1;
   return moduliWith(triang, m, verticalLine(sgn * c));

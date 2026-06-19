@@ -13,7 +13,7 @@ describe('collinear', () => {
 
   it('analytic Jacobian matches central finite differences', () => {
     const c = Float64Array.from({ length: 24 }, (_, i) => Math.sin(i * 1.3));
-    const fn = collinear(1, 2, 3, 24);
+    const fn = collinear(1, 2, 3, 24).fn;
     const J = new Float64Array(24);
     fn.jacobian(c, J);
     const h = 1e-6;

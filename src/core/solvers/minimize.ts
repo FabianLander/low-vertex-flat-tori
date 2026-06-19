@@ -68,7 +68,7 @@ export function minimize(
   const region = opts.region;
   const projectOpts = opts.projectOpts ?? {};
 
-  const K = held.reduce((s, g) => s + g.outDim, 0);
+  const K = held.reduce((s, c) => s + c.fn.outDim, 0);
 
   const gradX = new Float64Array(d);
   const gTan = new Float64Array(d);
@@ -81,10 +81,12 @@ export function minimize(
     return { status: 'diverged', iters: 0, energy: NaN };
   }
 
-  // Held Jacobian at the current x (every row of each constraint, stacked).
+  // Held Jacobian at the current x (every row of each constraint, stacked). Only the
+  // Jacobian is read — the tangent projection needs ker J, not the target (the retract via
+  // `project` is what consumes the target/residual).
   const heldJac = (): void => {
     let off = 0;
-    for (const g of held) { g.jacobian(x, J.subarray(off * d, (off + g.outDim) * d)); off += g.outDim; }
+    for (const c of held) { c.fn.jacobian(x, J.subarray(off * d, (off + c.fn.outDim) * d)); off += c.fn.outDim; }
   };
 
   for (let iter = 0; iter < maxIters; iter++) {

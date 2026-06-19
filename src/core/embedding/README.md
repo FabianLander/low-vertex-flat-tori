@@ -28,10 +28,11 @@ magnitude**:
   derived from the triangulation and memoized). EXTRINSIC bookkeeping — it lives here
   with its only consumer, not on `Triangulation`.
 
-`Region` — the OPEN-condition contract ({ `contains`, optional `margin` }) — is defined here
-(`embedded.ts`), the open-condition twin of `constraints/Constraint`. The embedded set is its
-instance: `isEmbedded` → `contains`, `clearance` → `margin`. `search/pull`'s `ambientRegion`
-pulls it onto the solver's working space ℝⁿ for `minimize`/`continuation`.
+`Region` — the OPEN-condition contract ({ `contains`, optional `margin` }) — lives in
+`types.ts`, the open-condition twin of `constraints/Constraint` (contract separated from its
+instance, mirroring `constraints/types.ts`). The embedded set is its sole instance:
+`isEmbedded` → `contains`, `clearance` → `margin`. `search/pull`'s `ambientRegion` pulls it onto
+the solver's working space ℝⁿ for `minimize`/`continuation`.
 
 The torus-blind intersection/distance kernels are in `geometry/` (`triangleIntersect`,
 `distance`, `intersectionChord`, `triangle`). Pure: no three.js, no DOM.

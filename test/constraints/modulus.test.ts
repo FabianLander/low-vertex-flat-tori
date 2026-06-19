@@ -16,11 +16,11 @@ import {
 import { modulus } from '@core/moduli/modulus.ts';
 import { reduceModulus } from '@core/moduli/reduce.ts';
 import type { Vec2 } from '@core/geometry/vec2.ts';
-import type { Fn } from '@core/functions/types.ts';
+import type { Constraint } from '@core/constraints/types.ts';
 import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
-const torus = byId(7);
+const torus = byId('v8-7');
 
 /** A flat seed and its modulus, raw (τ) and reduced (τ̂). */
 function flatSeed(): { pos: Float64Array; tauHat: Vec2; tauRaw: Vec2 } {
@@ -31,7 +31,8 @@ function flatSeed(): { pos: Float64Array; tauHat: Vec2; tauRaw: Vec2 } {
 }
 
 /** Max |analytic ∂g − central-FD ∂g| over a constraint's Jacobian at p. */
-function jacVsFd(fn: Fn, p: ArrayLike<number>, h = 1e-7): number {
+function jacVsFd(c: Constraint, p: ArrayLike<number>, h = 1e-7): number {
+  const fn = c.fn;
   const n = p.length, k = fn.outDim;
   const J = new Float64Array(k * n); fn.jacobian(p, J);
   const vp = new Float64Array(k), vm = new Float64Array(k);

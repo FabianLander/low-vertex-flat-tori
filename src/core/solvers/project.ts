@@ -10,10 +10,10 @@
  *   - full space + [flat]                              ≡ newtonFlatten
  *   - pinned space + [flat, collinear, collinear]      ≡ semiSolutionFlatten
  *
- * One step, given the current point x: stack the residuals `F = gᵢ(x)` and Jacobians
- * `J = Dgᵢ(x)` (K×n in ℝⁿ), solve `J·step = F` (min-norm) via the QR of `Jᵀ` (`qr.ts`), and
- * set `x ← x − step`. The QR conditions at κ(J), not the κ(J)² of the old normal equations
- * — see docs/solvers-overhaul.md.
+ * One step, given the current point x: stack the residuals `F = gᵢ(x) − targetᵢ` and
+ * Jacobians `J = Dgᵢ(x)` (K×n in ℝⁿ; the constant target drops out of the derivative),
+ * solve `J·step = F` (min-norm) via the QR of `Jᵀ` (`qr.ts`), and set `x ← x − step`. The QR
+ * conditions at κ(J), not the κ(J)² of the old normal equations — see docs/solvers-overhaul.md.
  *
  * The min-norm step is taken in the working space's Euclidean metric (`g = I`). The
  * canonical, reparameterization-invariant choice is the pullback metric `DφᵀDφ` — deferred;
@@ -54,18 +54,23 @@ export function project(
   const tol = opts.tolerance ?? 1e-12;
   const maxIters = opts.maxIters ?? 50;
 
-  const K = constraints.reduce((s, g) => s + g.outDim, 0);   // Σ rows (every row driven)
+  const K = constraints.reduce((s, c) => s + c.fn.outDim, 0);   // Σ rows (every row driven)
 
   const F = new Float64Array(K);          // stacked residuals
   const J = new Float64Array(K * d);      // stacked Jacobians in ℝⁿ (stride d)
   const qr = makeQR(K, d);                // QR of Jᵀ, refactored each iteration
   const step = new Float64Array(d);       // the min-norm Gauss–Newton step
 
-  // Residual at the current x: each constraint writes its rows straight into F; convergence
-  // is ‖F‖∞ over every row of every constraint.
+  // Residual at the current x: each constraint writes `fn(x) − target` into F (target
+  // absent ⟺ 0); convergence is ‖F‖∞ over every row of every constraint.
   const evalResidual = (): number => {
     let off = 0;
-    for (const g of constraints) { g.value(x, F.subarray(off, off + g.outDim)); off += g.outDim; }
+    for (const c of constraints) {
+      const k = c.fn.outDim;
+      c.fn.value(x, F.subarray(off, off + k));
+      if (c.target) for (let i = 0; i < k; i++) F[off + i] -= c.target[i];
+      off += k;
+    }
     return infNorm(F);
   };
 
@@ -78,7 +83,7 @@ export function project(
 
     // Stack each constraint's Jacobian (all rows) into J at the current x.
     let off = 0;
-    for (const g of constraints) { g.jacobian(x, J.subarray(off * d, (off + g.outDim) * d)); off += g.outDim; }
+    for (const c of constraints) { c.fn.jacobian(x, J.subarray(off * d, (off + c.fn.outDim) * d)); off += c.fn.outDim; }
 
     // Min-norm Gauss–Newton step via QR of Jᵀ: solve J·step = F (min-norm), x ← x − step.
     // A rank-deficient J (a collapsed column) is carried harmlessly — `minNormSolve` drops that

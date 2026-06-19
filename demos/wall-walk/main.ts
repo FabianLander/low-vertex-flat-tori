@@ -66,7 +66,7 @@ function rows(text: string, N: number): number[][] {
 }
 
 function makeFamily(key: string, type: number, color: string, raw: string): Family {
-  const triang = byId(type);
+  const triang = byId('v8-' + type);
   const N = triang.vertexCount * 3;
   const pool: Float64Array[] = [];
   const seedTau: { re: number; im: number }[] = [];

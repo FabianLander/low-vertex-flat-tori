@@ -9,9 +9,10 @@
  * The torus-blind intersection/distance kernels are in `geometry/`.
  */
 
+export { type Region } from './types.ts';
 export {
   isEmbedded, firstViolation, allViolations, violationFaceScalars, clearance,
-  type EmbeddingViolation, type Region,
+  type EmbeddingViolation,
 } from './embedded.ts';
 export {
   minSeparation, minCellGap, linearSize, forEachCellGap,

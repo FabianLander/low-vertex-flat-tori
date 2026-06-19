@@ -72,7 +72,7 @@ type Entry = { paper: PaperTorus; type: number; deficit: number; margin: number;
 const entries: Entry[] = [];
 for (const path of Object.keys(csvFiles).sort()) {
   const type = Number(path.match(/gallery-t(\d+)\.csv$/)![1]);
-  const triang = byId(type);
+  const triang = byId('v8-' + type);
   const group: Entry[] = parseEmbeddings(csvFiles[path], triang).map((paper) => {
     const deficit = maxConeDeficit(triang, paper.positions);
     const tau = reduceModulus(modulus(triang, paper.positions).tau);

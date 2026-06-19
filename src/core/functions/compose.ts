@@ -229,9 +229,8 @@ export function compose(outer: Fn, inner: Fn, label = `${outer.label}∘${inner.
  * `outDim = Σ fᵢ.outDim`. All must share the same `inDim` (the common domain). `value`/
  * `jacobian` write each block straight into `out.subarray(…)` at its row offset (no
  * copies). The zero set is the intersection ⋂{fᵢ = 0}; pair with `leastSquares` to flow
- * toward several conditions at once. Takes raw `Fn`s — a `Held`'s `drive`/`measure` is a
- * `project`-only concern (`stack` for the energy path uses the bare map, e.g. `coneDeficit`,
- * not the `flat` `Held`).
+ * toward several conditions at once. Takes raw `Fn`s (maps), not `Constraint`s — the energy
+ * path stacks bare maps (e.g. `coneDeficit`), independent of any constraint's `target`.
  */
 export function stack(...fns: Fn[]): Fn {
   const inDim = fns[0].inDim;

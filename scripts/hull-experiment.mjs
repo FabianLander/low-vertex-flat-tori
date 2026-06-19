@@ -53,7 +53,7 @@ import { flattenFlowEmbed } from '@core/search/recipe.ts';
 import { makeCutOffArea, makeChordLengthSquared } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
-const triang = byId(a.num('--type', 2));
+const triang = byId('v8-' + a.num('--type', 2));
 const V = triang.vertexCount;
 const tol = a.num('--tol', 1e-4);
 const limit = a.num('--limit', Infinity);

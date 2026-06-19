@@ -32,7 +32,7 @@ describe('modulus: direct (frames) == read off the developed image', () => {
   it('all 7 types, projected onto the flat manifold', () => {
     for (const torus of ALL_TORI) {
       const N = torus.vertexCount * 3;
-      const rng = mulberry32(8000 + torus.id);
+      const rng = mulberry32(8000 + ALL_TORI.indexOf(torus));
       let p: Float64Array | null = null;
       for (let a = 0; a < 16 && !p; a++) {
         const x = new Float64Array(N);

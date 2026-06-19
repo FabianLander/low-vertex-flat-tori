@@ -38,7 +38,7 @@ import { isEmbedded } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
 const TYPE = a.num('--type', 7);
-const triang = byId(TYPE);
+const triang = byId('v8-' + TYPE);
 const N = triang.vertexCount * 3;
 const ANCHORS = a.num('--anchors', 12);
 const IM_MIN = a.num('--im-min', 1.0);        // target: the square torus i

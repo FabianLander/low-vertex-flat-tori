@@ -11,6 +11,7 @@
  */
 
 import type { Fn } from '@core/functions/types.ts';
+import type { Constraint } from './types.ts';
 import { signedArea2 as triSignedArea2 } from '@core/geometry/triangle.ts';
 
 /** Twice the signed area of (Pi, Pj, Pk) in the XY-plane; zero iff collinear. */
@@ -20,13 +21,13 @@ export function signedArea2(p: ArrayLike<number>, i: number, j: number, k: numbe
 }
 
 /**
- * Collinearity of the vertex triple (i, j, k): planar signed area = 0. codim 1, analytic.
- * `n` is the configuration length (= 3·V) the map reads — its `inDim`; the map is sparse,
- * touching only the three vertices' x,y slots.
+ * Collinearity of the vertex triple (i, j, k): planar signed area = 0 (target 0). codim 1,
+ * analytic. `n` is the configuration length (= 3·V) the map reads — its `inDim`; the map is
+ * sparse, touching only the three vertices' x,y slots.
  */
-export function collinear(i: number, j: number, k: number, n: number): Fn {
+export function collinear(i: number, j: number, k: number, n: number): Constraint {
   const oi = 3 * i, oj = 3 * j, ok = 3 * k;
-  return {
+  const fn: Fn = {
     label: `collinear-${i}${j}${k}`,
     inDim: n,
     outDim: 1,
@@ -42,4 +43,5 @@ export function collinear(i: number, j: number, k: number, n: number): Fn {
       out[ok] = yi - yj; out[ok + 1] = xj - xi;
     },
   };
+  return { fn };                                  // target absent ⟺ 0
 }

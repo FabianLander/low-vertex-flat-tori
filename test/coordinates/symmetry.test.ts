@@ -15,7 +15,7 @@ import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 import { mulberry32 } from '@core/sampling/rng.ts';
 
-const torus = byId(7);
+const torus = byId('v8-7');
 const { reflection: refl, pairing } = RICH_SYMMETRY;
 
 /** Max |P_b − ρ·P_a| over the pairing — 0 ⟺ exactly ρ-symmetric. */

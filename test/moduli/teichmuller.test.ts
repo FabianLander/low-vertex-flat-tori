@@ -22,7 +22,7 @@ describe('per-torus Teichmüller pipeline (flatten → develop → τ)', () => {
   for (const torus of ALL_TORI) {
     it(`#${torus.id} ${torus.name}: a random flat realization has a well-defined τ`, () => {
       const N = torus.vertexCount * 3;
-      const rng = mulberry32(1000 + torus.id);
+      const rng = mulberry32(1000 + ALL_TORI.indexOf(torus));
 
       // Try a few random seeds; take the first that projects to a non-degenerate
       // (positive-area) flat torus. project is a corrector, not a global solver, so

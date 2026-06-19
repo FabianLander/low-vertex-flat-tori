@@ -90,7 +90,7 @@ function bump(type, field) {
 for (const { file, type } of SOURCES) {
   const path = resolve(file);
   if (!existsSync(path)) { process.stderr.write(`  (skip, missing) ${file}\n`); continue; }
-  const torus = byId(type);
+  const torus = byId('v8-' + type);
   if (!byType.has(type)) byType.set(type, new Map());
   const buckets = byType.get(type);
   let kept = 0;

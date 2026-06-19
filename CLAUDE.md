@@ -95,10 +95,13 @@ machinery-purity violation like `topology/` importing `triangulations/` is a gla
 
 The system is built from **one** thing — a differentiable map of the configuration,
 `Fn : C = ℝ³ⱽ → ℝᵏ` (`value` + `jacobian`). "Constraint" and "energy" are *uses* of an `Fn`, not
-separate interfaces:
+separate map types:
 
-- a **constraint** is an `Fn` driven to zero (`project`/`continuation`) — a bare `Fn`, no usage
-  wrapper; a rank-deficient one states its rank at the source (`flat` emits its V−1 independent rows).
+- a **constraint** is an `Fn` `fn` paired with a `target` value it is driven to — `{ fn, target }`,
+  a *function equated to a value* `{fn(x) = target}` (solved by `project`/`continuation`; `target`
+  absent ⟺ 0). A bare `Fn` is a MAP, not a constraint — the sharpened line `coneDeficit` (map) vs
+  `flat` (constraint); a rank-deficient `fn` states its rank at the source (`flat`'s `fn` emits its
+  V−1 independent rows).
 - an **energy** is a scalar `Fn` (`ScalarFn`: `compute`/`grad`) descended (`minimize`).
 
 The three verbs on an `Fn` live in `functions/compose`: solve it hard (`project`/`continuation`),
@@ -108,8 +111,9 @@ embedded `Region` composes on top.
 
 There is **no `ConstraintMap`, no `Energy`, no `SmoothMap`, and no `Embedding`** — they were all
 retired onto the one `Fn` (a map ℝⁿ → ℝᵏ with `inDim`/`outDim` + `value`/`jacobian`; `ScalarFn` =
-`outDim 1`). A reparameterization φ, a locus, a Möbius chart, a constraint, an energy are all just
-`Fn`s. `functions/` is the **generic toolkit** — the `Fn`/`ScalarFn` contracts (`types.ts`) and the
+`outDim 1`). A reparameterization φ and a Möbius chart are bare `Fn`s; an energy is a `ScalarFn`; a
+constraint is a thin `{ fn, target }` over an `Fn` (and a locus is just a constraint living on ℍ).
+`functions/` is the **generic toolkit** — the `Fn`/`ScalarFn` contracts (`types.ts`) and the
 algebra (`fdFn`/`fdScalar`/`scalarFn`/`affine`, the one chain-rule `compose`, `stack`, `leastSquares`),
 no torus content. The **concrete maps** live with the condition they define — the closed ones in
 `constraints/`, the open embedded region in `embedding/` — the same machinery↔instances split as
@@ -130,22 +134,30 @@ its triangulation; not used on the interior hot path.
 *choice* of developing chart (cut, develop order, marking) — and it does NO geometric measurement;
 that (developing a metric torus → its modulus) is `moduli/`, below.
 
-- `topology/triangulation.ts` — the `Triangulation` type + `defineTriangulation(spec)`. Everything
-  (edges, oriented vertex links, dual adjacency, develop order, gluing tree, H₁ generators, the
-  combinatorial decoration types `Marking`/`FundamentalDomain`/`Attach`/`DevelopStep`) is **derived
-  from the triangle list and validated by V−E+F=0** — no baked-in 8/24/16 counts.
-  `defineTriangulation({ triangles })` alone yields a working torus. (The extrinsic triangle-collision
-  tables are derived separately in `embedding/cells.ts`, not here.)
+- `topology/triangulation.ts` — the `Triangulation` type + the builder. The cheap combinatorics
+  (edges, oriented vertex links, dual adjacency, degree sequence) are **derived from the triangle list
+  and validated by V−E+F=0** (+ manifold edges, single-cycle links, coherent orientation) — no
+  baked-in 8/24/16 counts. `deriveCombinatorics(triangles)` derives them; `makeTriangulation(data,
+  marking)` joins them with a **precomputed** `Marking` into one torus. Types: `TriangulationData`
+  (the stored input `{ id, triangles, label? }`), `Marking` (the developing chart — loops + cut +
+  develop order, in readable vertex/edge/face numbers), `Combinatorics`, `Attach`, `DevelopStep`. It
+  **never imports `marking.ts`** (the marking arrives precomputed, so building stays cheap). (The
+  extrinsic triangle-collision tables are derived separately in `embedding/cells.ts`, not here.)
 - `topology/trees.ts` — the shared spanning-tree primitives (primal/dual trees, tree–cotree co-edges,
   LCA `treePath`) the homology generators and the canonical marking are read off of.
-- `topology/marking.ts` — `canonicalDecoration`: picks each triangulation's canonical marking (cut +
-  develop order + cut-aligned H₁ generators), run **on load** by the registry (~0.1s each).
+- `topology/marking.ts` — `canonicalMarking(combinatorics)`: computes a triangulation's canonical
+  marking (cut + develop order + cut-aligned H₁ generators). The **expensive** step (harmonic layout +
+  exact min-cut); run **OFFLINE** by `scripts/compute-markings` (which writes
+  `triangulations/markings.generated.ts`), never at load — so the heavy code is out of the runtime.
 - `topology/{harmonicLayout,fundamentalDomain}.ts` — the planar-layout helpers `marking` builds on:
   the harmonic (Tutte) flat-torus embedding + the exact minimal-cut domain / centered-spiral unroll.
   The harmonic torus is a convenient *scratch* layout (not one of OUR metrics) — geometry used only as a
   *method* to choose the combinatorial marking/cut.
-- `triangulations/` — the 7 types as data: `EIGHT_VERTEX`, registry `ALL_TORI`/`byId(n)`/`RICH = byId(7)`,
-  computing each triangulation's marking on load.
+- `triangulations/` — the tori as **two stored things joined by id**: `eightVertex.ts`
+  (`EIGHT_VERTEX`, the combinatorics as `TriangulationData`, ids `v8-1`…`v8-7`) and
+  `markings.generated.ts` (`MARKINGS`, the precomputed markings, generated by `compute-markings`,
+  committed). The registry `ALL_TORI`/`byId('v8-7')`/`RICH = byId('v8-7')` joins them via
+  `makeTriangulation` — an eager const array, since building **loads** the marking, not computes it.
 
 ### The modulus: `moduli/` (measure τ, and the space it lives in)
 
@@ -186,17 +198,19 @@ does the measurement and owns the target space.
   `coords`): `full`, `pin` (`pinCoords`/`pinVertices`), `symmetry` (+`RICH_SYMMETRY` = Rich's ρ), and
   `normalized` (+`normalizePose`) — the gauge-fixed section of C → C/Sim (kills the 7 similarity DOF,
   3V−7 free coords; the realization-side mirror of `moduli/reduce`; replaces the old `gauge`).
-- `constraints/` — the **closed** conditions `{g=0}` you *project onto* (+ `types`: `Constraint = Fn`):
-  `flat` (emits the V−1 independent cone-deficit rows), `collinear` (analytic), `modulus` — the **point/line/circle
-  × Teichmüller/moduli grid**: `pinTeichmuller`/`pinModuli` (the chart) × `point`/`verticalLine`/`circle`
-  (the locus), each `compose(locus, chart∘tau)` and fully analytic; named cells `fixedModulus`,
-  `modulusWall`. (`tau`, `mobiusMap` consume `moduli/`.)
+- `constraints/` — the **closed** conditions `{fn=target}` you *project onto* (+ `types`:
+  `Constraint = { fn, target? }`): `flat` (its `fn` emits the V−1 independent cone-deficit rows),
+  `collinear` (analytic), `modulus` — the **point/line/circle × Teichmüller/moduli grid**:
+  `pinTeichmuller`/`pinModuli` (the chart) × `point`/`verticalLine`/`circle` (the locus, itself a
+  `Constraint` on ℍ), each pinning `{ fn: compose(locus.fn, chart∘tau), target: locus.target }` and
+  fully analytic; named cells `fixedModulus`, `modulusWall`. (`tau`, `mobiusMap` consume `moduli/`.)
 - `embedding/` — the **open** condition Ω you *stay inside* (the search's hard part): `embedded`
   (`isEmbedded` gate + `clearance`, its continuous companion) · `separation` (`minSeparation`, the honest
   cell-to-cell diagnostic, + the fatten-energy cell-gap substrate) · `energies/` (overlap — Fabi's
   `chordLengthSquared`/`cutOffArea`, drive a crossing torus onto Ω; fatten — `cellMargin`/`cellBarrier`,
   push an embedded one deeper) · `cells` (`cellTables`) · `index`. The **`Region`** contract
-  ({`contains`, optional `margin`}) lives here; `minimize`/`continuation` stay inside it.
+  ({`contains`, optional `margin`}) lives in `embedding/types.ts` (mirroring `constraints/types.ts`);
+  `minimize`/`continuation` stay inside it.
 - `solvers/` — problem-agnostic steppers run **entirely on ℝⁿ**, all on one QR kernel (`qr.ts`,
   `Jᵀ = QR` → the min-norm step + the tangent projection): `project` (min-norm Gauss–Newton onto
   ⋂{gᵢ=0}), `minimize` (Riemannian descent of a `ScalarFn` along the manifold, staying in a `Region`),

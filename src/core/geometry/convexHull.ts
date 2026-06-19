@@ -22,6 +22,19 @@
  * supporting direction the ascent misses — `interiorVertexMask` surfaces those as a
  * borderline band rather than silently rounding (see `tol`).
  *
+ * NOTE — an exact alternative (deferred). `m*` is an iterative approximation of a finite,
+ * EXACT predicate: with the vⱼ spanning ℝ³ (any genuine 3D vertex), the supporting cone is
+ * pointed, so a supporting plane — if one exists — is spanned by two of the vⱼ, with normal
+ * vⱼ × vₖ. So xᵢ is strictly interior ⟺ for EVERY pair (j,k) the signs of
+ * `det3(vₗ, vⱼ, vₖ)` over all ℓ are not all one-signed — a knob-free predicate built on the
+ * `vec3.det3` we already have (~C(V−1,2)·(V−1) triple products, fewer ops than this ascent for
+ * V≤9, and no `iters`/`tol`). It would fit `geometry/` better than this optimizer. NOT adopted
+ * because (a) this file is experiment-only — see `scripts/hull-experiment.mjs`, the idea didn't
+ * pan out — and (b) on near-flat tori `det3` of near-coplanar triples is near-zero, so the exact
+ * predicate shares this method's sign sensitivity at the degeneracies; truly robust would want
+ * adaptive-precision `det3` (Shewchuk), an investment the codebase hasn't made. If hull-interior
+ * ever becomes load-bearing, swap to the `det3` predicate (and consider robust arithmetic).
+ *
  * Pure: no three.js, no DOM. Cold path (once per sample, not a hot kernel) — tuple ops.
  */
 

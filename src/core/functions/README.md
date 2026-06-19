@@ -6,10 +6,11 @@ systems, the modulus loci, …) build their concrete maps from — the same mach
 split as `topology/` (generic) ↔ `triangulations/` (data).
 
 - `types.ts` — **`Fn`**: the ONE object, a differentiable map ℝⁿ → ℝᵏ carrying its own
-  Jacobian (`label` + `inDim` + `outDim` + `value` + `jacobian`). Every condition, energy,
-  coordinate change φ, locus, and chart is an `Fn` — there is no separate "smooth map" or
-  "embedding" type, only `inDim`/`outDim` and role. `ScalarFn` is just an `Fn` at `outDim 1`
-  with the conveniences `compute`/`grad`.
+  Jacobian (`label` + `inDim` + `outDim` + `value` + `jacobian`). The *map* behind every
+  condition, energy, coordinate change φ, locus, and chart is an `Fn` — there is no separate
+  "smooth map" or "embedding" type, only `inDim`/`outDim` and role. (A `Constraint` then *pairs*
+  an `Fn` with a `target` to drive it to — `constraints/types.ts` — but that target never enters
+  the algebra here.) `ScalarFn` is just an `Fn` at `outDim 1` with the conveniences `compute`/`grad`.
 - `compose.ts` — the algebra:
   - `fdFn`/`fdScalar` (finite-difference a value-only map into an `Fn`), `scalarFn` (a scalar
     `Fn` from value + analytic gradient), `affine` (x ↦ A·x + b);

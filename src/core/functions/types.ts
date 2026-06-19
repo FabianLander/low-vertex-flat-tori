@@ -1,17 +1,18 @@
 /**
- * `Fn` — a differentiable map ℝⁿ → ℝᵏ carrying its own Jacobian. THE one object the
- * whole system is built from: every condition, energy, coordinate change, locus, and
- * chart is an `Fn`. (The canonical instance is a map of a configuration C = ℝ³ⱽ, so
- * n = 3V — but `Fn` is generic: a reparameterization φ : ℝⁿ → ℝ³ⱽ, a locus ℍ → ℝ, a
- * Möbius chart ℝ²→ℝ² are all `Fn`s, distinguished only by `inDim`/`outDim` and role.)
+ * `Fn` — a differentiable map ℝⁿ → ℝᵏ carrying its own Jacobian. THE one map object the
+ * whole system is built from: the map behind every condition, energy, coordinate change,
+ * locus, and chart is an `Fn`. (The canonical instance is a map of a configuration
+ * C = ℝ³ⱽ, so n = 3V — but `Fn` is generic: a reparameterization φ : ℝⁿ → ℝ³ⱽ, a locus
+ * ℍ → ℝ, a Möbius chart ℝ²→ℝ² are all `Fn`s, distinguished only by `inDim`/`outDim` and role.)
  *
- * A condition is used three ways, and the `functions/compose` algebra is what moves
- * between them: `project`/`march` solve it HARD (drive the value to zero);
- * `leastSquares(fn)` turns it into the `ScalarFn` energy `flow` descends SOFT (move
- * toward its zeros); `stack(...)` combines conditions into one higher-dim `Fn`;
- * `compose(g, f)` chains two `Fn`s by the chain rule (so the pullback `g∘φ` and the
- * post-map `locus∘τ` are the same operation). So "constraint"/"energy"/"coordinate map"
- * are ROLES an `Fn` plays — not separate types.
+ * An `Fn` is used several ways, and the `functions/compose` algebra is what moves between
+ * them: pair it with a `target` into a `Constraint` and `project`/`continuation` solve it
+ * HARD (drive `fn − target` to zero); `leastSquares(fn)` turns it into the `ScalarFn` energy
+ * `minimize` descends SOFT (move toward its zeros); `stack(...)` combines maps into one
+ * higher-dim `Fn`; `compose(g, f)` chains two `Fn`s by the chain rule (so the pullback `g∘φ`
+ * and the post-map `locus∘τ` are the same operation). So "constraint"/"energy"/"coordinate
+ * map" are ROLES — a `Constraint` is a thin `{fn, target}` over an `Fn`, an energy a
+ * `ScalarFn` — not separate map types.
  *
  * `value` writes the `outDim` components; `jacobian` writes the `outDim`×`inDim`
  * derivative, row-major with stride `inDim`. Both take the input as `ArrayLike` so they

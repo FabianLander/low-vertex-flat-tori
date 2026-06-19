@@ -11,7 +11,7 @@ import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
 import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
-const torus = byId(7);
+const torus = byId('v8-7');
 
 describe('the embedded condition: gate + clearance', () => {
   it('embedded Rich is embedded with positive clearance', () => {

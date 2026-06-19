@@ -15,7 +15,7 @@
  * Pure: no DOM/three.js.
  */
 
-import type { Triangulation } from './triangulation.ts';
+import type { Combinatorics } from './triangulation.ts';
 import { edgeKey, edgeEnds } from './triangulation.ts';
 import { type HarmonicLayout, type HarmonicTile } from './harmonicLayout.ts';
 import type { Vec2 } from '@core/geometry/vec2.ts';
@@ -30,7 +30,7 @@ export type ExactDomainResult = {
 
 const EPS = 1e-6;
 
-export function exactMinCutDomain(triang: Triangulation, layout: HarmonicLayout): ExactDomainResult {
+export function exactMinCutDomain(triang: Combinatorics, layout: HarmonicLayout): ExactDomainResult {
   const { edges, edgeToTris, triangles } = triang;
   const { tiles } = layout;
   const F = triangles.length;
@@ -85,7 +85,7 @@ export function exactMinCutDomain(triang: Triangulation, layout: HarmonicLayout)
       for (let j = i + 1; j < k; j++) comb[j] = comb[j - 1] + 1;
     }
   }
-  throw new Error(`exactMinCutDomain: no valid cut for torus #${triang.id}`);
+  throw new Error(`exactMinCutDomain: no valid cut`);
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ export type WindingNet = {
   readonly center: Vec2;
 };
 
-export function windingNet(triang: Triangulation, layout: HarmonicLayout): WindingNet {
+export function windingNet(triang: Combinatorics, layout: HarmonicLayout): WindingNet {
   const dom = exactMinCutDomain(triang, layout).domain;
   return { tiles: dom, ...windingDevelop(triang, dom) };
 }
@@ -121,7 +121,7 @@ export function windingNet(triang: Triangulation, layout: HarmonicLayout): Windi
  * outward, each triangle gluing onto an already-placed coincident neighbor.
  * Shared by `windingNet` (animation) and the canonical `developOrder`.
  */
-export function windingDevelop(triang: Triangulation, dom: HarmonicTile[]): { order: number[]; steps: DevelopStep[]; center: Vec2 } {
+export function windingDevelop(triang: Combinatorics, dom: HarmonicTile[]): { order: number[]; steps: DevelopStep[]; center: Vec2 } {
   const { triangles, edgeToTris } = triang;
   const F = triangles.length;
   const byId = new Map(dom.map((t) => [t.id, t]));
@@ -155,7 +155,7 @@ export function windingDevelop(triang: Triangulation, dom: HarmonicTile[]): { or
   const q = [root];
   for (let h = 0; h < q.length; h++) for (const { nbr } of adj[q[h]]) if (dist[nbr] === Infinity) { dist[nbr] = dist[q[h]] + 1; q.push(nbr); }
   if (dist.some((d) => d === Infinity)) {
-    throw new Error(`windingDevelop: fundamental domain is not coincident-connected for torus #${triang.id}`);
+    throw new Error(`windingDevelop: fundamental domain is not coincident-connected`);
   }
 
   // Continuous winding walk: greedily extend from the just-placed triangle when

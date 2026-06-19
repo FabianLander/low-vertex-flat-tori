@@ -28,10 +28,11 @@ The kernel:
 
 The contracts the operations consume — each defined where its condition lives:
 
-- **closed** → `Constraint` = a bare `Fn` driven to zero (`constraints/types.ts`). No usage
-  wrapper: there is no separate constraint *or energy* interface — a constraint IS an `Fn` driven
-  to zero, an energy IS a `ScalarFn` descended (`minimize` takes one).
-- **open** → `Region` ({ `contains`, optional `margin` }) — the feasible set Ω, in `embedding/`.
+- **closed** → `Constraint` = `{ fn: Fn; target? }`, a map equated to a value, driven so
+  `fn − target → 0` (`constraints/types.ts`; `target` absent ⟺ 0). There is no separate *energy*
+  interface — an energy IS a `ScalarFn` descended (`minimize` takes one); the target enters only
+  the residual (`project`), never the QR step / tangent projection.
+- **open** → `Region` ({ `contains`, optional `margin` }) — the feasible set Ω, in `embedding/types.ts`.
 - **continuation** → `Family` (`param` + `held`) — the only contract `solvers/` owns, in `types.ts`.
 
 Pure: no three.js, no DOM.

@@ -313,7 +313,7 @@ function showTorus3D(c: Klass, i: number): void {
     insetScene.remove(insetMesh);
     insetMesh.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
   }
-  const paper = paperFromRow(byId(c.type), c.pos[i]);
+  const paper = paperFromRow(byId('v8-' + c.type), c.pos[i]);
 
   // The folded paper torus (NO edges; drag it to spin) floating above its UNFOLDED
   // developed net, whose fold lines are black very-thin tubes (rect-gallery / Rich's
@@ -321,7 +321,7 @@ function showTorus3D(c: Klass, i: number): void {
   const group = new THREE.Group();
 
   // folded torus: grid face, no edges, centered in a spin pivot
-  const tview = makeTorusView(byId(c.type), { surface: { material: insetFace } });
+  const tview = makeTorusView(byId('v8-' + c.type), { surface: { material: insetFace } });
   tview.draw(paper.positions);
   const torus = tview.group;
   torus.updateMatrixWorld(true);
@@ -333,7 +333,7 @@ function showTorus3D(c: Klass, i: number): void {
   torusPivot = pivot;
 
   // developed net: grid face + black very-thin tube fold lines
-  const sheetView = developedSheet(byId(c.type), { faceMaterial: insetFace, foldMaterial: NET_EDGE, foldRadius: 0.0015 });
+  const sheetView = developedSheet(byId('v8-' + c.type), { faceMaterial: insetFace, foldMaterial: NET_EDGE, foldRadius: 0.0015 });
   sheetView.draw(paper.positions);
   const sheet = sheetView.group;
   sheet.rotation.x = -Math.PI / 2;                  // lay the net flat on the ground

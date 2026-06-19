@@ -4,7 +4,7 @@ import { maxConeDeficit } from '@core/constraints/flat.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { byId } from '@core/triangulations/index.ts';
 
-const torus = byId(7);
+const torus = byId('v8-7');
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];
 
 /** Twice the signed area of (Pi,Pj,Pk) in XY — zero iff collinear. */
