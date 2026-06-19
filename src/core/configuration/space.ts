@@ -1,37 +1,39 @@
 /**
  * ConfigSpace — the spine of the search. A triangulation `T` fixes the meaning of
- * coordinates (and the default space ℝ³ⱽ of all realizations); an `Embedding`
- * φ : ℝⁿ → ℝ³ⱽ presents the problem's actual configuration space ℝⁿ inside it. A
- * `ConfigSpace` is the pair (T, φ), and it is the COMPILER between the
+ * coordinates (and the default space ℝ³ⱽ of all realizations); a map (`Fn`)
+ * φ : ℝⁿ → ℝ³ⱽ — an immersion — presents the problem's actual configuration space ℝⁿ
+ * inside it. A `ConfigSpace` is the pair (T, φ), and it is the COMPILER between the
  * triangulation's language ("pin these vertices", "impose this symmetry") and the
  * plain linear algebra the solvers run on.
  *
  * Four operations, two of them a dual pair along φ:
  *   pull(g)      φ*g = g∘φ : an ambient measurement (built from T, on ℝ³ⱽ) → a real
- *                `Fn` on ℝⁿ — the thing you optimize. (`precompose`.)
+ *                `Fn` on ℝⁿ — the thing you optimize. (`compose(g, φ)`.)
  *   push(x)      φ(x) : a problem-space point → its realization in ℝ³ⱽ.
  *   coords(p)    π(p) : an ambient config → its ℝⁿ coordinates. Left-inverse of push
  *                (a retraction onto the restricted space for off-space inputs); for SEEDS.
  *   paperTorus(x)  the (T, positions) boundary bundle for certify / IO / render.
  * plus metric(x) = Dφᵀ Dφ, the pullback metric (the canonical solver metric; the
- * solver currently defaults to I — see docs/math/configuration-space.md).
+ * solver currently defaults to I — see docs/math/configuration-space.md). The metric is
+ * meaningful precisely because φ is an immersion (Dφ full column rank) — the contract on
+ * the φ handed in, never enforced by the numerics.
  *
- * Closed under restriction: each constructor returns a `ConfigSpace`, and an
- * embedding composed with another embedding is again an embedding, so a restriction
- * of a restriction is a `ConfigSpace` of the same kind.
+ * Closed under restriction: each constructor returns a `ConfigSpace`, and a map composed
+ * with another immersion is again an immersion, so a restriction of a restriction is a
+ * `ConfigSpace` of the same kind.
  *
  * Pure: no three.js, no DOM.
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import type { Fn, ScalarFn } from '@core/functions/types.ts';
-import { precompose, precomposeScalar, type Embedding } from '@core/functions/compose.ts';
+import { compose } from '@core/functions/compose.ts';
 import type { PaperTorus } from './paperTorus.ts';
 
 export interface ConfigSpace {
   readonly triang: Triangulation;
-  /** φ : ℝⁿ → ℝ³ⱽ, the embedding presenting this space inside the full one. */
-  readonly phi: Embedding;
+  /** φ : ℝⁿ → ℝ³ⱽ (an `Fn`, an immersion) presenting this space inside the full one. */
+  readonly phi: Fn;
   /** n — the problem's degrees of freedom (= φ.inDim). */
   readonly dim: number;
   /** 3V — the ambient configuration dimension (= φ.outDim). */
@@ -58,11 +60,11 @@ export interface ConfigSpace {
  * retraction π. The four operations + metric are generic in φ; only `coords` is
  * embedding-specific (the choice of retraction off the image), so each coordinate
  * system (`coordinates/`) supplies it. This is the machinery; the coordinate-system
- * INSTANCES (full / pin / symmetry / doyleSchwartz) live in `coordinates/`.
+ * INSTANCES (full / pin / symmetry / normalized) live in `coordinates/`.
  */
 export function makeConfigSpace(
   triang: Triangulation,
-  phi: Embedding,
+  phi: Fn,
   coordsImpl: (p: ArrayLike<number>, outX: Float64Array) => void,
 ): ConfigSpace {
   const n = phi.inDim;
@@ -76,8 +78,8 @@ export function makeConfigSpace(
     phi,
     dim: n,
     ambient: m,
-    pull: (g) => precompose(g, phi),
-    pullScalar: (g) => precomposeScalar(g, phi),
+    pull: (g) => compose(g, phi),
+    pullScalar: (g) => compose(g, phi),
     push: (x, outP) => phi.value(x, outP),
     coords: coordsImpl,
     metric: (x, outG) => pullbackMetric(phi, x, outG),
@@ -90,7 +92,7 @@ export function makeConfigSpace(
 }
 
 /** g(x) = Dφ(x)ᵀ Dφ(x), the n×n Gram matrix of φ's Jacobian columns (row-major). */
-function pullbackMetric(phi: Embedding, x: ArrayLike<number>, outG: Float64Array): void {
+function pullbackMetric(phi: Fn, x: ArrayLike<number>, outG: Float64Array): void {
   const m = phi.outDim, n = phi.inDim;
   const J = new Float64Array(m * n);
   phi.jacobian(x, J);                       // m×n, row-major (stride n)

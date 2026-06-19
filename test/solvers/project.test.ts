@@ -57,7 +57,8 @@ describe('project — full space + [flat] lands on the flat manifold', () => {
 
 describe('project — pinned space + [flat, collinear×2] lands on the semi-solution locus', () => {
   const space = pinCoords(torus, FROZEN_Z);
-  const constraints = pullHeld(space, [flat(torus), collinear(1, 2, 3), collinear(4, 5, 6)]);
+  const n = 3 * torus.vertexCount;
+  const constraints = pullHeld(space, [flat(torus), collinear(1, 2, 3, n), collinear(4, 5, 6, n)]);
 
   it('drives flatness AND the two collinearities to zero on ρ-broken DS seeds', () => {
     for (const { x, y } of SEEDS) {

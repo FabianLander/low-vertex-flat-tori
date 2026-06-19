@@ -2,8 +2,8 @@
  * The Doyle–Schwartz seed family — a SEED (not a coordinate system): the explicit
  * closed-form #7 flat torus of modulus τ = x + iy, as bare positions. Used to seed
  * searches (the semi-solution scan perturbs its tent poles) and as a known flat-#7
- * fixture. It is value-only — no Jacobian, so it is not a `ConfigSpace`/`Embedding`;
- * it lives here with the searches that consume it, not in `coordinates/`.
+ * fixture. It is value-only — no Jacobian, so it is not an `Fn`/`ConfigSpace`; it lives
+ * here with the searches that consume it, not in `coordinates/`.
  *
  * Every member is a symmetric flat torus: the six planar vertices P1..P6 lie in z = 0
  * and are collinear in two triples {P1,P2,P3}, {P4,P5,P6}; the two tent-pole vertices

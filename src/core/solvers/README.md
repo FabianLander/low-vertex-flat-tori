@@ -4,7 +4,7 @@ The methods that move a point, run **entirely on the problem's space ℝⁿ**: `
 (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian gradient descent along the
 manifold, gated to stay in a region), and `march` (continuation tracking a family ∩
 region). They take constraints already *pulled* into ℝⁿ and a `Gate` predicate, and
-know **nothing** about a `Triangulation`, an `Embedding`, or a chart — that's what
+know **nothing** about a `Triangulation`, a coordinate system, or a chart — that's what
 makes a toy test just "ℝⁿ + some functions". `solvers/` depends on no implementation.
 
 - `types.ts` — the one solver-side contract: `Gate`, a predicate on ℝⁿ (the runtime

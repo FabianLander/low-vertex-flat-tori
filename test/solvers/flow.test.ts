@@ -20,7 +20,8 @@ import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 // --- toy: the unit sphere {‖x‖² = 1} in ℝ³ as an Fn ---
 const sphere: Fn = {
   label: 'sphere',
-  dim: 1,
+  inDim: 3,
+  outDim: 1,
   value(c, out) { out[0] = c[0] * c[0] + c[1] * c[1] + c[2] * c[2] - 1; },
   jacobian(c, out) { out[0] = 2 * c[0]; out[1] = 2 * c[1]; out[2] = 2 * c[2]; },
 };
@@ -29,6 +30,7 @@ const sphere: Fn = {
 function linearEnergy(a: readonly [number, number, number]): ScalarFn {
   return scalarFn(
     'linear',
+    3,
     (c) => a[0] * c[0] + a[1] * c[1] + a[2] * c[2],
     (_c, out) => { out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; },
   );
@@ -62,8 +64,8 @@ describe('flow — soft path: descend leastSquares(condition) to its zeros', () 
     // The combine (stack) + soften (leastSquares) composition, checked numerically.
     const torus = byId(7);
     const pos = RICH_REFERENCE.positions;
-    const cd = coneDeficit(torus), col = collinear(1, 2, 3);
-    const cdv = new Float64Array(cd.dim); cd.value(pos, cdv);
+    const cd = coneDeficit(torus), col = collinear(1, 2, 3, 3 * torus.vertexCount);
+    const cdv = new Float64Array(cd.outDim); cd.value(pos, cdv);
     const colv = new Float64Array(1); col.value(pos, colv);
     let expected = colv[0] * colv[0];
     for (const x of cdv) expected += x * x;

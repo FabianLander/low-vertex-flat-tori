@@ -2,18 +2,19 @@
  * full — the trivial coordinate system: the whole space ℝ³ⱽ, nothing restricted
  * (φ = id). The default ConfigSpace of a triangulation.
  *
- * A coordinate system is an `Embedding` φ : ℝⁿ → ℝ³ⱽ paired (via `makeConfigSpace`)
+ * A coordinate system is a map (`Fn`) φ : ℝⁿ → ℝ³ⱽ paired (via `makeConfigSpace`)
  * with a triangulation; see `configuration/space.ts` for the machinery. Pure: no
  * three.js, no DOM.
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
-import type { Embedding } from '@core/functions/compose.ts';
+import type { Fn } from '@core/functions/types.ts';
 import { makeConfigSpace, type ConfigSpace } from '@core/configuration/space.ts';
 
 /** The identity embedding ℝⁿ → ℝⁿ (φ = id, Dφ = I). */
-function identityEmbedding(n: number): Embedding {
+function identityEmbedding(n: number): Fn {
   return {
+    label: 'id',
     inDim: n,
     outDim: n,
     value(x, out) { for (let i = 0; i < n; i++) out[i] = x[i]; },

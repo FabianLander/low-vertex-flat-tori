@@ -8,7 +8,7 @@
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
-import type { Embedding } from '@core/functions/compose.ts';
+import type { Fn } from '@core/functions/types.ts';
 import { makeConfigSpace, type ConfigSpace } from '@core/configuration/space.ts';
 
 /**
@@ -22,7 +22,8 @@ export function pinCoords(triang: Triangulation, frozen: readonly number[], pin 
   const free: number[] = [];
   for (let i = 0; i < n; i++) if (!frozenSet.has(i)) free.push(i);
   const d = free.length;
-  const phi: Embedding = {
+  const phi: Fn = {
+    label: `pin(${frozen.length})`,
     inDim: d,
     outDim: n,
     value(x, out) {

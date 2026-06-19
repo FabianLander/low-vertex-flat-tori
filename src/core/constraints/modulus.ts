@@ -2,7 +2,7 @@
  * modulus — the modulus condition, as a clean grid: pin the modulus to a LOCUS in either
  * SPACE. Every constraint here is
  *
- *     constraint = postcompose(locus, chart ∘ tau)
+ *     constraint = compose(locus, chart ∘ tau)
  *
  * - `tau` (config → τ ∈ ℍ) is the same analytic measurement `Fn` (from `moduli/modulus`);
  * - the CHART (ℍ → ℍ) picks the space: identity for **Teichmüller** (raw τ), the frozen
@@ -12,7 +12,7 @@
  * So the family is a 2 × 3 grid (`pinTeichmuller`/`pinModuli` × `point`/`verticalLine`/`circle`),
  * with the common cells named (`fixedModulus`, `modulusWall`). The other cells are spelled
  * directly, e.g. `pinTeichmuller(t, point(τ0))` or `pinModuli(t, seed, circle([0,0],1))`.
- * `tau`, `mobiusMap`, `affine`, and `postcompose` are all analytic, so the chain rule
+ * `tau`, `mobiusMap`, `affine`, and `compose` are all analytic, so the chain rule
  * fuses each combination into an exact-Jacobian `Fn` — no finite differences anywhere.
  *
  * The reduced τ̂ is only piecewise-smooth (the SL(2,ℤ) element jumps at the
@@ -28,14 +28,14 @@ import type { Triangulation } from '@core/topology/triangulation.ts';
 import { modulus, tauJacobian } from '@core/moduli/modulus.ts';
 import { reduceModulusWithMatrix, applyMobius, type Sl2z } from '@core/moduli/reduce.ts';
 import type { Vec2 } from '@core/geometry/vec2.ts';
-import { affine, postcompose, type SmoothMap } from '@core/functions/compose.ts';
+import { affine, compose } from '@core/functions/compose.ts';
 import type { Fn } from '@core/functions/types.ts';
 
 // ─── the measurement ────────────────────────────────────────────────────────
 
 /**
  * tau — the Teichmüller modulus τ(c) = (Re τ, Im τ) ∈ ℍ, read off the developing
- * map's holonomy. dim 2, with an EXACT analytic Jacobian (`tauJacobian`, the
+ * map's holonomy. An `Fn` ℝ³ⱽ → ℝ² with an EXACT analytic Jacobian (`tauJacobian`, the
  * forward-mode complex differentiation of the frame develop). Defined everywhere the
  * developing map is (off the flat locus too, where `project` evaluates it); on a
  * non-flat config τ is the holonomy of a non-translation, still a smooth function of
@@ -44,23 +44,25 @@ import type { Fn } from '@core/functions/types.ts';
 export function tau(triang: Triangulation): Fn {
   return {
     label: 'tau',
-    dim: 2,
+    inDim: triang.vertexCount * 3,
+    outDim: 2,
     value: (c, out) => { const t = modulus(triang, c).tau; out[0] = t[0]; out[1] = t[1]; },
     jacobian: (c, out) => { tauJacobian(triang, c, out); },
   };
 }
 
-// ─── loci: the shape a modulus constraint cuts out of ℍ (`SmoothMap`, inDim 2) ─
+// ─── loci: the shape a modulus constraint cuts out of ℍ (an `Fn` ℍ → ℝᵏ, inDim 2) ─
 
 /** Pin to the point z₀ ∈ ℍ — codim 2 (`z − z₀`). */
-export const point = (z0: Vec2): SmoothMap => affine([1, 0, 0, 1], [-z0[0], -z0[1]]);
+export const point = (z0: Vec2): Fn => affine([1, 0, 0, 1], [-z0[0], -z0[1]], 'point');
 
 /** Pin to the vertical line Re z = c — codim 1 (`Re z − c`). */
-export const verticalLine = (c: number): SmoothMap => affine([1, 0], [-c]);
+export const verticalLine = (c: number): Fn => affine([1, 0], [-c], 'verticalLine');
 
 /** Pin to the circle |z − center| = r — codim 1. Squared form `|z−center|² − r²`, so it is
  *  analytic everywhere (no √); its zero set is the circle, derivative `2(z − center)`. */
-export const circle = (center: Vec2, r: number): SmoothMap => ({
+export const circle = (center: Vec2, r: number): Fn => ({
+  label: 'circle',
   inDim: 2,
   outDim: 1,
   value: (x, out) => { const dx = x[0] - center[0], dy = x[1] - center[1]; out[0] = dx * dx + dy * dy - r * r; },
@@ -70,15 +72,16 @@ export const circle = (center: Vec2, r: number): SmoothMap => ({
 // ─── the chart: which space (the only difference between the two columns) ─────
 
 /**
- * The Möbius map z ↦ (az+b)/(cz+d) of m ∈ SL(2,ℤ) on ℍ, as a `SmoothMap` ℝ²→ℝ²
+ * The Möbius map z ↦ (az+b)/(cz+d) of m ∈ SL(2,ℤ) on ℍ, as an `Fn` ℝ²→ℝ²
  * with its EXACT Jacobian. Holomorphic, so the real 2×2 derivative is the conformal
  * [[Re w′, −Im w′],[Im w′, Re w′]]; for SL(2,ℤ) (ad−bc=1), w′(z) = 1/(cz+d)².
- * (Stays here: it produces a `functions/SmoothMap`, so it can't sink into the
- * `geometry`-only `moduli/` layer.)
+ * (Stays here: it consumes `moduli/reduce`'s `applyMobius`/`Sl2z` and is purely a
+ * modulus-chart concern.)
  */
-function mobiusMap(m: Sl2z): SmoothMap {
+function mobiusMap(m: Sl2z): Fn {
   const c = m[2], d = m[3];
   return {
+    label: 'mobius',
     inDim: 2,
     outDim: 2,
     value(x, out) {
@@ -105,8 +108,8 @@ function frozen(triang: Triangulation, seed: ArrayLike<number>): { m: Sl2z; tauH
 }
 
 /** Moduli constraint with the chart matrix already chosen: pin τ̂ = applyMobius(m, τ) to `locus`. */
-function moduliWith(triang: Triangulation, m: Sl2z, locus: SmoothMap): Fn {
-  return postcompose(locus, postcompose(mobiusMap(m), tau(triang), 'frozenModulus'));
+function moduliWith(triang: Triangulation, m: Sl2z, locus: Fn): Fn {
+  return compose(locus, compose(mobiusMap(m), tau(triang), 'frozenModulus'));
 }
 
 // ─── the two charts (the columns of the grid) ─────────────────────────────────
@@ -115,15 +118,15 @@ function moduliWith(triang: Triangulation, m: Sl2z, locus: SmoothMap): Fn {
  * Teichmüller-space constraint: pin the RAW τ to `locus`. Identity chart — no seed,
  * globally smooth. The target lives in the current marking (raw τ, not the SL(2,ℤ)-class).
  */
-export function pinTeichmuller(triang: Triangulation, locus: SmoothMap): Fn {
-  return postcompose(locus, tau(triang));
+export function pinTeichmuller(triang: Triangulation, locus: Fn): Fn {
+  return compose(locus, tau(triang));
 }
 
 /**
  * Moduli-space constraint: pin the REDUCED τ̂ to `locus`. The reduction chart is frozen at
  * `seed` (holds in its SL(2,ℤ) chamber; `march` re-freezes per substep).
  */
-export function pinModuli(triang: Triangulation, seed: ArrayLike<number>, locus: SmoothMap): Fn {
+export function pinModuli(triang: Triangulation, seed: ArrayLike<number>, locus: Fn): Fn {
   return moduliWith(triang, frozen(triang, seed).m, locus);
 }
 

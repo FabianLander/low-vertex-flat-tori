@@ -52,7 +52,7 @@ The kit models exactly that, as a few modular objects close to the math (full wr
   tiny far set — plus **certify** to record the result (raw τ and reduced τ̂, margin, embeddedness).
 
 The solvers run entirely on the problem's space ℝⁿ — they take pulled `Fn`s and a gate predicate,
-never a `Triangulation`, an `Embedding`, or a chart.
+never a `Triangulation`, a coordinate system, or a chart.
 
 ## Layout
 
@@ -88,13 +88,14 @@ src/core/            THE PURE, HEADLESS CORE — no three.js, no DOM; every fold
     geometry → functions → {configuration, coordinates, constraints, embedding} → solvers → sampling → search
 
     geometry/          torus-blind ℝ²/ℝ³ kernels: point/segment/triangle distances, the tri–tri chord
-    functions/         the generic toolkit ONLY: the `Fn`/`ScalarFn`/`Embedding` contracts (types.ts)
-                       + the compose algebra (fdFn/precompose/postcompose/affine; `stack` to combine
-                       conditions, `leastSquares` to soften one into a flow energy). ONE concept — a
-                       constraint is an `Fn` driven to 0, an energy a scalar `Fn` descended. No torus.
+    functions/         the generic toolkit ONLY: the `Fn` contract (a map ℝⁿ→ℝᵏ with inDim/outDim +
+                       value/jacobian; `ScalarFn` = outDim 1) + the algebra (fdFn/scalarFn/affine; the
+                       one chain-rule `compose` = both pullback g∘φ and post-map locus∘τ; `stack` to
+                       combine conditions, `leastSquares` to soften one into a flow energy). ONE concept —
+                       constraint, energy, coordinate map are all `Fn`s. No torus, no separate map types.
     configuration/     the configuration-space MACHINERY: `ConfigSpace = (T, φ)` with pull/push/coords/
                        metric (space.ts); `paperTorus` (the {triang, positions} boundary bundle); csv.
-    coordinates/       the coordinate-system INSTANCES (each an `Embedding` φ, both push + coords):
+    coordinates/       the coordinate-system INSTANCES (each a map (`Fn`) φ, both push + coords):
                        full · pin (pinCoords/pinVertices) · symmetry · normalized (the gauge-fixed
                        section of C → C/Sim, 3V−7 free coords; the mirror of moduli/reduce).
     constraints/       the CLOSED conditions {g=0} you project onto (+ types.ts Held): flat (coneDeficit),

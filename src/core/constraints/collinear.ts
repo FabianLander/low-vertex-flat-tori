@@ -19,12 +19,17 @@ export function signedArea2(p: ArrayLike<number>, i: number, j: number, k: numbe
   return triangleSignedArea2(p[oi], p[oi + 1], p[oj], p[oj + 1], p[ok], p[ok + 1]);
 }
 
-/** Collinearity of the vertex triple (i, j, k): planar signed area = 0. codim 1, analytic. */
-export function collinear(i: number, j: number, k: number): Fn {
+/**
+ * Collinearity of the vertex triple (i, j, k): planar signed area = 0. codim 1, analytic.
+ * `n` is the configuration length (= 3·V) the map reads — its `inDim`; the map is sparse,
+ * touching only the three vertices' x,y slots.
+ */
+export function collinear(i: number, j: number, k: number, n: number): Fn {
   const oi = 3 * i, oj = 3 * j, ok = 3 * k;
   return {
     label: `collinear-${i}${j}${k}`,
-    dim: 1,
+    inDim: n,
+    outDim: 1,
     value: (c, out) => { out[0] = signedArea2(c, i, j, k); },
     jacobian: (c, out) => {
       out.fill(0);

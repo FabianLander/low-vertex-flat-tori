@@ -105,10 +105,12 @@ The three verbs on an `Fn` live in `functions/compose`: solve it hard (`project`
 with others into one higher-dim `Fn`, or `leastSquares` it into the `½‖·‖²` energy `flow` descends —
 so any condition can be Newton-solved OR gradient-flowed toward, and the embedded gate composes on top.
 
-There is **no `ConstraintMap` and no `Energy` interface** — they were retired onto `Fn`/`ScalarFn`.
-`functions/` is the **generic toolkit** — the `Fn`/`ScalarFn`/`Embedding` contracts (`types.ts`,
-`compose.ts`) and the compose algebra (`fdFn`/`fdScalar`, `precompose`/`postcompose`/`affine`), no
-torus content. The **concrete maps** live with the condition they define — the closed ones in
+There is **no `ConstraintMap`, no `Energy`, no `SmoothMap`, and no `Embedding`** — they were all
+retired onto the one `Fn` (a map ℝⁿ → ℝᵏ with `inDim`/`outDim` + `value`/`jacobian`; `ScalarFn` =
+`outDim 1`). A reparameterization φ, a locus, a Möbius chart, a constraint, an energy are all just
+`Fn`s. `functions/` is the **generic toolkit** — the `Fn`/`ScalarFn` contracts (`types.ts`) and the
+algebra (`fdFn`/`fdScalar`/`scalarFn`/`affine`, the one chain-rule `compose`, `stack`, `leastSquares`),
+no torus content. The **concrete maps** live with the condition they define — the closed ones in
 `constraints/`, the open embedded region in `embedding/` — the same machinery↔instances split as
 `topology/`↔`triangulations/` and `configuration/`↔`coordinates/`.
 
@@ -170,22 +172,23 @@ does the measurement and owns the target space.
   `planeCutRatio`), `distance` (point/segment/triangle), `intersectionChord` (`triTriChord`),
   `triangleIntersect` (the Möller–Trumbore predicates behind `isEmbedded`), and `curve` (`PlaneCurve`).
   Two tiers: tuple ops for cold code, allocation-free scalar/buffer kernels for the hot search loops.
-- `functions/` — the generic toolkit: `types` (`Fn`/`ScalarFn`) + `compose` (`Embedding` + the algebra
-  `fdFn`/`scalarFn`/`precompose`/`postcompose`/`affine`, plus `stack` — combine conditions into one
-  higher-dim `Fn` — and `leastSquares` — soften a condition into the `½‖·‖²` energy `flow` descends).
-  No instances. A condition is one `Fn`: `project`/`march` solve it hard, `leastSquares`+`flow` move
-  toward it soft, `stack` combines.
+- `functions/` — the generic toolkit: `types` (just `Fn` = a map ℝⁿ→ℝᵏ with `inDim`/`outDim` +
+  `value`/`jacobian`; `ScalarFn` = `outDim 1`) + `compose` (the builders `fdFn`/`scalarFn`/`fdScalar`/
+  `affine`; the one chain-rule `compose` — which is both the pullback `g∘φ` and the post-map `locus∘τ`;
+  `stack` — combine conditions into one higher-dim `Fn`; `leastSquares` — soften a condition into the
+  `½‖·‖²` energy `flow` descends). No instances, no separate "smooth map"/"embedding" type. A condition
+  is one `Fn`: `project`/`march` solve it hard, `leastSquares`+`flow` move toward it soft, `stack` combines.
 - `configuration/` — the configuration-space **machinery**: `space` (`ConfigSpace = (T, φ)` with
   `pull`/`push`/`coords`/`metric` + `makeConfigSpace`), `paperTorus` (the `{triang, positions}`
   boundary bundle), `csv` (the bundle's CSV form).
-- `coordinates/` — the coordinate-system **instances** (each an `Embedding` φ with both `push` and
+- `coordinates/` — the coordinate-system **instances** (each a map (`Fn`) φ paired with both `push` and
   `coords`): `full`, `pin` (`pinCoords`/`pinVertices`), `symmetry` (+`RICH_SYMMETRY` = Rich's ρ), and
   `normalized` (+`normalizePose`) — the gauge-fixed section of C → C/Sim (kills the 7 similarity DOF,
   3V−7 free coords; the realization-side mirror of `moduli/reduce`; replaces the old `gauge`).
 - `constraints/` — the **closed** conditions `{g=0}` you *project onto* (+ `types` `Held`/`Constraint`):
   `flat` (`coneDeficit` + the V−1 constraint), `collinear` (analytic), `modulus` — the **point/line/circle
   × Teichmüller/moduli grid**: `pinTeichmuller`/`pinModuli` (the chart) × `point`/`verticalLine`/`circle`
-  (the locus), each `postcompose(locus, chart∘tau)` and fully analytic; named cells `fixedModulus`,
+  (the locus), each `compose(locus, chart∘tau)` and fully analytic; named cells `fixedModulus`,
   `modulusWall`. (`tau`, `mobiusMap` consume `moduli/`.)
 - `embedding/` — the **open** condition Ω you *stay inside* (the search's hard part): `embedded`
   (`isEmbedded` gate + `clearance`, its continuous companion) · `separation` (`minSeparation`, the honest
@@ -196,7 +199,7 @@ does the measurement and owns the target space.
 - `solvers/` — problem-agnostic steppers run **entirely on ℝⁿ**, all on one J-hub: `project`
   (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian descent of a `ScalarFn` along the manifold,
   gated by a `Gate` predicate), `march` (continuation tracking a family ∩ region). They take pulled
-  `Fn`s + a `Gate` (`types.ts`) — never a `Triangulation`, `Embedding`, or chart. Metric = I (the
+  `Fn`s + a `Gate` (`types.ts`) — never a `Triangulation`, coordinate system, or chart. Metric = I (the
   pullback-metric `DφᵀDφ` is a documented, deferred seam).
 - `sampling/` — producing seeds: `rng`, `perturb`, `seeds` (random `perturbedSeeds`/… + deterministic
   `gridSeeds`, a finite Cartesian sweep over a coordinate system's params), `reference` (`RICH_REFERENCE`).

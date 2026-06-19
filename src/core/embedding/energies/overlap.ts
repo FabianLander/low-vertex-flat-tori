@@ -21,7 +21,7 @@ import { cellTables } from '../cells.ts';
 export function makeChordLengthSquared(triang: Triangulation): ScalarFn {
   const tris = triang.triangles;
   const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
-  return fdScalar('chord length²', (positions) => {
+  return fdScalar('chord length²', triang.vertexCount * 3, (positions) => {
     let E = 0;
     for (const [tA, tB] of disjointTrianglePairs) {
       const A = tris[tA], B = tris[tB];
@@ -69,7 +69,7 @@ function pairCutOffEnergy(triang: Triangulation, positions: ArrayLike<number>, t
 /** Σ ℓ² · (smaller-piece-area ratios) — chord²-modulated cut-off area. */
 export function makeCutOffArea(triang: Triangulation): ScalarFn {
   const { disjointTrianglePairs, sharedVertexTrianglePairs } = cellTables(triang);
-  return fdScalar('cut-off area (chord²-modulated)', (positions) => {
+  return fdScalar('cut-off area (chord²-modulated)', triang.vertexCount * 3, (positions) => {
     let E = 0;
     for (const [tA, tB] of disjointTrianglePairs) E += pairCutOffEnergy(triang, positions, tA, tB);
     for (const pair of sharedVertexTrianglePairs) E += pairCutOffEnergy(triang, positions, pair.a, pair.b);

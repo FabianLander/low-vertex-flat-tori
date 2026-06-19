@@ -1,13 +1,13 @@
 # coordinates/ — the coordinate systems
 
 The **instances** to `configuration/`'s machinery: each file builds a coordinate
-system — an `Embedding` φ : ℝⁿ → ℝ³ⱽ paired (via `makeConfigSpace`) with a
+system — a map (`Fn`) φ : ℝⁿ → ℝ³ⱽ, an immersion, paired (via `makeConfigSpace`) with a
 triangulation into a `ConfigSpace`. Same machinery↔instances split as
 `topology/`↔`triangulations/` and `functions/`↔`constraints/`. Depends on
 `configuration/` and `functions/`; nothing depends back.
 
-Every coordinate system is an `Embedding` with BOTH directions — `push` (φ: params → config)
-and `coords` (config → params, the retraction). Two kinds:
+Each φ is just an `Fn`; the coordinate system pairs it with BOTH directions of the change —
+`push` (φ: params → config) and `coords` (config → params, the retraction). Two kinds:
 
 - **restrictions** — carve out a subspace you *solve in*:
   - `full.ts` — `fullSpace`: the trivial system, all of ℝ³ⱽ (φ = id).

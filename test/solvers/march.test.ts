@@ -23,14 +23,16 @@ import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 // --- toy: unit circle in ℝ², parameter = x₀ ---
 const circle: Fn = {
   label: 'circle',
-  dim: 1,
+  inDim: 2,
+  outDim: 1,
   value(c, out) { out[0] = c[0] * c[0] + c[1] * c[1] - 1; },
   jacobian(c, out) { out[0] = 2 * c[0]; out[1] = 2 * c[1]; },
 };
 function xCoord(s: number): Fn {
   return {
     label: `x0=${s}`,
-    dim: 1,
+    inDim: 2,
+    outDim: 1,
     value(c, out) { out[0] = c[0] - s; },
     jacobian(_c, out) { out[0] = 1; out[1] = 0; },
   };

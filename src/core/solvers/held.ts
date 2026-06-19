@@ -13,13 +13,13 @@ import type { Constraint, Held } from '@core/constraints/types.ts';
 
 export interface NormHeld {
   readonly fn: Fn;
-  /** Rows of `fn` actually driven by the step (≤ fn.dim). */
+  /** Rows of `fn` actually driven by the step (≤ fn.outDim). */
   readonly drive: number;
-  /** Custom convergence measure, if any; else ‖value‖∞ over all fn.dim rows. */
+  /** Custom convergence measure, if any; else ‖value‖∞ over all fn.outDim rows. */
   readonly custom?: (c: ArrayLike<number>) => number;
-  /** Scratch for the full value (length fn.dim). */
+  /** Scratch for the full value (length fn.outDim). */
   readonly valueBuf: Float64Array;
-  /** Scratch for the full Jacobian (fn.dim × n). */
+  /** Scratch for the full Jacobian (fn.outDim × n). */
   readonly jacBuf: Float64Array;
 }
 
@@ -30,10 +30,10 @@ export function normHeld(c: Constraint, n: number): NormHeld {
   const fn = isHeld(c) ? c.fn : c;
   return {
     fn,
-    drive: (isHeld(c) ? c.drive : undefined) ?? fn.dim,
+    drive: (isHeld(c) ? c.drive : undefined) ?? fn.outDim,
     custom: isHeld(c) ? c.measure : undefined,
-    valueBuf: new Float64Array(fn.dim),
-    jacBuf: new Float64Array(fn.dim * n),
+    valueBuf: new Float64Array(fn.outDim),
+    jacBuf: new Float64Array(fn.outDim * n),
   };
 }
 

@@ -108,11 +108,12 @@ export function coneAngleJacobian(triang: Triangulation, positions: ArrayLike<nu
   }
 }
 
-/** The cone-deficit map as an `Fn` (dim V): value = the V deficits, jacobian = the analytic derivative. */
+/** The cone-deficit map as an `Fn` (ℝ³ⱽ → ℝⱽ): value = the V deficits, jacobian = the analytic derivative. */
 export function coneDeficit(triang: Triangulation): Fn {
   return {
     label: 'coneDeficit',
-    dim: triang.vertexCount,
+    inDim: triang.vertexCount * 3,
+    outDim: triang.vertexCount,
     value: (c, out) => { coneAngleDeficits(triang, c, out); },
     jacobian: (c, out) => { coneAngleJacobian(triang, c, out); },
   };

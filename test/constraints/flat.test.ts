@@ -49,7 +49,7 @@ describe('coneDeficit Fn', () => {
     fn.value(p, out);
     const ref = coneAngleDeficits(RICH, p);
     for (let i = 0; i < V; i++) expect(out[i]).toBeCloseTo(ref[i], 14);
-    expect(fn.dim).toBe(V);
+    expect(fn.outDim).toBe(V);
   });
 
   it('analytic jacobian matches central finite differences', () => {

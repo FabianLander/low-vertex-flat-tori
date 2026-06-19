@@ -28,13 +28,13 @@ describe('fullSpace', () => {
     const pulled = space.pull(g);
     const x = RICH_REFERENCE.positions;
 
-    const vp = new Float64Array(g.dim);
+    const vp = new Float64Array(g.outDim);
     pulled.value(x, vp);
     const va = coneAngleDeficits(RICH, x);
-    for (let i = 0; i < g.dim; i++) expect(vp[i]).toBeCloseTo(va[i], 10);
+    for (let i = 0; i < g.outDim; i++) expect(vp[i]).toBeCloseTo(va[i], 10);
 
-    const Jp = new Float64Array(g.dim * N);
-    const Ja = new Float64Array(g.dim * N);
+    const Jp = new Float64Array(g.outDim * N);
+    const Ja = new Float64Array(g.outDim * N);
     pulled.jacobian(x, Jp);
     g.jacobian(x, Ja);
     for (let i = 0; i < Jp.length; i++) expect(Jp[i]).toBeCloseTo(Ja[i], 8);

@@ -11,7 +11,7 @@ imports the measurement straight from the module.
 - `flat.ts` — the cone-angle deficit measurement + the `flat` constraint (drive V−1).
 - `collinear.ts` — the planar signed-area measurement (analytic) + the constraint.
 - `modulus.ts` — the modulus as a **chart × locus grid**: `pinTeichmuller`/`pinModuli` ×
-  `point`/`verticalLine`/`circle`, each `postcompose(locus, chart∘tau)` (fully analytic — `tau`'s
+  `point`/`verticalLine`/`circle`, each `compose(locus, chart∘tau)` (fully analytic — `tau`'s
   Jacobian comes from `moduli/modulus`); named cells `fixedModulus`/`modulusWall`. Consumes `moduli/`.
 
 The other species of condition — the **open** region you *stay inside* — is

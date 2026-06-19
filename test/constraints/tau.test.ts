@@ -15,7 +15,7 @@ describe('tau Fn', () => {
     expect(out[0]).toBeCloseTo(ref[0], 12);
     expect(out[1]).toBeCloseTo(ref[1], 12);
     expect(out[1]).toBeGreaterThan(0);   // Im τ > 0
-    expect(fn.dim).toBe(2);
+    expect(fn.outDim).toBe(2);
   });
 
   it('finite-difference Jacobian is finite and matches a manual central difference', () => {

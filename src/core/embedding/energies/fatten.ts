@@ -33,7 +33,7 @@ export function makeCellMargin(triang: Triangulation, opts: CellMarginOptions = 
   const eps = opts.epsilon ?? 0.1;
   const weight = opts.weight ?? 1;
   const invEps = 1 / eps;
-  return fdScalar(`cell-margin (ε=${eps}, c=${weight})`, (p) => {
+  return fdScalar(`cell-margin (ε=${eps}, c=${weight})`, triang.vertexCount * 3, (p) => {
     let E = 0;
     forEachCellGap(triang, p, (g) => { if (g < eps) E += weight * (1 - g * invEps); });
     return E;
@@ -66,7 +66,7 @@ export function makeCellBarrier(triang: Triangulation, opts: CellBarrierOptions 
     d >= delta ? 0 : -strength * Math.log((d < FLOOR ? FLOOR : d) / delta);
   const { sharedVertexTrianglePairs } = cellTables(triang);
 
-  return fdScalar(`cell-barrier (δ=${delta}, μ=${strength})`, (p) => {
+  return fdScalar(`cell-barrier (δ=${delta}, μ=${strength})`, triang.vertexCount * 3, (p) => {
     let E = 0;
     forEachCellGap(triang, p, (g) => { E += barrier(g); });   // six non-adjacent cell-gap types
     // Shared-vertex pairs: each triangle's opposite edge vs the other's triangle —

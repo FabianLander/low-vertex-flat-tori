@@ -69,7 +69,7 @@ describe('normalized — the gauge-fixed coordinate system', () => {
     const space = normalized(RICH);
     const g = space.pull(coneDeficit(RICH));
     const x = new Float64Array(FREE); space.coords(RICH_REFERENCE.positions, x);
-    const J = new Float64Array(g.dim * FREE);
+    const J = new Float64Array(g.outDim * FREE);
     g.jacobian(x, J);
     // sanity: the pulled Jacobian is finite and the free dim is 3V−7 (similarity removed).
     expect(FREE).toBe(N - 7);

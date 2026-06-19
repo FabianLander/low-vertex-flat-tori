@@ -51,7 +51,8 @@ export function semiSolutionAttempt(
   opts: SemiSolutionOptions = {},
 ): (seed: Float64Array) => Certificate | null {
   const space = pinCoords(triang, DS_BASE_Z);
-  const held = pullHeld(space, [flat(triang), collinear(1, 2, 3), collinear(4, 5, 6)]);
+  const n = triang.vertexCount * 3;
+  const held = pullHeld(space, [flat(triang), collinear(1, 2, 3, n), collinear(4, 5, 6, n)]);
   const angleTol = opts.angleTol ?? 1e-10;
   const x = new Float64Array(space.dim);
   return (seed) => {

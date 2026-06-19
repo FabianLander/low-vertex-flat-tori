@@ -15,7 +15,7 @@
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
-import type { Embedding } from '@core/functions/compose.ts';
+import type { Fn } from '@core/functions/types.ts';
 import { makeConfigSpace, type ConfigSpace } from '@core/configuration/space.ts';
 
 export type Reflection = readonly [number, number, number];
@@ -59,7 +59,8 @@ export function symmetry(
   }
   const d = cs.length;
 
-  const phi: Embedding = {
+  const phi: Fn = {
+    label: `symmetry(${cs.length})`,
     inDim: d,
     outDim: ambient,
     value(x, out) {

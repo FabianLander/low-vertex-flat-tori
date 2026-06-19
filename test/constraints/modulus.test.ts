@@ -32,7 +32,7 @@ function flatSeed(): { pos: Float64Array; tauHat: Vec2; tauRaw: Vec2 } {
 
 /** Max |analytic ∂g − central-FD ∂g| over a constraint's Jacobian at p. */
 function jacVsFd(fn: Fn, p: ArrayLike<number>, h = 1e-7): number {
-  const n = p.length, k = fn.dim;
+  const n = p.length, k = fn.outDim;
   const J = new Float64Array(k * n); fn.jacobian(p, J);
   const vp = new Float64Array(k), vm = new Float64Array(k);
   const q = Float64Array.from(p);

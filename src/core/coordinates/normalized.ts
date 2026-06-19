@@ -26,7 +26,7 @@
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
-import type { Embedding } from '@core/functions/compose.ts';
+import type { Fn } from '@core/functions/types.ts';
 import { makeConfigSpace, type ConfigSpace } from '@core/configuration/space.ts';
 import { type Vec3, dot, cross } from '@core/geometry/vec3.ts';
 
@@ -79,7 +79,8 @@ const slotOf = (k: number): number => (k === 0 ? 6 : k === 1 ? 7 : 9 + (k - 2));
  */
 export function normalized(triang: Triangulation): ConfigSpace {
   const free = triang.vertexCount * 3 - 7;
-  const phi: Embedding = {
+  const phi: Fn = {
+    label: 'normalized',
     inDim: free,
     outDim: triang.vertexCount * 3,
     value(x, out) {

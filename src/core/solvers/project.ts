@@ -76,7 +76,7 @@ export function project(
     let off = 0;
     let m = 0;
     for (const h of hs) {
-      const r = residualOf(h, x);          // fills h.valueBuf (all fn.dim rows)
+      const r = residualOf(h, x);          // fills h.valueBuf (all fn.outDim rows)
       if (r > m) m = r;
       for (let i = 0; i < h.drive; i++) F[off + i] = h.valueBuf[i];
       off += h.drive;
@@ -94,7 +94,7 @@ export function project(
     // Driving Jacobians in ℝⁿ (x is current from the last evalResidual).
     let off = 0;
     for (const h of hs) {
-      h.fn.jacobian(x, h.jacBuf);                                   // full fn.dim × d
+      h.fn.jacobian(x, h.jacBuf);                                   // full fn.outDim × d
       J.set(h.jacBuf.subarray(0, h.drive * d), off * d);           // first `drive` rows
       off += h.drive;
     }

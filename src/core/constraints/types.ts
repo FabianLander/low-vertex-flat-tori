@@ -19,15 +19,15 @@ import type { Fn } from '@core/functions/types.ts';
  *
  * `drive` lets a constraint advertise its true rank: `flat` exposes all V deficits
  * but drives only V−1 (Gauss–Bonnet makes the V-th redundant), keeping `project`'s
- * normal matrix full-rank. Convergence still measures ALL `fn.dim` rows by default
+ * normal matrix full-rank. Convergence still measures ALL `fn.outDim` rows by default
  * (‖value‖∞), so the dropped row can't hide above tolerance — for `flat` that
  * default IS `maxConeDeficit`, so no custom `measure` is needed.
  */
 export interface Held {
   readonly fn: Fn;
-  /** Number of leading rows of `fn` to drive. Default `fn.dim`. */
+  /** Number of leading rows of `fn` to drive. Default `fn.outDim`. */
   readonly drive?: number;
-  /** Convergence measure. Default ‖fn.value‖∞ over all `fn.dim` rows. */
+  /** Convergence measure. Default ‖fn.value‖∞ over all `fn.outDim` rows. */
   readonly measure?: (c: ArrayLike<number>) => number;
 }
 
