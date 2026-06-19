@@ -286,6 +286,7 @@ ui.innerHTML =
   +   `rot&nbsp;def&nbsp;${exp(cert.rotDefect)}&nbsp;&nbsp;·&nbsp;&nbsp;area&nbsp;${cert.area.toPrecision(8)}</span>`
   + `</div>`
   + `<div style="margin-top:6px;opacity:.6">drag torus to spin · drag outside to orbit · scroll zoom</div>`
+  + `<div style="margin-top:8px"><label style="cursor:pointer;user-select:none"><input id="slice" type="checkbox" checked style="vertical-align:middle"> slice plane (translucent torus)</label></div>`
   + `<div style="margin-top:8px">slide torus · z = <span id="zv">0.000</span><br>`
   + `<input id="z" type="range" min="${-maxR}" max="${maxR}" step="${maxR / 300}" value="0" style="width:100%"></div>`
   + `<div style="margin-top:8px">show loops:&nbsp;`
@@ -308,6 +309,17 @@ function syncLoops(): void {
 aEl.addEventListener('change', syncLoops);
 bEl.addEventListener('change', syncLoops);
 bothEl.addEventListener('change', () => { aEl.checked = bEl.checked = bothEl.checked; syncLoops(); });
+// slice-plane toggle: on (default) = plane + section + translucent torus;
+// off = hide the plane/section and make the torus less translucent.
+const sliceEl = ui.querySelector<HTMLInputElement>('#slice')!;
+function applySlice(): void {
+  const on = sliceEl.checked;
+  plane.visible = on;
+  slice.visible = on;
+  face.opacity = on ? 0.4 : 0.9;
+}
+sliceEl.addEventListener('change', applySlice);
+applySlice();
 
 // ---------------------------------------------------------------------------
 // Mini 2-D view: only the section polygon, with pan (drag) + zoom (scroll)
