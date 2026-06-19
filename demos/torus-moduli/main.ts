@@ -1,5 +1,5 @@
 /**
- * imaginary-moduli — OUR generated datasets plotted in MODULI space ℍ: flat
+ * torus-moduli — OUR generated datasets plotted in MODULI space ℍ: flat
  * embedded tori found along the imaginary-axis edge (Re τ̂ = 0, the rectangular
  * tori) by scripts/collect-imaginary.mjs and scripts/march-to-i.mjs. Standalone
  * clone of curated-moduli showing only our data, COLORED BY TRIANGULATION TYPE
@@ -22,8 +22,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { byId } from '@core/triangulations';
 import { paperFromRow } from '@core/configuration/csv';
-import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
-import { developedSheet, type DevelopedSheet } from '@display/viewer/developedSheet';
+import { makeTorusView } from '@display/viewer/TorusView';
+import { developedSheet } from '@display/viewer/developedSheet';
 import { paperMaterials } from '@display/viewer/materials';
 import { skyEnvironment } from '@app/render/stage';
 
@@ -253,11 +253,11 @@ document.body.appendChild(panel);
 function sliceUrl(type: number, pos: ArrayLike<number>): string {
   const qs = new URLSearchParams({ type: String(type), pos: Array.from(pos).join(',') }).toString();
   if (location.pathname.includes('/.dev/')) {
-    let h = 5381; const name = 'square-torus-slice';
+    let h = 5381; const name = 'torus-inspector';
     for (let i = 0; i < name.length; i++) h = ((h * 33) ^ name.charCodeAt(i)) >>> 0;
-    return `http://${location.hostname}:${5200 + (h % 400)}/.dev/square-torus-slice.html?${qs}`;
+    return `http://${location.hostname}:${5200 + (h % 400)}/.dev/torus-inspector.html?${qs}`;
   }
-  return new URL(`../square-torus-slice/?${qs}`, location.href).href;
+  return new URL(`../torus-inspector/?${qs}`, location.href).href;
 }
 
 const insetRenderer = new THREE.WebGLRenderer({ antialias: true });
@@ -286,7 +286,6 @@ const { surface: insetFace } = paperMaterials({
 const NET_EDGE = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5 });   // black, very-thin fold-line tubes
 
 let insetMesh: THREE.Object3D | null = null;
-let curView: TorusView | null = null, curSheet: DevelopedSheet | null = null;
 let torusPivot: THREE.Object3D | null = null;   // the folded torus; drag it to spin in place
 let insetVisible = false;
 
@@ -310,8 +309,10 @@ function layoutPanel(): void {
 }
 
 function showTorus3D(c: Klass, i: number): void {
-  if (insetMesh) insetScene.remove(insetMesh);
-  curView?.dispose(); curSheet?.dispose();
+  if (insetMesh) {
+    insetScene.remove(insetMesh);
+    insetMesh.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+  }
   const paper = paperFromRow(byId(c.type), c.pos[i]);
 
   // The folded paper torus (NO edges; drag it to spin) floating above its UNFOLDED
@@ -320,23 +321,21 @@ function showTorus3D(c: Klass, i: number): void {
   const group = new THREE.Group();
 
   // folded torus: grid face, no edges, centered in a spin pivot
-  const view = makeTorusView(paper.triang, { surface: { material: insetFace } });
-  view.draw(paper.positions);
-  curView = view;
-  const triang = view.group;
-  triang.updateMatrixWorld(true);
-  const tbox = new THREE.Box3().setFromObject(triang);
+  const tview = makeTorusView(byId(c.type), { surface: { material: insetFace } });
+  tview.draw(paper.positions);
+  const torus = tview.group;
+  torus.updateMatrixWorld(true);
+  const tbox = new THREE.Box3().setFromObject(torus);
   const tr = tbox.getBoundingSphere(new THREE.Sphere()).radius || 1;
-  triang.position.sub(tbox.getCenter(new THREE.Vector3()));   // centered at the pivot origin → spins in place
+  torus.position.sub(tbox.getCenter(new THREE.Vector3()));   // centered at the pivot origin → spins in place
   const pivot = new THREE.Group();
-  pivot.add(triang);
+  pivot.add(torus);
   torusPivot = pivot;
 
   // developed net: grid face + black very-thin tube fold lines
-  const sheetDeco = developedSheet(paper.triang, { faceMaterial: insetFace, foldMaterial: NET_EDGE, foldRadius: 0.0015 });
-  sheetDeco.draw(paper.positions);
-  curSheet = sheetDeco;
-  const sheet = sheetDeco.group;
+  const sheetView = developedSheet(byId(c.type), { faceMaterial: insetFace, foldMaterial: NET_EDGE, foldRadius: 0.0015 });
+  sheetView.draw(paper.positions);
+  const sheet = sheetView.group;
   sheet.rotation.x = -Math.PI / 2;                  // lay the net flat on the ground
 
   // stack: torus hovering above, net on the ground below

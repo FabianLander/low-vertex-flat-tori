@@ -313,3 +313,32 @@ export function tauFromNet(triang: Triangulation, net: DevelopedNet): Vec2 {
   if (det2(v1, v2) < 0) [v1, v2] = [v2, v1];
   return cdiv(v2, v1);
 }
+
+/**
+ * The lifted polyline of an oriented edge-loop, drawn in the developing map and
+ * anchored so it STARTS at `origin`. Consecutive points differ by the developed
+ * vector of each directed edge — the same translation-invariant vectors that the
+ * holonomy sums — so the polyline is connected end-to-end and its last point
+ * minus its first is exactly the loop's holonomy translation. Use it to draw a
+ * generator loop and its lattice translate in the universal cover. Returns
+ * `loop.length` points.
+ */
+export function developLoop(
+  triang: Triangulation,
+  net: DevelopedNet,
+  loop: readonly number[],
+  origin: Vec2 = [0, 0],
+): Vec2[] {
+  const pts: Vec2[] = [[origin[0], origin[1]]];
+  let x = origin[0], y = origin[1];
+  for (let k = 0; k + 1 < loop.length; k++) {
+    const a = loop[k], b = loop[k + 1];
+    const t = triang.edgeToTris.get(edgeKey(a, b))![0];
+    const Pa = net.corners[t][localIndex(triang, t, a)];
+    const Pb = net.corners[t][localIndex(triang, t, b)];
+    x += Pb[0] - Pa[0];
+    y += Pb[1] - Pa[1];
+    pts.push([x, y]);
+  }
+  return pts;
+}

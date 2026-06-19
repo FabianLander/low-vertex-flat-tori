@@ -2,7 +2,8 @@ name: Deploy to Pages
 
 # Builds and publishes to GitHub Pages (https://fabianlander.github.io/low-vertex-flat-tori/):
 #   - the `rich-birthday` render, at the site ROOT (unchanged URL), and
-#   - the `imaginary-moduli` demo, at /imaginary-moduli/.
+#   - the `torus-moduli` picker, at /torus-moduli/, plus the `torus-inspector`
+#     detail view it links to, at /torus-inspector/.
 # Each build is self-contained (Vite base './'), so it serves correctly at any path.
 # GitHub Pages serves one site per repo, so both ship from this single workflow.
 
@@ -36,19 +37,19 @@ jobs:
       - run: npm ci
 
       - run: npm run build rich-birthday
-      - run: npm run build imaginary-moduli
-      - run: npm run build square-torus-slice
+      - run: npm run build torus-moduli
+      - run: npm run build torus-inspector
 
       # Assemble the Pages site: rich-birthday at the root, the others in
-      # subfolders (so imaginary-moduli's "Investigate" button can link to
-      # ../square-torus-slice/). imaginary-moduli reads only its committed data/
+      # subfolders (so torus-moduli's "Investigate" button can link to
+      # ../torus-inspector/). torus-moduli reads only its committed data/
       # — the gitignored live/ symlinks aren't in CI, so the public site shows
       # just the curated examples.
       - run: |
           mkdir -p site
           cp -r dist/rich-birthday/. site/
-          cp -r dist/imaginary-moduli site/imaginary-moduli
-          cp -r dist/square-torus-slice site/square-torus-slice
+          cp -r dist/torus-moduli site/torus-moduli
+          cp -r dist/torus-inspector site/torus-inspector
 
       - uses: actions/configure-pages@v5
 
