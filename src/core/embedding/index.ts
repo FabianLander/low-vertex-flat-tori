@@ -11,7 +11,7 @@
 
 export {
   isEmbedded, firstViolation, allViolations, violationFaceScalars, clearance,
-  type EmbeddingViolation,
+  type EmbeddingViolation, type Region,
 } from './embedded.ts';
 export {
   minSeparation, minCellGap, linearSize, forEachCellGap,

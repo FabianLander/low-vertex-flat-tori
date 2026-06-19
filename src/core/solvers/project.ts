@@ -10,26 +10,23 @@
  *   - full space + [flat]                              ≡ newtonFlatten
  *   - pinned space + [flat, collinear, collinear]      ≡ semiSolutionFlatten
  *
- * One step, given the current point x:
- *   F  = stacked residuals gᵢ(x)                       (length K = Σ codim)
- *   J  = stacked Jacobians Dgᵢ(x)                      (K × n, in ℝⁿ)
- *   (J Jᵀ + λI) w = F                                  (K × K normal equations)
- *   x ← x − Jᵀ w                                       (min-norm step in ℝⁿ)
+ * One step, given the current point x: stack the residuals `F = gᵢ(x)` and Jacobians
+ * `J = Dgᵢ(x)` (K×n in ℝⁿ), solve `J·step = F` (min-norm) via the QR of `Jᵀ` (`qr.ts`), and
+ * set `x ← x − step`. The QR conditions at κ(J), not the κ(J)² of the old normal equations
+ * — see docs/solvers-overhaul.md.
  *
  * The min-norm step is taken in the working space's Euclidean metric (`g = I`). The
- * canonical, reparameterization-invariant choice is the pullback metric `DφᵀDφ` —
- * deferred; it coincides with `I` for every current restriction. See
- * docs/math/configuration-space.md.
+ * canonical, reparameterization-invariant choice is the pullback metric `DφᵀDφ` — deferred;
+ * it coincides with `I` for every current restriction. See docs/math/configuration-space.md.
  *
- * One solver covers both rank regimes, because rank is the CONSTRAINT's business:
- * `flat` drops the Gauss–Bonnet driving row (→ full-rank G); the damping λ carries any
- * remaining rank deficiency harmlessly (a consistent residual is ⊥ the null space).
+ * Constraints carry no rank annotation: one that is rank-deficient by construction states it
+ * at the source (`flat` emits its V−1 independent rows), and any residual rank deficiency is
+ * carried harmlessly by the QR (a collapsed column drops out of the min-norm step).
  *
  * Mutates `x` in place. Pure: no three.js, no DOM.
  */
 
-import { solveDenseInPlace } from './linalg.ts';
-import { normHeld, residualOf, totalDrive } from './held.ts';
+import { makeQR, qrFactor, minNormSolve, infNorm } from './qr.ts';
 import type { Constraint } from '@core/constraints/types.ts';
 
 export type ProjectStatus = 'converged' | 'diverged' | 'max-iters';
@@ -39,8 +36,6 @@ export interface ProjectOptions {
   tolerance?: number;
   /** Hard iteration cap. Default 50. */
   maxIters?: number;
-  /** Tikhonov damping added to the K×K normal matrix. Default 1e-12. */
-  damping?: number;
 }
 
 export interface ProjectResult {
@@ -58,30 +53,20 @@ export function project(
 
   const tol = opts.tolerance ?? 1e-12;
   const maxIters = opts.maxIters ?? 50;
-  const lambda = opts.damping ?? 1e-12;
 
-  const hs = constraints.map((cm) => normHeld(cm, d));
-  const K = totalDrive(hs);               // Σ driven rows
+  const K = constraints.reduce((s, g) => s + g.outDim, 0);   // Σ rows (every row driven)
 
-  const F = new Float64Array(K);          // stacked driving residuals
-  const J = new Float64Array(K * d);      // stacked driving Jacobians in ℝⁿ (stride d)
-  const aug = new Float64Array(K * (K + 1)); // [G + λI | F]
-  const w = new Float64Array(K);
+  const F = new Float64Array(K);          // stacked residuals
+  const J = new Float64Array(K * d);      // stacked Jacobians in ℝⁿ (stride d)
+  const qr = makeQR(K, d);                // QR of Jᵀ, refactored each iteration
+  const step = new Float64Array(d);       // the min-norm Gauss–Newton step
 
-  // Residual at the current x: evaluate every constraint's FULL value (into its
-  // scratch), then copy its DRIVING rows into F. Convergence is the max over each
-  // constraint's honest measure — a custom `measure` if given (none needed for
-  // `flat`: ‖value‖∞ over all V deficits already IS the full residual).
+  // Residual at the current x: each constraint writes its rows straight into F; convergence
+  // is ‖F‖∞ over every row of every constraint.
   const evalResidual = (): number => {
     let off = 0;
-    let m = 0;
-    for (const h of hs) {
-      const r = residualOf(h, x);          // fills h.valueBuf (all fn.outDim rows)
-      if (r > m) m = r;
-      for (let i = 0; i < h.drive; i++) F[off + i] = h.valueBuf[i];
-      off += h.drive;
-    }
-    return m;
+    for (const g of constraints) { g.value(x, F.subarray(off, off + g.outDim)); off += g.outDim; }
+    return infNorm(F);
   };
 
   let curNorm = evalResidual();
@@ -91,37 +76,17 @@ export function project(
     if (!isFinite(curNorm) || curNorm > 1e8) return { status: 'diverged', iters: iter, residualNorm: curNorm };
     if (iter === maxIters) return { status: 'max-iters', iters: iter, residualNorm: curNorm };
 
-    // Driving Jacobians in ℝⁿ (x is current from the last evalResidual).
+    // Stack each constraint's Jacobian (all rows) into J at the current x.
     let off = 0;
-    for (const h of hs) {
-      h.fn.jacobian(x, h.jacBuf);                                   // full fn.outDim × d
-      J.set(h.jacBuf.subarray(0, h.drive * d), off * d);           // first `drive` rows
-      off += h.drive;
-    }
+    for (const g of constraints) { g.jacobian(x, J.subarray(off * d, (off + g.outDim) * d)); off += g.outDim; }
 
-    // aug = [G + λI | F], G = J Jᵀ (K×K symmetric).
-    const stride = K + 1;
-    for (let i = 0; i < K; i++) {
-      const ri = i * d;
-      for (let j = i; j < K; j++) {
-        const rj = j * d;
-        let s = 0;
-        for (let col = 0; col < d; col++) s += J[ri + col] * J[rj + col];
-        aug[i * stride + j] = s;
-        aug[j * stride + i] = s;
-      }
-      aug[i * stride + i] += lambda;
-      aug[i * stride + K] = F[i];
-    }
-
-    if (!solveDenseInPlace(aug, w, K)) return { status: 'diverged', iters: iter, residualNorm: curNorm };
-
-    // x ← x − Jᵀ w  (min-norm step).
-    for (let col = 0; col < d; col++) {
-      let s = 0;
-      for (let i = 0; i < K; i++) s += J[i * d + col] * w[i];
-      x[col] -= s;
-    }
+    // Min-norm Gauss–Newton step via QR of Jᵀ: solve J·step = F (min-norm), x ← x − step.
+    // A rank-deficient J (a collapsed column) is carried harmlessly — `minNormSolve` drops that
+    // direction (its y-component → 0), giving the min-norm step in the available rank, exactly as
+    // the old damped solve did. Genuine blow-up is caught by the residual check above.
+    qrFactor(qr, J, K, d);
+    minNormSolve(qr, F, step);
+    for (let col = 0; col < d; col++) x[col] -= step[col];
 
     curNorm = evalResidual();
   }

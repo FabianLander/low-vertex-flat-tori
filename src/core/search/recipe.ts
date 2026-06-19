@@ -23,8 +23,8 @@ import type { Constraint } from '@core/constraints/types.ts';
 import { fullSpace } from '@core/coordinates/full.ts';
 import { isEmbedded } from '@core/embedding/index.ts';
 import { project } from '@core/solvers/project.ts';
-import { flow } from '@core/solvers/flow.ts';
-import { pullHeld, ambientGate } from './pull.ts';
+import { minimize } from '@core/solvers/minimize.ts';
+import { pullHeld, ambientRegion } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 export interface FlowSearchOptions {
@@ -48,11 +48,11 @@ export function flattenFlowEmbed(
   opts: FlowSearchOptions,
 ): (seed: Float64Array) => Certificate | null {
   const space = fullSpace(triang);        // x ∈ ℝⁿ is the ambient config (φ = id)
-  const gate = ambientGate(space, (c) => isEmbedded(triang, c));
+  const region = ambientRegion(space, (c) => isEmbedded(triang, c));
   const energy = space.pullScalar(opts.energy);
   const fattenEnergy = opts.fattenEnergy ? space.pullScalar(opts.fattenEnergy) : undefined;
-  const flowOpts = {
-    gate,
+  const minimizeOpts = {
+    region,
     stepSize: opts.stepSize ?? 0.001,
     maxIters: opts.maxFlowIters ?? 500,
     energyTol: 1e-12,
@@ -61,8 +61,8 @@ export function flattenFlowEmbed(
   return (x) => {
     const held = pullHeld(space, buildHeld(x));   // [flat] or [flat, modulusWall(seed, c)], pulled
     if (project(x, held).status !== 'converged') return null;
-    flow(x, held, energy, flowOpts);                   // reach embedded
-    if (fattenEnergy) flow(x, held, fattenEnergy, flowOpts); // fatten the margin
+    minimize(x, held, energy, minimizeOpts);                   // reach embedded
+    if (fattenEnergy) minimize(x, held, fattenEnergy, minimizeOpts); // fatten the margin
     const cert = certify(triang, x);
     return accept(cert) ? cert : null;
   };

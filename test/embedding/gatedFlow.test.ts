@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { isEmbedded, clearance, makeCellMargin, makeCutOffArea } from '@core/embedding/index.ts';
-import { flow } from '@core/solvers/flow.ts';
+import { minimize } from '@core/solvers/minimize.ts';
 import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
 import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
@@ -21,7 +21,7 @@ describe('the embedded condition: gate + clearance', () => {
 
     // Aggressive un-gated fattening crosses a pair → reproducibly non-embedded.
     const bad = RICH_REFERENCE.positions.slice();
-    flow(bad, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
+    minimize(bad, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     expect(isEmbedded(torus, bad)).toBe(false);
   });
 
@@ -34,7 +34,7 @@ describe('the embedded condition: gate + clearance', () => {
 describe('gated flow — the gate keeps the search inside Ω where un-gated descent escapes', () => {
   it('un-gated descent of the repulsion energy leaves Ω', () => {
     const pos = RICH_REFERENCE.positions.slice();
-    flow(pos, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
+    minimize(pos, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     expect(isEmbedded(torus, pos)).toBe(false);
   });
 
@@ -42,7 +42,7 @@ describe('gated flow — the gate keeps the search inside Ω where un-gated desc
     const energy = makeCellMargin(torus, { epsilon: 0.3 });
     const pos = RICH_REFERENCE.positions.slice();
     const eBefore = energy.compute(pos);
-    const r = flow(pos, [flat(torus)], energy, { gate: (c) => isEmbedded(torus, c), maxIters: 200 });
+    const r = minimize(pos, [flat(torus)], energy, { region: { contains: (c) => isEmbedded(torus, c) }, maxIters: 200 });
 
     expect(['converged', 'stalled', 'max-iters', 'blocked']).toContain(r.status);
     expect(maxConeDeficit(torus, pos)).toBeLessThan(1e-9); // stayed on M (flat)

@@ -30,9 +30,9 @@ import { resolve, dirname } from 'path';
 import { makeArgs } from './lib/cli.mjs';
 import { byId } from '@core/triangulations/index.ts';
 import { fullSpace } from '@core/coordinates/full.ts';
-import { march } from '@core/solvers/march.ts';
+import { continuation } from '@core/solvers/continuation.ts';
 import { imaginaryFamily } from '@core/search/marchModulus.ts';
-import { ambientGate } from '@core/search/pull.ts';
+import { ambientRegion } from '@core/search/pull.ts';
 import { certify } from '@core/search/certify.ts';
 import { isEmbedded } from '@core/embedding/index.ts';
 
@@ -48,11 +48,11 @@ const outBase = resolve((a.flag('--out') ?? `samples/march-to-i-t${TYPE}`).repla
 // fullSpace: the working point IS the 24-vector of positions (φ = identity).
 const space = fullSpace(triang);
 const family = imaginaryFamily(space);                              // {flat ∧ τ̂ = (0, s)}, re-frozen
-const gate = ambientGate(space, (c) => isEmbedded(triang, c));      // stay embedded
+const region = ambientRegion(space, (c) => isEmbedded(triang, c));      // stay embedded
 
 // Fine continuation: tiny terminal steps + many halvings → march very close to the
 // true closing point before declaring a pinch.
-const marchOpts = { gate, minStep: 1e-4, maxHalvings: 44, maxSteps: 4000, stallStep: 1e-10, tol: 1e-9 };
+const continuationOpts = { region, minStep: 1e-4, maxHalvings: 44, maxSteps: 4000, stallStep: 1e-10, tol: 1e-9 };
 
 // Load embedded rectangular seeds; take the K lowest-Im ones as anchors.
 if (!existsSync(seedFile)) {
@@ -81,7 +81,7 @@ let lowestPinch = Infinity;
 
 for (const anc of anchors) {
   const x = Float64Array.from(anc.p);            // working point = positions (fullSpace)
-  const r = march(x, family, IM_MIN, marchOpts); // mutates x in place
+  const r = continuation(x, family, IM_MIN, continuationOpts); // mutates x in place
   const c = certify(triang, x);
   info.push({ startIm: anc.im, pinchIm: r.param, status: r.status, embedded: c.embedded, margin: c.margin });
   if (c.embedded) {

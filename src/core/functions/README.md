@@ -22,8 +22,8 @@ split as `topology/` (generic) ↔ `triangulations/` (data).
   - **`leastSquares`** — soften a condition into the `½‖·‖²` energy whose descent reaches
     `{fn = 0}` (exact gradient `Jᵀf`, analytic whenever the map is).
 
-So a condition is one `Fn` with three verbs: **solve it hard** (`project`/`march`), **combine**
-it (`stack`), or **soften** it for gradient flow (`leastSquares` → `flow`); `compose` chains any
+So a condition is one `Fn` with three verbs: **solve it hard** (`project`/`continuation`), **combine**
+it (`stack`), or **soften** it for gradient descent (`leastSquares` → `minimize`); `compose` chains any
 two maps. The finite-difference/composition builders cache reused scratch, so the returned `Fn`s
 are **not re-entrant** (an inner map must not re-enter its outer's `jacobian` mid-call) — the
 algebra is feed-forward, so this holds.

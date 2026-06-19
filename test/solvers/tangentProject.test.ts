@@ -1,10 +1,10 @@
 /**
- * tangentProject correctness, checked against KNOWN geometry (not old code):
- * the projected vector lands in ker J, and P_T is idempotent.
+ * tangentProject (the kernel's QR-based tangent projection), checked against KNOWN
+ * geometry (not old code): the projected vector lands in ker J, and P_T is idempotent.
  */
 
 import { describe, it, expect } from 'vitest';
-import { tangentProject } from '@core/solvers/tangentProject.ts';
+import { makeQR, tangentProject } from '@core/solvers/qr.ts';
 import { mulberry32 } from '@core/sampling/rng.ts';
 
 function dotJrow(jac: number[], cols: number, row: number, v: ArrayLike<number>): number {
@@ -20,15 +20,16 @@ describe('tangentProject', () => {
     const jac = [2 * x[0], 2 * x[1], 2 * x[2]];
     const v = [rng() - 0.5, rng() - 0.5, rng() - 0.5];
 
+    const qr = makeQR(1, 3);
     const pt = new Float64Array(3);
-    expect(tangentProject(jac, 1, 3, v, pt)).toBe(true);
+    tangentProject(qr, jac, 1, 3, v, pt);
 
     // Lands in ker J: J·(P_T v) ≈ 0  (tangent to the sphere at x).
     expect(Math.abs(dotJrow(jac, 3, 0, pt))).toBeLessThan(1e-9);
 
     // Idempotent: P_T(P_T v) = P_T v.
     const pt2 = new Float64Array(3);
-    tangentProject(jac, 1, 3, pt, pt2);
+    tangentProject(qr, jac, 1, 3, pt, pt2);
     let d = 0;
     for (let i = 0; i < 3; i++) d = Math.max(d, Math.abs(pt2[i] - pt[i]));
     expect(d).toBeLessThan(1e-9);
@@ -50,26 +51,29 @@ describe('tangentProject', () => {
       0, 0, 1, 0,
     ];
     const v = [1.1, -0.4, 0.9, -0.7];
+    const qr = makeQR(2, 4);
     const pt = new Float64Array(4);
-    expect(tangentProject(jac, 2, 4, v, pt)).toBe(true);
+    tangentProject(qr, jac, 2, 4, v, pt);
 
     expect(Math.abs(dotJrow(jac, 4, 0, pt))).toBeLessThan(1e-9);
     expect(Math.abs(dotJrow(jac, 4, 1, pt))).toBeLessThan(1e-9);
 
     const pt2 = new Float64Array(4);
-    tangentProject(jac, 2, 4, pt, pt2);
+    tangentProject(qr, jac, 2, 4, pt, pt2);
     let d = 0;
     for (let i = 0; i < 4; i++) d = Math.max(d, Math.abs(pt2[i] - pt[i]));
     expect(d).toBeLessThan(1e-9);
   });
 
-  it('redundant constraint (duplicated row) still projects to ker J via damping', () => {
+  it('redundant constraint (duplicated row): the collapsed column is ignored, still projects to ker J', () => {
     const x = [0.3, -0.7, 0.64];
     const row = [2 * x[0], 2 * x[1], 2 * x[2]];
-    const jac = [...row, ...row]; // rank-1 2×3 — JJᵀ singular, λ carries it
+    const jac = [...row, ...row]; // rank-1 2×3 — the second column collapses under QR
     const v = [0.4, 0.9, -0.2];
+    const qr = makeQR(2, 3);
     const pt = new Float64Array(3);
-    expect(tangentProject(jac, 2, 3, v, pt)).toBe(true);
-    expect(Math.abs(dotJrow(jac, 3, 0, pt))).toBeLessThan(1e-8);
+    tangentProject(qr, jac, 2, 3, v, pt);
+    expect(qr.fullRank).toBe(false);                              // QR detects the rank deficiency
+    expect(Math.abs(dotJrow(jac, 3, 0, pt))).toBeLessThan(1e-8);  // …but the projection is still correct
   });
 });

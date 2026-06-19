@@ -25,6 +25,19 @@ import { segmentTriangleDist2, triangleTriangleDist2 } from '@core/geometry/dist
 import { cellTables } from './cells.ts';
 import { linearSize } from './separation.ts';
 
+/**
+ * `Region` — the OPEN-condition contract: an open feasible set Ω as a membership test, the
+ * open-condition twin of `constraints/Constraint`. `contains` is the hard in/out test the
+ * gated steppers refuse to leave; `margin` (optional) is the continuous distance to the
+ * boundary (>0 strictly inside, 0 on ∂Ω), which a stepper can use to size a feasible step.
+ * The embedded set is the instance below (`isEmbedded` → `contains`, `clearance` → `margin`);
+ * `search/` pulls it onto the solver's working space ℝⁿ. Generic (any ℝⁿ) — a ball is one too.
+ */
+export interface Region {
+  contains(x: ArrayLike<number>): boolean;
+  margin?(x: ArrayLike<number>): number;
+}
+
 // ─── buffer adapters: read a face/edge's corners from `positions` and feed a
 //     coordinates-only geometry kernel (the gate's twins of faceFaceDist2/edgeFaceDist2) ──
 

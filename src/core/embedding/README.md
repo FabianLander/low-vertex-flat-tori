@@ -28,8 +28,10 @@ magnitude**:
   derived from the triangulation and memoized). EXTRINSIC bookkeeping — it lives here
   with its only consumer, not on `Triangulation`.
 
-There is no `Region` wrapper: `flow`/`march` take a `Gate` (a predicate on the working
-space ℝⁿ), which `search/pull`'s `ambientGate` builds straight from `isEmbedded`.
+`Region` — the OPEN-condition contract ({ `contains`, optional `margin` }) — is defined here
+(`embedded.ts`), the open-condition twin of `constraints/Constraint`. The embedded set is its
+instance: `isEmbedded` → `contains`, `clearance` → `margin`. `search/pull`'s `ambientRegion`
+pulls it onto the solver's working space ℝⁿ for `minimize`/`continuation`.
 
 The torus-blind intersection/distance kernels are in `geometry/` (`triangleIntersect`,
 `distance`, `intersectionChord`, `triangle`). Pure: no three.js, no DOM.

@@ -20,18 +20,18 @@
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import type { ScalarFn } from '@core/functions/types.ts';
-import type { Family } from '@core/solvers/march.ts';
+import type { Family } from '@core/solvers/types.ts';
 import type { ConfigSpace } from '@core/configuration/space.ts';
 import { fullSpace } from '@core/coordinates/full.ts';
 import { flat } from '@core/constraints/flat.ts';
 import { modulusWall, fixedModulus } from '@core/constraints/modulus.ts';
 import { isEmbedded } from '@core/embedding/index.ts';
 import { project } from '@core/solvers/project.ts';
-import { flow } from '@core/solvers/flow.ts';
-import { march } from '@core/solvers/march.ts';
+import { minimize } from '@core/solvers/minimize.ts';
+import { continuation } from '@core/solvers/continuation.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { reduceModulus } from '@core/moduli/reduce.ts';
-import { pullHeld, ambientGate } from './pull.ts';
+import { pullHeld, ambientRegion } from './pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 /**
@@ -108,30 +108,30 @@ export function marchToWallAttempt(
 ): (seed: Float64Array) => MarchOutcome | null {
   const space = fullSpace(triang);        // seed ∈ ℝⁿ is the ambient config (φ = id)
   const held0 = pullHeld(space, [flat(triang)]);
-  const gate = ambientGate(space, (c) => isEmbedded(triang, c));
+  const region = ambientRegion(space, (c) => isEmbedded(triang, c));
   const family = wallFamily(space);
   const energy = space.pullScalar(opts.energy);
   const fattenEnergy = opts.fattenEnergy ? space.pullScalar(opts.fattenEnergy) : undefined;
   const angleTol = opts.angleTol ?? 1e-10;
-  const flowOpts = {
-    gate,
+  const minimizeOpts = {
+    region,
     stepSize: opts.stepSize ?? 0.001,
     maxIters: opts.maxFlowIters ?? 500,
     energyTol: 1e-12,
     gradientTol: 1e-12,
   };
   return (seed) => {
-    // 1. Reach a flat embedded starting torus (the march needs a point in F ∩ Ω).
+    // 1. Reach a flat embedded starting torus (the continuation needs a point in F ∩ Ω).
     if (project(seed, held0).status !== 'converged') return null;
-    flow(seed, held0, energy, flowOpts);
-    // 1b. Optionally fatten the margin so the march has room to move (Fabi's energy
+    minimize(seed, held0, energy, minimizeOpts);
+    // 1b. Optionally fatten the margin so the continuation has room to move (Fabi's energy
     //     is zero on the embedded set; the cell-margin energy is alive there).
-    if (fattenEnergy) flow(seed, held0, fattenEnergy, flowOpts);
+    if (fattenEnergy) minimize(seed, held0, fattenEnergy, minimizeOpts);
     const start = certify(triang, seed);
     if (!(start.coneDeficit < angleTol && start.embedded)) return null;
 
-    // 2. March |Re τ̂| onto the wall, re-freezing + gating embedded each step.
-    const r = march(seed, family, opts.c, { gate });
+    // 2. Continue |Re τ̂| onto the wall, re-freezing + checking embedded each step.
+    const r = continuation(seed, family, opts.c, { region });
     return { cert: certify(triang, seed), status: r.status, reached: r.param };
   };
 }

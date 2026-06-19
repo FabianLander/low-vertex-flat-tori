@@ -97,13 +97,14 @@ The system is built from **one** thing — a differentiable map of the configura
 `Fn : C = ℝ³ⱽ → ℝᵏ` (`value` + `jacobian`). "Constraint" and "energy" are *uses* of an `Fn`, not
 separate interfaces:
 
-- a **constraint** is an `Fn` driven to zero (`project`/`march`); held with optional usage (`Held`:
-  which rows to drive). `flat` = `coneDeficit` driving V−1 rows.
-- an **energy** is a scalar `Fn` (`ScalarFn`: `compute`/`grad`) descended (`flow`).
+- a **constraint** is an `Fn` driven to zero (`project`/`continuation`) — a bare `Fn`, no usage
+  wrapper; a rank-deficient one states its rank at the source (`flat` emits its V−1 independent rows).
+- an **energy** is a scalar `Fn` (`ScalarFn`: `compute`/`grad`) descended (`minimize`).
 
-The three verbs on an `Fn` live in `functions/compose`: solve it hard (`project`/`march`), `stack` it
-with others into one higher-dim `Fn`, or `leastSquares` it into the `½‖·‖²` energy `flow` descends —
-so any condition can be Newton-solved OR gradient-flowed toward, and the embedded gate composes on top.
+The three verbs on an `Fn` live in `functions/compose`: solve it hard (`project`/`continuation`),
+`stack` it with others into one higher-dim `Fn`, or `leastSquares` it into the `½‖·‖²` energy
+`minimize` descends — so any condition can be Newton-solved OR gradient-descended toward, and the
+embedded `Region` composes on top.
 
 There is **no `ConstraintMap`, no `Energy`, no `SmoothMap`, and no `Embedding`** — they were all
 retired onto the one `Fn` (a map ℝⁿ → ℝᵏ with `inDim`/`outDim` + `value`/`jacobian`; `ScalarFn` =
@@ -176,8 +177,8 @@ does the measurement and owns the target space.
   `value`/`jacobian`; `ScalarFn` = `outDim 1`) + `compose` (the builders `fdFn`/`scalarFn`/`fdScalar`/
   `affine`; the one chain-rule `compose` — which is both the pullback `g∘φ` and the post-map `locus∘τ`;
   `stack` — combine conditions into one higher-dim `Fn`; `leastSquares` — soften a condition into the
-  `½‖·‖²` energy `flow` descends). No instances, no separate "smooth map"/"embedding" type. A condition
-  is one `Fn`: `project`/`march` solve it hard, `leastSquares`+`flow` move toward it soft, `stack` combines.
+  `½‖·‖²` energy `minimize` descends). No instances, no separate "smooth map"/"embedding" type. A condition
+  is one `Fn`: `project`/`continuation` solve it hard, `leastSquares`+`minimize` move toward it soft, `stack` combines.
 - `configuration/` — the configuration-space **machinery**: `space` (`ConfigSpace = (T, φ)` with
   `pull`/`push`/`coords`/`metric` + `makeConfigSpace`), `paperTorus` (the `{triang, positions}`
   boundary bundle), `csv` (the bundle's CSV form).
@@ -185,8 +186,8 @@ does the measurement and owns the target space.
   `coords`): `full`, `pin` (`pinCoords`/`pinVertices`), `symmetry` (+`RICH_SYMMETRY` = Rich's ρ), and
   `normalized` (+`normalizePose`) — the gauge-fixed section of C → C/Sim (kills the 7 similarity DOF,
   3V−7 free coords; the realization-side mirror of `moduli/reduce`; replaces the old `gauge`).
-- `constraints/` — the **closed** conditions `{g=0}` you *project onto* (+ `types` `Held`/`Constraint`):
-  `flat` (`coneDeficit` + the V−1 constraint), `collinear` (analytic), `modulus` — the **point/line/circle
+- `constraints/` — the **closed** conditions `{g=0}` you *project onto* (+ `types`: `Constraint = Fn`):
+  `flat` (emits the V−1 independent cone-deficit rows), `collinear` (analytic), `modulus` — the **point/line/circle
   × Teichmüller/moduli grid**: `pinTeichmuller`/`pinModuli` (the chart) × `point`/`verticalLine`/`circle`
   (the locus), each `compose(locus, chart∘tau)` and fully analytic; named cells `fixedModulus`,
   `modulusWall`. (`tau`, `mobiusMap` consume `moduli/`.)
@@ -194,19 +195,20 @@ does the measurement and owns the target space.
   (`isEmbedded` gate + `clearance`, its continuous companion) · `separation` (`minSeparation`, the honest
   cell-to-cell diagnostic, + the fatten-energy cell-gap substrate) · `energies/` (overlap — Fabi's
   `chordLengthSquared`/`cutOffArea`, drive a crossing torus onto Ω; fatten — `cellMargin`/`cellBarrier`,
-  push an embedded one deeper) · `cells` (`cellTables`) · `index`. **No `Region` type** — `flow`/`march`
-  take a `Gate` predicate built from `isEmbedded`.
-- `solvers/` — problem-agnostic steppers run **entirely on ℝⁿ**, all on one J-hub: `project`
-  (min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian descent of a `ScalarFn` along the manifold,
-  gated by a `Gate` predicate), `march` (continuation tracking a family ∩ region). They take pulled
-  `Fn`s + a `Gate` (`types.ts`) — never a `Triangulation`, coordinate system, or chart. Metric = I (the
+  push an embedded one deeper) · `cells` (`cellTables`) · `index`. The **`Region`** contract
+  ({`contains`, optional `margin`}) lives here; `minimize`/`continuation` stay inside it.
+- `solvers/` — problem-agnostic steppers run **entirely on ℝⁿ**, all on one QR kernel (`qr.ts`,
+  `Jᵀ = QR` → the min-norm step + the tangent projection): `project` (min-norm Gauss–Newton onto
+  ⋂{gᵢ=0}), `minimize` (Riemannian descent of a `ScalarFn` along the manifold, staying in a `Region`),
+  `continuation` (tracking a `Family` ∩ region). They take pulled `Fn`s + a `Region`/`Family` — never a
+  `Triangulation`, coordinate system, or chart. Metric = I (the
   pullback-metric `DφᵀDφ` is a documented, deferred seam).
 - `sampling/` — producing seeds: `rng`, `perturb`, `seeds` (random `perturbedSeeds`/… + deterministic
   `gridSeeds`, a finite Cartesian sweep over a coordinate system's params), `reference` (`RICH_REFERENCE`).
 - `search/` — `certify` (the result record: cone deficit, embedded, margin, raw τ AND reduced τ̂),
-  `collect` (rejection-sampling driver), `pull` (pull a `Constraint`/gate into a coordinate system),
+  `collect` (rejection-sampling driver), `pull` (pull a `Constraint`/`Region` into a coordinate system),
   and the recipes `discover` (`held=[flat]`), `wall` (`held=[flat, modulusWall(c)]`) via `flattenFlowEmbed`
-  (`seed → project(held) → flow(held, energy, gate=embedded) → certify`), `semiSolution`, `marchModulus`.
+  (`seed → project(held) → minimize(held, energy, region=embedded) → certify`), `semiSolution`, `marchModulus`.
 
 ### Rendering — one subject, the k-cells realized (`display/` = `mesh/` + `viewer/`; `app/` = `render/` harness)
 

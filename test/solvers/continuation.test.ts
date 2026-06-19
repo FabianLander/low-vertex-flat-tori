@@ -1,16 +1,17 @@
 /**
- * march correctness:
- *  (1) TOY with a known track + known pinch: march a point along the unit circle
+ * continuation correctness:
+ *  (1) TOY with a known track + known pinch: continue a point along the unit circle
  *      by its x-coordinate; reaches an in-range target on the circle, and BLOCKS
  *      at the closed-form pinch x₀=√(1−r²) when a region floor x₁ ≥ r closes the path;
- *  (2) REAL: march the modulus wall |Re τ̂| toward a target from a flat embedded
+ *  (2) REAL: continue the modulus wall |Re τ̂| toward a target from a flat embedded
  *      torus, staying embedded, landing flat+embedded at the realized wall value.
  */
 
 import { describe, it, expect } from 'vitest';
-import { march, type Family } from '@core/solvers/march.ts';
+import { continuation } from '@core/solvers/continuation.ts';
+import type { Family } from '@core/solvers/types.ts';
 import { project } from '@core/solvers/project.ts';
-import type { Gate } from '@core/solvers/types.ts';
+import type { Region } from '@core/embedding/index.ts';
 import type { Fn } from '@core/functions/types.ts';
 import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
 import { modulusWall } from '@core/constraints/modulus.ts';
@@ -41,13 +42,13 @@ const circleFamily: Family = {
   param: (c) => c[0],
   held: (_c, s) => [circle, xCoord(s)],
 };
-// gate: upper part of the circle, x₁ ≥ floor.
-const upperHalf = (floor: number): Gate => (c) => c[1] >= floor;
+// region: upper part of the circle, x₁ ≥ floor.
+const upperHalf = (floor: number): Region => ({ contains: (c) => c[1] >= floor });
 
-describe('march — toy: tracking a point along the unit circle', () => {
+describe('continuation — toy: tracking a point along the unit circle', () => {
   it('reaches an in-range target on the circle', () => {
     const x = new Float64Array([0.6, 0.8]); // on the circle, upper
-    const r = march(x, circleFamily, -0.5);
+    const r = continuation(x, circleFamily, -0.5);
     expect(r.status).toBe('reached');
     expect(x[0]).toBeCloseTo(-0.5, 8);
     expect(Math.abs(x[0] * x[0] + x[1] * x[1] - 1)).toBeLessThan(1e-9);
@@ -57,15 +58,15 @@ describe('march — toy: tracking a point along the unit circle', () => {
     // From (0.6,0.8) marching x₀ → 1.0 with floor x₁ ≥ 0.5: the path pinches at
     // x₀ = √(1−0.25) = 0.8660…, where x₁ hits 0.5; beyond that the gate closes.
     const x = new Float64Array([0.6, 0.8]);
-    const r = march(x, circleFamily, 1.0, { gate: upperHalf(0.5), minStep: 1e-3 });
+    const r = continuation(x, circleFamily, 1.0, { region: upperHalf(0.5), minStep: 1e-3 });
     expect(r.status).toBe('blocked');
     expect(r.param).toBeLessThan(1.0);
     expect(r.param).toBeCloseTo(Math.sqrt(0.75), 2); // the pinch
   });
 });
 
-describe('march — real: tracking the modulus wall, staying embedded', () => {
-  it('marches |Re τ̂| from a flat embedded torus to a target, landing flat+embedded', () => {
+describe('continuation — real: tracking the modulus wall, staying embedded', () => {
+  it('continues |Re τ̂| from a flat embedded torus to a target, landing flat+embedded', () => {
     const torus = byId(7);
     const seed = RICH_REFERENCE.positions.slice();
     project(seed, [flat(torus)]); // land flat
@@ -78,7 +79,7 @@ describe('march — real: tracking the modulus wall, staying embedded', () => {
     };
 
     const x = seed.slice();
-    const r = march(x, family, target, { gate: (c) => isEmbedded(torus, c), maxSteps: 400 });
+    const r = continuation(x, family, target, { region: { contains: (c) => isEmbedded(torus, c) }, maxSteps: 400 });
 
     // Either it reached the target or the embedded region pinched it off — both
     // are valid RESULTS. Whatever value it stopped at must be a genuine flat,

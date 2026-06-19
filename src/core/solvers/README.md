@@ -1,20 +1,37 @@
 # solvers/ — the problem-agnostic numerical core
 
-The methods that move a point, run **entirely on the problem's space ℝⁿ**: `project`
-(min-norm Gauss–Newton onto ⋂{gᵢ=0}), `flow` (Riemannian gradient descent along the
-manifold, gated to stay in a region), and `march` (continuation tracking a family ∩
-region). They take constraints already *pulled* into ℝⁿ and a `Gate` predicate, and
-know **nothing** about a `Triangulation`, a coordinate system, or a chart — that's what
-makes a toy test just "ℝⁿ + some functions". `solvers/` depends on no implementation.
+The methods that move a point, run **entirely on the problem's working space ℝⁿ** over **one
+shared QR kernel**. They know **nothing** about a `Triangulation`, a coordinate system, or
+embeddedness — only ℝⁿ, some `Fn`s, a `Region`, a `Family` — so a toy test is just "ℝⁿ + some
+functions" (a sphere, a circle). `solvers/` depends on no implementation.
 
-- `types.ts` — the one solver-side contract: `Gate`, a predicate on ℝⁿ (the runtime
-  form of an open region). The condition contracts live below: `Held`/`Constraint` in
-  `constraints/types.ts`; the open embedded region is just its `isEmbedded` gate
-  (`embedding/embedded.ts`), pulled to a `Gate`. There is no separate
-  constraint *or energy* interface — a constraint IS an `Fn` driven to zero, an energy
-  IS a scalar `Fn` descended (`flow` takes a `ScalarFn`).
-- `held.ts` — normalize a `Constraint` (bare `Fn` or `Fn`+usage) into the driven-rows
-  form the steppers stack.
-- `project.ts` / `flow.ts` / `march.ts` / `tangentProject.ts` — the steppers, all on
-  one J-hub (the held Jacobian's damped JJᵀ solve).
-- `linalg.ts` — the dense normal-equation solve + ‖·‖∞, the solver core's only numerics.
+Three operations:
+
+- `project.ts` — **solve onto** the submanifold ⋂{gᵢ=0}: min-norm Gauss–Newton, iterated. Every
+  row of every constraint is driven (no rank hints — a rank-deficient constraint states its rank
+  at the source, e.g. `flat` emits its V−1 independent rows).
+- `minimize.ts` — **minimize** an energy ALONG {g=0}, staying in an open `Region` Ω: Riemannian
+  gradient descent (tangent-project ∇E, step, retract via `project`), with a `Region` it becomes a
+  feasibility-gated backtracking line search. (Was `flow`.)
+- `continuation.ts` — **track** a 1-parameter `Family` of submanifolds ∩ Ω: corrector-continuation
+  (re-`project` each parameter substep at an adaptive step, reporting the pinch where Ω closes a
+  path). (Was `march`. Currently natural-parameter; a secant predictor is a TODO — see
+  docs/solvers-overhaul.md.)
+
+The kernel:
+
+- `qr.ts` — the dense linear algebra, all from ONE economy QR of the transposed constraint
+  Jacobian `Jᵀ = QR`: the **min-norm step** `s = Q R⁻ᵀ b` (`project`) and the **tangent projection**
+  `v − Q Qᵀ v` (`minimize`/`continuation`). QR conditions at κ(J), not the κ(J)² of the old normal
+  equations — the measured reason for the design (docs/solvers-overhaul.md). No damping; a
+  rank-deficient column collapses and is carried harmlessly. Plus `infNorm`.
+
+The contracts the operations consume — each defined where its condition lives:
+
+- **closed** → `Constraint` = a bare `Fn` driven to zero (`constraints/types.ts`). No usage
+  wrapper: there is no separate constraint *or energy* interface — a constraint IS an `Fn` driven
+  to zero, an energy IS a `ScalarFn` descended (`minimize` takes one).
+- **open** → `Region` ({ `contains`, optional `margin` }) — the feasible set Ω, in `embedding/`.
+- **continuation** → `Family` (`param` + `held`) — the only contract `solvers/` owns, in `types.ts`.
+
+Pure: no three.js, no DOM.

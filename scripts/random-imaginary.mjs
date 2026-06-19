@@ -24,7 +24,7 @@ import { resolve, dirname } from 'path';
 import { makeArgs } from './lib/cli.mjs';
 import { byId } from '@core/triangulations/index.ts';
 import { project } from '@core/solvers/project.ts';
-import { flow } from '@core/solvers/flow.ts';
+import { minimize } from '@core/solvers/minimize.ts';
 import { certify } from '@core/search/certify.ts';
 import { flat } from '@core/constraints/flat.ts';
 import { fixedModulus } from '@core/constraints/modulus.ts';
@@ -90,7 +90,7 @@ while ((Date.now() - startMs) / 3.6e6 < MAX_HOURS) {
   if (pr.status === 'converged') {
     onModulus++;
     if (FLOW_ITERS > 0 && !isEmbedded(triang, x)) {
-      flow(x, held, uncross, { stepSize: 0.004, maxIters: FLOW_ITERS, energyTol: 1e-12 });
+      minimize(x, held, uncross, { stepSize: 0.004, maxIters: FLOW_ITERS, energyTol: 1e-12 });
     }
     const c = certify(triang, x);
     if (c.margin > bestMargin) bestMargin = c.margin;

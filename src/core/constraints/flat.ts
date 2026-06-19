@@ -15,7 +15,6 @@
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import type { Fn } from '@core/functions/types.ts';
 import { cornerAngle } from '@core/geometry/triangle.ts';
-import type { Held } from './types.ts';
 
 const TWO_PI = Math.PI * 2;
 
@@ -124,13 +123,24 @@ export function coneDeficit(triang: Triangulation): Fn {
 /**
  * Flatness as a closed condition: every cone-angle deficit = 0. **codim = V−1.**
  *
- * Gauss–Bonnet forces Σ deficits ≡ 0, so the flat locus is codim V−1, not V — the
- * V-th deficit is `−(sum of the others)`. `flat` is `coneDeficit` as a `Held` that
- * drives the first V−1 rows (full-rank, well-conditioned; reproduces `newtonFlatten`,
- * which drops the same row). No custom convergence measure is needed: the solver's
- * default ‖value‖∞ over all V rows of `coneDeficit` IS `maxConeDeficit`, so the
- * dropped deficit cannot lag above tolerance unseen.
+ * Gauss–Bonnet forces Σ deficits ≡ 0, so the flat locus is codim V−1, not V — the V-th
+ * deficit is `−(sum of the others)`. So `flat` emits the **first V−1** deficit rows
+ * directly (the one redundancy removed at the source), and the solver drives them all —
+ * no rank annotation needed. The full V-deficit *measurement* stays in `coneAngleDeficits`
+ * / `maxConeDeficit` (certificate / acceptance), and ‖the V−1 driven rows‖∞ → 0 forces all
+ * V → 0 (the dropped deficit is `−Σ(others)`), so convergence still controls every vertex.
  */
-export function flat(triang: Triangulation): Held {
-  return { fn: coneDeficit(triang), drive: triang.vertexCount - 1 };
+export function flat(triang: Triangulation): Fn {
+  const cd = coneDeficit(triang);                 // the full V-row map
+  const m = triang.vertexCount - 1;               // drive V−1 (drop the redundant last row)
+  const n = triang.vertexCount * 3;
+  const fullV = new Float64Array(triang.vertexCount);
+  const fullJ = new Float64Array(triang.vertexCount * n);
+  return {
+    label: 'flat',
+    inDim: n,
+    outDim: m,
+    value: (c, out) => { cd.value(c, fullV); for (let i = 0; i < m; i++) out[i] = fullV[i]; },
+    jacobian: (c, out) => { cd.jacobian(c, fullJ); out.set(fullJ.subarray(0, m * n)); },
+  };
 }

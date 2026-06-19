@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { certify } from '@core/search/certify.ts';
 import { makeCellMargin, isEmbedded, clearance } from '@core/embedding/index.ts';
 import { project } from '@core/solvers/project.ts';
-import { flow } from '@core/solvers/flow.ts';
+import { minimize } from '@core/solvers/minimize.ts';
 import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { reduceModulus } from '@core/moduli/reduce.ts';
@@ -52,7 +52,7 @@ describe('certify', () => {
   it('reports embedded:false honestly when descent escapes Ω', () => {
     const p = RICH_REFERENCE.positions.slice();
     // Un-gated repulsion descent leaves the embedded set (see flow/region tests).
-    flow(p, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
+    minimize(p, [flat(torus)], makeCellMargin(torus, { epsilon: 0.3 }), { maxIters: 50 });
     const cert = certify(torus, p);
     expect(cert.embedded).toBe(false);
     expect(cert.coneDeficit).toBeLessThan(1e-9); // still flat (held), just not embedded

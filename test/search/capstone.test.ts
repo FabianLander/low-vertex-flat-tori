@@ -1,6 +1,6 @@
 /**
  * Capstone: the real problem — find a FLAT, EMBEDDED torus on a MODULUS WALL —
- * composed entirely from the core operations (project · march · flow) over the
+ * composed entirely from the core operations (project · continuation · minimize) over the
  * core conditions ([flat, modulusWall] inside the embedded region). No driver,
  * no orchestration: just the math system, called in sequence.
  *
@@ -10,8 +10,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { project } from '@core/solvers/project.ts';
-import { flow } from '@core/solvers/flow.ts';
-import { march, type Family } from '@core/solvers/march.ts';
+import { minimize } from '@core/solvers/minimize.ts';
+import { continuation } from '@core/solvers/continuation.ts';
+import type { Family } from '@core/solvers/types.ts';
 import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
 import { modulusWall } from '@core/constraints/modulus.ts';
 import { makeCellMargin, isEmbedded } from '@core/embedding/index.ts';
@@ -23,9 +24,9 @@ import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 const torus = byId(7);
 const reTauHat = (p: ArrayLike<number>) => Math.abs(reduceModulus(modulus(torus, p).tau)[0]);
 
-describe('capstone — flat ∧ on-wall ∧ embedded, from project · march · flow', () => {
+describe('capstone — flat ∧ on-wall ∧ embedded, from project · continuation · minimize', () => {
   it('lands a flat embedded torus on a modulus wall and fattens it there', () => {
-    const gate = (c: ArrayLike<number>) => isEmbedded(torus, c);
+    const region = { contains: (c: ArrayLike<number>) => isEmbedded(torus, c) };
     const x = RICH_REFERENCE.positions.slice();
 
     // 1. project onto the flat manifold M = {flat}.
@@ -38,7 +39,7 @@ describe('capstone — flat ∧ on-wall ∧ embedded, from project · march · f
       param: reTauHat,
       held: (c, s) => [flat(torus), modulusWall(torus, c, s)],
     };
-    const m = march(x, wallFamily, target, { gate, maxSteps: 400 });
+    const m = continuation(x, wallFamily, target, { region, maxSteps: 400 });
     expect(['reached', 'blocked', 'max-iters']).toContain(m.status); // any stop is a valid result
     const wall = reTauHat(x); // the wall value actually reached
 
@@ -48,10 +49,10 @@ describe('capstone — flat ∧ on-wall ∧ embedded, from project · march · f
     expect(wall).toBeCloseTo(m.param, 6);
     expect(wall).toBeGreaterThan(start - 1e-6); // moved toward the target
 
-    // 3. flow to fatten ALONG the wall: descend the barrier while HOLDING
-    //    [flat, modulusWall(wall)] and gated to stay embedded.
+    // 3. minimize to fatten ALONG the wall: descend the barrier while HOLDING
+    //    [flat, modulusWall(wall)] and staying in the embedded region.
     const held = [flat(torus), modulusWall(torus, x, wall)];
-    const f = flow(x, held, makeCellMargin(torus), { gate, maxIters: 100, stepSize: 0.002 });
+    const f = minimize(x, held, makeCellMargin(torus), { region, maxIters: 100, stepSize: 0.002 });
     expect(['converged', 'stalled', 'max-iters', 'blocked']).toContain(f.status);
 
     // The composed result is still a flat, embedded torus on the same wall.

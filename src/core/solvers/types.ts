@@ -1,16 +1,25 @@
 /**
- * The solver-side input contract.
+ * The solver-owned input contract.
  *
- * After the configuration-space refactor the solvers run ENTIRELY in a problem's
- * working space ℝⁿ: they take constraints already pulled to ℝⁿ (`Constraint`, from
- * `constraints/`) and, for the gated steppers, a `Gate` — the runtime predicate form
- * of an open region, already pulled to the working space (`x ↦ region.contains(push(x))`,
- * built in `search/`). The solvers know nothing about a `Triangulation`, a coordinate
- * system, or a `Region` type — only ℝⁿ, some `Fn`s, and a predicate. That is what makes
- * them reusable and toy-testable (a sphere/circle is just ℝⁿ + functions).
+ * The solvers run ENTIRELY in a problem's working space ℝⁿ on abstract maps. The two
+ * condition contracts they consume are defined where the conditions live: the CLOSED one
+ * (`Constraint` = an `Fn` driven to zero) in `constraints/`, the OPEN one (`Region`, the
+ * feasible set) in `embedding/`. The one contract the solvers define themselves is `Family`
+ * — not a condition, but the continuation input: a 1-parameter family of constraints. So a
+ * solver still knows nothing torus-specific — only ℝⁿ, some `Fn`s, a `Region`, a `Family`.
  *
  * Pure: no three.js, no DOM.
  */
 
-/** An open region as the solver sees it: a predicate on the working space ℝⁿ. */
-export type Gate = (x: ArrayLike<number>) => boolean;
+import type { Constraint } from '@core/constraints/types.ts';
+
+/**
+ * A 1-parameter family of submanifolds M_s — the input to `continuation`. `param(x)` reads
+ * the current parameter value off the working point; `held(x, s)` builds the constraints
+ * pinning the family to value `s`, rebuilt AT the current point (so frozen charts re-freeze
+ * each step).
+ */
+export interface Family {
+  param(x: ArrayLike<number>): number;
+  held(x: ArrayLike<number>, s: number): readonly Constraint[];
+}

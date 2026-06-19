@@ -28,9 +28,9 @@ import { resolve, dirname } from 'path';
 import { makeArgs } from './lib/cli.mjs';
 import { byId } from '@core/triangulations/index.ts';
 import { fullSpace } from '@core/coordinates/full.ts';
-import { march } from '@core/solvers/march.ts';
+import { continuation } from '@core/solvers/continuation.ts';
 import { imaginaryFamily } from '@core/search/marchModulus.ts';
-import { ambientGate } from '@core/search/pull.ts';
+import { ambientRegion } from '@core/search/pull.ts';
 import { certify } from '@core/search/certify.ts';
 import { isEmbedded } from '@core/embedding/index.ts';
 
@@ -47,7 +47,7 @@ const outBase = resolve((a.flag('--out') ?? `samples/imaginary-t${TYPE}`).replac
 // fullSpace: working point = positions. {flat ∧ τ̂ = (0, s)} family + embedded gate.
 const space = fullSpace(triang);
 const family = imaginaryFamily(space);
-const gate = ambientGate(space, (c) => isEmbedded(triang, c));
+const region = ambientRegion(space, (c) => isEmbedded(triang, c));
 
 // Load curated embedded rectangular seeds (certify each: embedded AND Re τ̂ ≈ 0).
 const seeds = [];
@@ -86,7 +86,7 @@ function recordHit(t, x, c) {
 process.stderr.write(`filling ${targets.filter((t) => t >= im0).length} buckets ≥ Im=${im0.toFixed(3)} from nearest seeds\n`);
 for (const t of targets.filter((t) => t >= im0)) {
   const x = Float64Array.from(nearestSeed(t).p);
-  const r = march(x, family, t, { gate, maxSteps: 300 });
+  const r = continuation(x, family, t, { region, maxSteps: 300 });
   const c = certify(triang, x);
   if (r.status === 'reached' && c.embedded) {
     recordHit(t, x, c);
@@ -104,7 +104,7 @@ if (downTargets.length) {
   process.stderr.write(`probing DOWN from the curated floor Im=${im0.toFixed(3)} toward Im=${IM_MIN}\n`);
   const x = Float64Array.from(seeds[0].p);
   for (const t of downTargets) {
-    const r = march(x, family, t, { gate, maxSteps: 800 });
+    const r = continuation(x, family, t, { region, maxSteps: 800 });
     const c = certify(triang, x);
     if (r.status === 'reached' && c.embedded) {
       recordHit(t, x, c);

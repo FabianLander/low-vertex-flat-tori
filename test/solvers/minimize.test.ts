@@ -1,5 +1,5 @@
 /**
- * flow correctness, against KNOWN math:
+ * minimize correctness, against KNOWN math:
  *  (1) descending a linear energy on the unit sphere converges to the constrained
  *      minimizer x = −â (closed form), staying on the sphere — pure Riemannian descent;
  *  (2) on the real [flat] manifold, descending the cell-margin repulsion fattens the
@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { flow } from '@core/solvers/flow.ts';
+import { minimize } from '@core/solvers/minimize.ts';
 import { flat, maxConeDeficit, coneDeficit } from '@core/constraints/flat.ts';
 import { collinear } from '@core/constraints/collinear.ts';
 import type { Fn, ScalarFn } from '@core/functions/types.ts';
@@ -36,14 +36,14 @@ function linearEnergy(a: readonly [number, number, number]): ScalarFn {
   );
 }
 
-describe('flow — toy: linear energy on the unit sphere', () => {
+describe('minimize — toy: linear energy on the unit sphere', () => {
   it('converges to the constrained minimizer x = −a/‖a‖, staying on the sphere', () => {
     const a: [number, number, number] = [1, 2, -1];
     const norm = Math.hypot(a[0], a[1], a[2]);
     const target = [-a[0] / norm, -a[1] / norm, -a[2] / norm];
 
-    const x = new Float64Array([0.5, 0.5, 0.5]); // off the sphere; flow lands first
-    const r = flow(x, [sphere], linearEnergy(a), {
+    const x = new Float64Array([0.5, 0.5, 0.5]); // off the sphere; minimize lands first
+    const r = minimize(x, [sphere], linearEnergy(a), {
       stepSize: 0.05, maxIters: 5000, gradientTol: 1e-8,
       energyTol: -Infinity, // linear energy is unbounded below; stop on the tangent gradient, not E
     });
@@ -59,7 +59,7 @@ describe('flow — toy: linear energy on the unit sphere', () => {
   });
 });
 
-describe('flow — soft path: descend leastSquares(condition) to its zeros', () => {
+describe('minimize — soft path: descend leastSquares(condition) to its zeros', () => {
   it('leastSquares ∘ stack combines conditions: ½‖stack(a,b)‖² = ½(‖a‖² + b²)', () => {
     // The combine (stack) + soften (leastSquares) composition, checked numerically.
     const torus = byId(7);
@@ -73,7 +73,7 @@ describe('flow — soft path: descend leastSquares(condition) to its zeros', () 
     expect(leastSquares(stack(cd, col)).compute(pos)).toBeCloseTo(expected, 9);
   });
 
-  it('flow([], leastSquares(coneDeficit)) re-flattens — the soft analogue of project[flat]', () => {
+  it('minimize([], leastSquares(coneDeficit)) re-flattens — the soft analogue of project[flat]', () => {
     const torus = byId(7);
     const pos = RICH_REFERENCE.positions.slice();
     for (let i = 0; i < pos.length; i++) pos[i] += 0.03 * Math.sin(i * 1.7); // deterministic kick off flat
@@ -81,7 +81,7 @@ describe('flow — soft path: descend leastSquares(condition) to its zeros', () 
     expect(before).toBeGreaterThan(1e-2);                     // genuinely off the flat manifold
 
     // No held manifold (held = []): pure gradient descent of the least-squares energy.
-    flow(pos, [], leastSquares(coneDeficit(torus)), {
+    minimize(pos, [], leastSquares(coneDeficit(torus)), {
       stepSize: 0.2, maxIters: 4000, energyTol: 1e-16, gradientTol: 1e-14,
     });
     const after = maxConeDeficit(torus, pos);
@@ -89,7 +89,7 @@ describe('flow — soft path: descend leastSquares(condition) to its zeros', () 
   });
 });
 
-describe('flow — real: honest descent ALONG [flat]', () => {
+describe('minimize — real: honest descent ALONG [flat]', () => {
   it('cell-margin descent stays exactly on the flat manifold and lowers the energy', () => {
     const torus = byId(7);
     const pos = RICH_REFERENCE.positions.slice();
@@ -97,15 +97,15 @@ describe('flow — real: honest descent ALONG [flat]', () => {
 
     const eBefore = energy.compute(pos);
     expect(isEmbedded(torus, pos)).toBe(true); // start is embedded
-    const r = flow(pos, [flat(torus)], energy, { maxIters: 50 });
+    const r = minimize(pos, [flat(torus)], energy, { maxIters: 50 });
     const eAfter = energy.compute(pos);
 
     expect(['converged', 'stalled', 'max-iters']).toContain(r.status);
     // The Riemannian property: we never left M (held exactly), and E decreased.
     expect(maxConeDeficit(torus, pos)).toBeLessThan(1e-9);
     expect(eAfter).toBeLessThan(eBefore);
-    // NB: staying EMBEDDED while fattening is the region-gated flow's job (the gate
+    // NB: staying EMBEDDED while fattening is the region-gated minimize's job (the gate
     // is exactly what un-gated repulsion descent can't guarantee) — validated once
-    // the `embedded` region exists, with `flow(..., {region: embedded})`.
+    // the `embedded` region exists, with `minimize(..., {region: embedded})`.
   });
 });
