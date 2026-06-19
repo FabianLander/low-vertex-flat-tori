@@ -14,10 +14,10 @@
  *           t triangle ids · v vertex ids · r reset view
  */
 
-import { ALL_TORI } from '../../src/triangulations';
-import { harmonicLayout, periodicTiles } from '../../src/topology/harmonicLayout';
-import type { Vec2 } from '../../src/geometry/vec2';
-import { exactMinCutDomain } from '../../src/topology/fundamentalDomain';
+import { ALL_TORI } from '@core/triangulations';
+import { harmonicLayout, periodicTiles } from '@core/topology/harmonicLayout';
+import type { Vec2 } from '@core/geometry/vec2';
+import { exactMinCutDomain } from '@core/topology/fundamentalDomain';
 
 const data = ALL_TORI.map((t) => {
   const layout = harmonicLayout(t);

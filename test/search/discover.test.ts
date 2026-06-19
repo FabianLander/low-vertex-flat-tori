@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { collect } from '../../src/search/collect.ts';
-import { discoverAttempt } from '../../src/search/discover.ts';
-import { perturbedSeeds, uniformSigma } from '../../src/sampling/seeds.ts';
-import { makeCutOffArea } from '../../src/embedding/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
-import { mulberry32 } from '../../src/sampling/rng.ts';
-import { RICH } from '../../src/triangulations/index.ts';
+import { collect } from '@core/search/collect.ts';
+import { discoverAttempt } from '@core/search/discover.ts';
+import { perturbedSeeds, uniformSigma } from '@core/sampling/seeds.ts';
+import { makeCutOffArea } from '@core/embedding/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
+import { mulberry32 } from '@core/sampling/rng.ts';
+import { RICH } from '@core/triangulations/index.ts';
 
 // These exercise the search COMPONENTS' contracts — not whether a (slow,
 // stochastic) search actually finds a torus. Accepts are allowed but not required.

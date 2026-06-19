@@ -2,7 +2,7 @@
 
 > Given a flat realization of a [triangulation](triangulation.md), unfold it into the plane and read
 > off its **modulus τ ∈ ℍ** — its point in Teichmüller space. Forgetting the
-> [marking](marking.md) projects to moduli space. This is `topology/develop.ts`.
+> [marking](marking.md) projects to moduli space. This is `moduli/develop.ts`.
 
 ## The mathematics
 
@@ -51,10 +51,10 @@ searches).
 
 | symbol | file | role |
 | --- | --- | --- |
-| `developNet` | `topology/develop.ts` | unfold along the fundamental domain → planar corners + boundary identifications |
-| `modulus` → `{ v1, v2, tau, area, covolume, rotDefect }` | `topology/develop.ts` | the Teichmüller point + flatness/unit-index diagnostics |
-| `totalArea` | `topology/develop.ts` | intrinsic area Σ½‖(b−a)×(c−a)‖ (= covolume for a unit-index basis) |
-| `reduceModulus`, `reduceModulusWithMatrix`, `applyMobius` | `topology/develop.ts` | the moduli reduction (and its `SL(2,ℤ)` element) |
+| `developNet` | `moduli/develop.ts` | unfold along the fundamental domain → planar corners + boundary identifications |
+| `modulus` → `{ v1, v2, tau, area, covolume, rotDefect }` | `moduli/develop.ts` | the Teichmüller point + flatness/unit-index diagnostics |
+| `totalArea` | `moduli/develop.ts` | intrinsic area Σ½‖(b−a)×(c−a)‖ (= covolume for a unit-index basis) |
+| `reduceModulus`, `reduceModulusWithMatrix`, `applyMobius` | `moduli/develop.ts` | the moduli reduction (and its `SL(2,ℤ)` element) |
 
 `modulus` reads `tri.marking` (the generators) and develops via `tri.fundamentalDomain`; it takes
 raw coordinates (`ArrayLike<number>`), never a `PaperTorus` — so `topology` stays independent of the

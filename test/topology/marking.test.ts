@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_TORI } from '../../src/triangulations';
-import { edgeKey } from '../../src/topology/triangulation';
-import { harmonicLayout } from '../../src/topology/harmonicLayout';
-import { exactMinCutDomain } from '../../src/topology/fundamentalDomain';
-import { canonicalDecoration } from '../../src/topology/marking';
+import { ALL_TORI } from '@core/triangulations';
+import { edgeKey } from '@core/topology/triangulation';
+import { harmonicLayout } from '@core/topology/harmonicLayout';
+import { exactMinCutDomain } from '@core/topology/fundamentalDomain';
+import { canonicalDecoration } from '@core/topology/marking';
 
 describe('canonicalDecoration (minimal-domain marking, all tori)', () => {
   for (const torus of ALL_TORI) {

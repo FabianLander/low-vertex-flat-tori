@@ -28,13 +28,13 @@ import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 
 import { makeArgs } from './lib/cli.mjs';
-import { byId } from '../src/triangulations/index.ts';
-import { fullSpace } from '../src/coordinates/full.ts';
-import { march } from '../src/solvers/march.ts';
-import { imaginaryFamily } from '../src/search/marchModulus.ts';
-import { ambientGate } from '../src/search/pull.ts';
-import { certify } from '../src/search/certify.ts';
-import { isEmbedded } from '../src/embedding/index.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { fullSpace } from '@core/coordinates/full.ts';
+import { march } from '@core/solvers/march.ts';
+import { imaginaryFamily } from '@core/search/marchModulus.ts';
+import { ambientGate } from '@core/search/pull.ts';
+import { certify } from '@core/search/certify.ts';
+import { isEmbedded } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
 const TYPE = a.num('--type', 7);

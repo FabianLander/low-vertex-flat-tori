@@ -56,86 +56,97 @@ never a `Triangulation`, an `Embedding`, or a chart.
 
 ## Layout
 
+`src/` is three rings by purity — `core/` (pure, headless, tsx-runnable), `display/` (torus →
+three.js), `app/` (scene/path-trace harness). Imports cross folders via the aliases `@core/*`,
+`@display/*`, `@app/*`.
+
 ```
-src/topology/        the intrinsic torus, COMBINATORIAL — works on ANY triangulation:
-  triangulation.ts     the Triangulation builder + types (combinatorics + decoration types, Euler-checked)
-  trees.ts             shared spanning-tree primitives (primal/dual trees, tree–cotree, LCA path)
-  marking.ts           the canonical marking (canonicalDecoration): H₁ generators + cut + develop order
-  fundamentalDomain.ts the developing chart — exact minimal cut + centered-spiral unroll order
-  harmonicLayout.ts    flat-torus harmonic (Tutte) embedding — the SCRATCH layout that picks the marking
-  (depends only on geometry/; the geometric measurement of a metric torus lives in moduli/, below)
+src/core/            THE PURE, HEADLESS CORE — no three.js, no DOM; every folder runs under tsx.
 
-src/moduli/          the modulus: develop a metric torus → τ, and the space it lives in:
-  develop.ts           the developing map via per-triangle frames (no circle–circle): developNet + frames
-  modulus.ts           τ ∈ ℍ directly from the frames + tauJacobian (the exact analytic ∂τ/∂p)
-  reduce.ts            the space ℍ/SL(2,ℤ): applyMobius, reduceModulus, SQUARE/HEXAGONAL (torus-blind)
-  (depends on topology + geometry; consumed by constraints/modulus and search/certify)
+  topology/            the intrinsic torus, COMBINATORIAL — works on ANY triangulation:
+    triangulation.ts     the Triangulation builder + types (combinatorics + decoration types, Euler-checked)
+    trees.ts             shared spanning-tree primitives (primal/dual trees, tree–cotree, LCA path)
+    marking.ts           the canonical marking (canonicalDecoration): H₁ generators + cut + develop order
+    fundamentalDomain.ts the developing chart — exact minimal cut + centered-spiral unroll order
+    harmonicLayout.ts    flat-torus harmonic (Tutte) embedding — the SCRATCH layout that picks the marking
+    (depends only on geometry/; the geometric measurement of a metric torus lives in moduli/, below)
 
-src/triangulations/  the specific triangulations we study, as DATA — scales to many:
-  eightVertex.ts       the 7 V=8 lists (a census); add nineVertex.ts, … later
-  index.ts             the registry: ALL_TORI, RICH, byId — maps the census through the builder,
-                       computing each triangulation's canonical marking on load
-  (depends on topology)
+  moduli/              the modulus: develop a metric torus → τ, and the space it lives in:
+    develop.ts           the developing map via per-triangle frames (no circle–circle): developNet + frames
+    modulus.ts           τ ∈ ℍ directly from the frames + tauJacobian (the exact analytic ∂τ/∂p)
+    reduce.ts            the space ℍ/SL(2,ℤ): applyMobius, reduceModulus, SQUARE/HEXAGONAL (torus-blind)
+    (depends on topology + geometry; consumed by constraints/modulus and search/certify)
 
-THE SEARCH SYSTEM — a modular, problem-agnostic kit for constrained search (see docs/math).
-Dependency-ordered, each layer using only the ones below:
-  geometry → functions → {configuration, coordinates, constraints, embedding} → solvers → sampling → search
+  triangulations/     the specific triangulations we study, as DATA — scales to many:
+    eightVertex.ts       the 7 V=8 lists (a census); add nineVertex.ts, … later
+    index.ts             the registry: ALL_TORI, RICH, byId — maps the census through the builder,
+                         computing each triangulation's canonical marking on load
+    (depends on topology)
 
-  src/geometry/        torus-blind ℝ²/ℝ³ kernels: point/segment/triangle distances, the tri–tri chord
-  src/functions/       the generic toolkit ONLY: the `Fn`/`ScalarFn`/`Embedding` contracts (types.ts)
+  THE SEARCH STACK — a modular, problem-agnostic kit for constrained search (see docs/math).
+  Dependency-ordered, each layer using only the ones below:
+    geometry → functions → {configuration, coordinates, constraints, embedding} → solvers → sampling → search
+
+    geometry/          torus-blind ℝ²/ℝ³ kernels: point/segment/triangle distances, the tri–tri chord
+    functions/         the generic toolkit ONLY: the `Fn`/`ScalarFn`/`Embedding` contracts (types.ts)
                        + the compose algebra (fdFn/precompose/postcompose/affine; `stack` to combine
                        conditions, `leastSquares` to soften one into a flow energy). ONE concept — a
                        constraint is an `Fn` driven to 0, an energy a scalar `Fn` descended. No torus.
-  src/configuration/   the configuration-space MACHINERY: `ConfigSpace = (T, φ)` with pull/push/coords/
+    configuration/     the configuration-space MACHINERY: `ConfigSpace = (T, φ)` with pull/push/coords/
                        metric (space.ts); `paperTorus` (the {triang, positions} boundary bundle); csv.
-  src/coordinates/     the coordinate-system INSTANCES (each an `Embedding` φ, both push + coords):
+    coordinates/       the coordinate-system INSTANCES (each an `Embedding` φ, both push + coords):
                        full · pin (pinCoords/pinVertices) · symmetry · normalized (the gauge-fixed
                        section of C → C/Sim, 3V−7 free coords; the mirror of moduli/reduce).
-  src/constraints/     the CLOSED conditions {g=0} you project onto (+ types.ts Held): flat (coneDeficit),
+    constraints/       the CLOSED conditions {g=0} you project onto (+ types.ts Held): flat (coneDeficit),
                        collinear, modulus — the point/line/circle × Teichmüller/moduli grid
                        (pinTeichmuller/pinModuli × point/verticalLine/circle; named: fixedModulus, modulusWall).
-  src/embedding/       the OPEN condition Ω you stay inside (its own home): embedded (isEmbedded gate +
+    embedding/         the OPEN condition Ω you stay inside (its own home): embedded (isEmbedded gate +
                        clearance) · separation (minSeparation + the fatten cell-gap substrate) ·
                        energies/ (overlap + fatten) · cells (cellTables). No Region — a Gate predicate.
-  src/solvers/         the engine, on ℝⁿ: project (corrector), flow (Riemannian descent, gated),
+    solvers/           the engine, on ℝⁿ: project (corrector), flow (Riemannian descent, gated),
                        march (continuation), tangentProject; types.ts holds the `Gate` contract.
-  src/sampling/        producing seeds: rng · perturb · seeds (random + deterministic gridSeeds) ·
+    sampling/          producing seeds: rng · perturb · seeds (random + deterministic gridSeeds) ·
                        reference (RICH_REFERENCE).
-  src/search/          composition & measurement: certify (raw τ AND reduced τ̂), collect, the recipes,
+    search/            composition & measurement: certify (raw τ AND reduced τ̂), collect, the recipes,
                        pull (pull conditions into a coordinate system).
 
-src/mesh             three.js: the triangulation's k-cells realized in ℝ³ (one `Part`) + section/obj
-src/viewer           the one subject `makeTorusView` (factory, streams positions) + decorations + look
-src/render           the path-traced `Studio` harness (WebGL ↔ three-gpu-pathtracer) + stage/controls
-demos/ renders/      browser entry points (interactive demos; path-traced figures)
+src/display/         TORUS → THREE.JS (the impure presentation library):
+  mesh/                the triangulation's k-cells realized in ℝ³ (one `Part`) + section/obj
+  viewer/              the one subject `makeTorusView` (factory, streams positions) + decorations + look
+
+src/app/             THE SCENE/PRESENT HARNESS:
+  render/              the path-traced `Studio` (WebGL ↔ three-gpu-pathtracer) + stage/controls
+
+demos/ renders/      browser entry points (interactive demos; path-traced figures), each a <name>/main.ts
 scripts/             headless CLI runners (the search drivers); scripts/legacy/ is a read-only archive
-data/                CSV result sets (one torus per row, 24 floats)
+data/                CSV result sets we keep (one torus per row, 24 floats); samples/ is the gitignored dump
 ```
 
-The dependency rule: **`src/topology`, `src/triangulations`, `src/moduli` never import three.js or touch
-the DOM** — so every intrinsic algorithm runs headless under `tsx`. `topology` (combinatorial) depends
-only on `geometry/` (its harmonic *scratch* layout uses `geometry/vec2`); `moduli/` (the modulus
-measurement + space) depends on `topology` + `geometry`. Arrows are one-way folder→folder: `geometry →
-topology → triangulations` and `geometry`/`topology` → `moduli`; the search stack `geometry → functions →
-{configuration, coordinates, constraints, embedding} → solvers → sampling → search` builds on top (with
-`constraints`/`search` also consuming `moduli`); rendering sits on top of all of it. `geometry/` is the
-single bottom both halves rest on. Machinery and its instances are flat siblings — `topology`↔`triangulations`,
-`functions`↔`constraints`, `configuration`↔`coordinates` — never nested (the arrow is dependency, not
-containment).
+The dependency rule: **all of `src/core/` never imports three.js or touches the DOM** — so every
+algorithm runs headless under `tsx`; `display/`/`app/` may, and depend on `core/`, never the reverse
+(a `@display`/`@app` import inside `src/core/` is a glaring purity violation). Within `core/`: `topology`
+(combinatorial) depends only on `geometry/` (its harmonic *scratch* layout uses `geometry/vec2`);
+`moduli/` (the modulus measurement + space) depends on `topology` + `geometry`. Arrows are one-way
+folder→folder: `geometry → topology → triangulations` and `geometry`/`topology` → `moduli`; the search
+stack `geometry → functions → {configuration, coordinates, constraints, embedding} → solvers → sampling
+→ search` builds on top (with `constraints`/`search` also consuming `moduli`); `display`/`app` sit on top
+of all of it. `geometry/` is the single bottom everything rests on. Machinery and its instances are flat
+siblings — `topology`↔`triangulations`, `functions`↔`constraints`, `configuration`↔`coordinates` — never
+nested (the arrow is dependency, not containment).
 
 ## Searches
 
 A search is **three small pieces** wired together — there is no framework, just composition:
 
 1. a **seed source** — `() => Float64Array | null`, the next starting configuration
-   (`src/sampling/seeds.ts`: `perturbedSeeds`, `poolSeeds`, `uniformSeeds` random; `gridSeeds`
+   (`src/core/sampling/seeds.ts`: `perturbedSeeds`, `poolSeeds`, `uniformSeeds` random; `gridSeeds`
    deterministic, returning `null` when exhausted — all built on `sampling/perturb` + an RNG);
 2. an **`attempt` recipe** — `(seed) => Certificate | null`: run `project`/`flow` on the seed and
    `certify`, returning the certificate to accept it or `null` to reject;
 3. the **`collect` driver** — `collect(drawSeed, attempt, {maxTries, maxAccepts, onAccept})`: the
    rejection-sampling loop (stops on a `null` seed), with all IO in the `onAccept`/`onTry` callbacks.
 
-The three built-in searches (thin runners in `scripts/`, logic in `src/search/`):
+The three built-in searches (thin runners in `scripts/`, logic in `src/core/search/`):
 
 ```
 npm run discover       -- [opts]          # any flat embedded torus
@@ -154,7 +165,7 @@ seed → project(held) → flow(held, energy, region = embedded) → certify
 To write a **new** search, write its `attempt` (pick the coordinate system, the held conditions,
 whether to `flow`, and the accept predicate) and hand it to `collect` with a seed source — e.g.
 `semiSolution` runs in a `pinCoords` coordinate system with `held = [flat, collinear, collinear]` and
-no flow (a flat-immersion search). A ~15-line `src/search/<name>.ts` plus a thin `scripts/<name>.mjs`
+no flow (a flat-immersion search). A ~15-line `src/core/search/<name>.ts` plus a thin `scripts/<name>.mjs`
 is a whole new search.
 
 **Validate the develop → τ pipeline** (covolume = area, rotational defect ≈ 0, cone deficit ≈ 0):
@@ -168,19 +179,20 @@ npx tsx scripts/legacy/develop-check.mjs [path/to.csv]
 Install once: `npm install`.
 
 ```
-npm run dev <demo>        # serve a demo (vite). Omit <demo> to list them.
-npm run build <demo>      # self-contained build → dist/<demo>/
+npm run dev <name>        # serve a demo/render (vite). Omit <name> to list them.
+npm run build <name>      # self-contained build → dist/<name>/
 npm test                  # vitest
 npx tsc --noEmit          # the typecheck — there is no separate linter
 ```
 
-> `npm run dev <demo>` writes a gitignored `.dev/<demo>.html` and serves it on a **stable per-demo
-> port** (a hash of the name, 5200–5599), so demos never collide and run in parallel. `build`
-> rewrites the tracked `index.html`, so `git status` shows it modified after a build.
+> `npm run dev <name>` (a demo under `demos/` or a render under `renders/`) writes a gitignored
+> `.dev/<name>.html` and serves it on a **stable per-name port** (a hash of the name, 5200–5599), so
+> entries never collide and run in parallel. `build` rewrites the tracked `index.html`, so `git status`
+> shows it modified after a build.
 
 ### Adding a triangulation
 
-Add an entry `{ name, triangles }` to the census (`src/triangulations/eightVertex.ts`, or a new
+Add an entry `{ name, triangles }` to the census (`src/core/triangulations/eightVertex.ts`, or a new
 per-vertex-count file). That's it — the registry computes its canonical marking on load, the builder
 derives all combinatorics and validates `V − E + F = 0`. The marking is computed, not authored; no
 vertex/edge/face count is hard-wired. (The marking derivation is ~0.1s per triangulation; for a much
@@ -195,7 +207,7 @@ in Float32.
 
 ## Normalization convention
 
-`src/coordinates/normalized.ts` puts a torus into a **canonical pose** under the similarity group of
+`src/core/coordinates/normalized.ts` puts a torus into a **canonical pose** under the similarity group of
 ℝ³ (translation ⊕ rotation ⊕ uniform scale = 7 DOF): vertex 0 at the origin, vertex 1 at (1,0,0),
 vertex 2 in the xy-plane with y₂ ≥ 0. That removes the 7 similarity DOF, leaving **3V − 7** free
 numbers. Only proper rotations are used, so chirality is preserved, not quotiented. It is a real

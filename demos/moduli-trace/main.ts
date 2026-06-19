@@ -12,11 +12,11 @@
  *            b cloud · c curve · w download selected tori (CSV)
  */
 
-import { RICH } from '../../src/triangulations';
-import { modulus } from '../../src/moduli/modulus';
-import { makeCurve, type PlaneCurve } from '../../src/geometry/curve.ts';
+import { RICH } from '@core/triangulations';
+import { modulus } from '@core/moduli/modulus';
+import { makeCurve, type PlaneCurve } from '@core/geometry/curve.ts';
 import { sampleAlongCurve, type CloudPoint, type Match } from './curveCloudSample.ts';
-import type { Vec2 } from '../../src/geometry/vec2.ts';
+import type { Vec2 } from '@core/geometry/vec2.ts';
 
 const DIM = RICH.vertexCount * 3;
 const ROT_TOL = 1e-5;

@@ -18,10 +18,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
-import { RICH } from '../../src/triangulations';
-import { normalizePose } from '../../src/coordinates/normalized';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { makeTorusView } from '../../src/viewer/TorusView';
+import { RICH } from '@core/triangulations';
+import { normalizePose } from '@core/coordinates/normalized';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { makeTorusView } from '@display/viewer/TorusView';
 
 const DIM = RICH.vertexCount * 3;
 const FACE_COUNT = RICH.triangles.length;

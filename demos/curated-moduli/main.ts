@@ -18,11 +18,11 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { byId } from '../../src/triangulations';
-import { paperFromRow } from '../../src/configuration/csv';
-import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
-import { paperMaterials } from '../../src/viewer/materials';
-import { skyEnvironment } from '../../src/render/stage';
+import { byId } from '@core/triangulations';
+import { paperFromRow } from '@core/configuration/csv';
+import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
+import { paperMaterials } from '@display/viewer/materials';
+import { skyEnvironment } from '@app/render/stage';
 
 const files = import.meta.glob('./data/*.csv', {
   eager: true, query: '?raw', import: 'default',

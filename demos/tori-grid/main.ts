@@ -11,9 +11,9 @@
  * Controls:  v toggle vertex labels · t toggle tiling
  */
 
-import { ALL_TORI } from '../../src/triangulations/index';
-import { harmonicLayout, periodicTiles, type HarmonicLayout } from '../../src/topology/harmonicLayout';
-import type { Vec2 } from '../../src/geometry/vec2';
+import { ALL_TORI } from '@core/triangulations/index';
+import { harmonicLayout, periodicTiles, type HarmonicLayout } from '@core/topology/harmonicLayout';
+import type { Vec2 } from '@core/geometry/vec2';
 
 const layouts: HarmonicLayout[] = ALL_TORI.map(harmonicLayout);
 let showLabels = true;

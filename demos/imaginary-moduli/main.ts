@@ -20,12 +20,12 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { byId } from '../../src/triangulations';
-import { paperFromRow } from '../../src/configuration/csv';
-import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
-import { developedSheet, type DevelopedSheet } from '../../src/viewer/developedSheet';
-import { paperMaterials } from '../../src/viewer/materials';
-import { skyEnvironment } from '../../src/render/stage';
+import { byId } from '@core/triangulations';
+import { paperFromRow } from '@core/configuration/csv';
+import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
+import { developedSheet, type DevelopedSheet } from '@display/viewer/developedSheet';
+import { paperMaterials } from '@display/viewer/materials';
+import { skyEnvironment } from '@app/render/stage';
 
 // data/ = committed curated examples; live/ = gitignored symlinks into samples/
 // for watching an active search (re-run a script, refresh, it updates). Use

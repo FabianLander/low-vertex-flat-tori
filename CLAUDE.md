@@ -48,17 +48,34 @@ npm run semi-solutions -- [opts]   # Doyle–Schwartz semi-solution scan (flat i
 npm run march-modulus  -- --c 0    # transport a torus onto a wall by continuation; reports the pinch
 ```
 
-These write 24-float CSV rows and are thin runners over `src/search/` (flags in each script
+These write 24-float CSV rows and are thin runners over `src/core/search/` (flags in each script
 header). **`scripts/legacy/` is a read-only archive** — its files still import the deleted `src/math/`
 and are intentionally left stale, NOT built or run.
 
 ## Architecture
 
+### Three rings: `src/{core, display, app}`
+
+`src/` is split into three rings by **purity**, the load-bearing invariant made visible as folders:
+
+- **`src/core/`** — the pure, headless, `tsx`-runnable heart: **no three.js, no DOM**. Every algorithm
+  here runs under `tsx`. Holds the 12 dependency-ordered folders (`geometry … search`, below) as flat
+  siblings.
+- **`src/display/`** — `viewer`, `mesh`: turn a torus into three.js objects.
+- **`src/app/`** — `render`: the torus-blind three.js scene / path-trace / present harness (room here for
+  `app/animation/`, `app/backgrounds/` later).
+
+Imports cross folders through **ring aliases** (configured in tsconfig + vite + vitest): `@core/*`,
+`@display/*`, `@app/*` (e.g. `import { byId } from '@core/triangulations'`). Same-folder imports stay
+relative (`./x`). The rings layer one-way: `display`/`app` depend on `core`; **`core` never imports
+`display`/`app`** (a `@display`/`@app` import inside `src/core/` is a glaring purity violation). `app`'s
+`render` is torus-blind and imports nothing from `src/`; the browser entries (`demos/`/`renders/`)
+are the glue that wires a `display` view into an `app` studio.
+
 ### The dependency rule (load-bearing)
 
-Everything outside `mesh/`, `viewer/`, `render/` (and the browser entries `demos/`,
-`renders/`) is **pure** — no three.js, no DOM — so every algorithm runs headless under `tsx`. The
-extrinsic search stack is **dependency-ordered**, each layer using only the ones below:
+Inside `src/core/`, the extrinsic search stack is **dependency-ordered**, each layer using only the ones
+below (all flat siblings within `core/`):
 
 ```
 geometry/ → functions/ → { configuration/, coordinates/, constraints/, embedding/ } → solvers/ → sampling/ → search/
@@ -188,9 +205,9 @@ does the measurement and owns the target space.
   and the recipes `discover` (`held=[flat]`), `wall` (`held=[flat, modulusWall(c)]`) via `flattenFlowEmbed`
   (`seed → project(held) → flow(held, energy, gate=embedded) → certify`), `semiSolution`, `marchModulus`.
 
-### Rendering — one subject, the k-cells realized (`mesh/` + `viewer/` + the `render/` harness)
+### Rendering — one subject, the k-cells realized (`display/` = `mesh/` + `viewer/`; `app/` = `render/` harness)
 
-The impure boundary (three.js, DOM). One shape — **`triang → (positions → three.js)`**, the visual
+The impure boundary (three.js, DOM) — the `display` and `app` rings. One shape — **`triang → (positions → three.js)`**, the visual
 sibling of `coneDeficit(triang)`: a viewer **closes over the triangulation** (the parts' buffers are
 sized by V/E/F) and **streams bare positions**. It is NOT a `ConfigSpace` and never `pull`s — it
 consumes already-realized ℝ³ points. `PaperTorus` is only the boundary envelope (`fromPaper`).

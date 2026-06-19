@@ -39,9 +39,9 @@ and a [marking](marking.md) — but those are not combinatorics; see their own d
 
 The split that keeps this scalable:
 
-- **`src/topology/triangulation.ts`** — the **machinery**: the `Triangulation` type and the
+- **`src/core/topology/triangulation.ts`** — the **machinery**: the `Triangulation` type and the
   `defineTriangulation(spec)` builder. Generic; it knows nothing about *which* triangulations exist.
-- **`src/triangulations/`** — the **instances**, as data. `eightVertex.ts` is a *census* (an array
+- **`src/core/triangulations/`** — the **instances**, as data. `eightVertex.ts` is a *census* (an array
   of `{ name, triangles }`); `index.ts` maps it through `defineTriangulation` to build `ALL_TORI`,
   `RICH = byId(7)`, `byId(n)`. Adding a triangulation is one census entry — there are no
   per-instance modules. A new vertex count is a sibling census file (`nineVertex.ts`, …).
@@ -60,7 +60,7 @@ The split that keeps this scalable:
 
 A `Triangulation` carries **no metric and no bespoke per-instance data** — `#7` is just another
 census entry. To *realize* it in ℝ³ (give it coordinates) is a **`PaperTorus`**
-(`src/configuration/paperTorus.ts`), the extrinsic object the search moves around.
+(`src/core/configuration/paperTorus.ts`), the extrinsic object the search moves around.
 
 ## Notes
 

@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { RICH } from '../../src/triangulations';
-import { makePaperTorus } from '../../src/configuration/paperTorus.ts';
-import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
+import { RICH } from '@core/triangulations';
+import { makePaperTorus } from '@core/configuration/paperTorus.ts';
+import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
 import { SAMPLE_COUNT, SAMPLE_SIZE, SAMPLES_FLAT } from './data';
 
 // 100 samples — 10×10 grid.

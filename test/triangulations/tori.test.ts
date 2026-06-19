@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_TORI, RICH } from '../../src/triangulations/index';
-import { edgeKey } from '../../src/topology/triangulation';
+import { ALL_TORI, RICH } from '@core/triangulations/index';
+import { edgeKey } from '@core/topology/triangulation';
 
 /** Two cyclic sequences equal up to rotation. */
 function sameCycle(a: readonly number[], b: readonly number[]): boolean {

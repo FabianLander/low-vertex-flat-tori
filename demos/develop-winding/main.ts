@@ -11,10 +11,10 @@
  * Controls:  ↑/↓ switch torus · ←/→ step · Space play/pause · r reset · v labels
  */
 
-import { ALL_TORI } from '../../src/triangulations/index';
-import { harmonicLayout } from '../../src/topology/harmonicLayout';
-import type { Vec2 } from '../../src/geometry/vec2';
-import { windingNet, type WindingNet } from '../../src/topology/fundamentalDomain';
+import { ALL_TORI } from '@core/triangulations/index';
+import { harmonicLayout } from '@core/topology/harmonicLayout';
+import type { Vec2 } from '@core/geometry/vec2';
+import { windingNet, type WindingNet } from '@core/topology/fundamentalDomain';
 
 const STEP_MS = 380;
 const HOLD_MS = 1100;

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { paperToObj } from '../../src/mesh/obj';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { RICH } from '../../src/triangulations';
+import { paperToObj } from '@display/mesh/obj';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { RICH } from '@core/triangulations';
 
 describe('paperToObj — the realization as a Wavefront OBJ polyhedron', () => {
   const obj = paperToObj(RICH_REFERENCE);

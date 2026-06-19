@@ -8,17 +8,17 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { march, type Family } from '../../src/solvers/march.ts';
-import { project } from '../../src/solvers/project.ts';
-import type { Gate } from '../../src/solvers/types.ts';
-import type { Fn } from '../../src/functions/types.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { modulusWall } from '../../src/constraints/modulus.ts';
-import { isEmbedded } from '../../src/embedding/index.ts';
-import { modulus } from '../../src/moduli/modulus.ts';
-import { reduceModulus } from '../../src/moduli/reduce.ts';
-import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { march, type Family } from '@core/solvers/march.ts';
+import { project } from '@core/solvers/project.ts';
+import type { Gate } from '@core/solvers/types.ts';
+import type { Fn } from '@core/functions/types.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
+import { modulusWall } from '@core/constraints/modulus.ts';
+import { isEmbedded } from '@core/embedding/index.ts';
+import { modulus } from '@core/moduli/modulus.ts';
+import { reduceModulus } from '@core/moduli/reduce.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
 // --- toy: unit circle in ℝ², parameter = x₀ ---
 const circle: Fn = {

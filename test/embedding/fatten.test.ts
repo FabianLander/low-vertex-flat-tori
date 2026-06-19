@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { makeCellMargin, minCellGap, isEmbedded } from '../../src/embedding/index.ts';
-import { flow } from '../../src/solvers/flow.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
-import { RICH } from '../../src/triangulations/index.ts';
+import { makeCellMargin, minCellGap, isEmbedded } from '@core/embedding/index.ts';
+import { flow } from '@core/solvers/flow.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
+import { RICH } from '@core/triangulations/index.ts';
 
 // The fatten energy descends the cell-gap substrate (`forEachCellGap`/`minCellGap`),
 // so it's calibrated against that same measure.

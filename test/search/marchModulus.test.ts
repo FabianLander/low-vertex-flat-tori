@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { marchToWallAttempt, wallFamily } from '../../src/search/marchModulus.ts';
-import { fullSpace } from '../../src/coordinates/full.ts';
-import { doyleSchwartzPositions } from '../../src/search/doyleSchwartz.ts';
-import { makeCutOffArea } from '../../src/embedding/index.ts';
-import { modulus } from '../../src/moduli/modulus.ts';
-import { reduceModulus } from '../../src/moduli/reduce.ts';
-import { RICH } from '../../src/triangulations/index.ts';
+import { marchToWallAttempt, wallFamily } from '@core/search/marchModulus.ts';
+import { fullSpace } from '@core/coordinates/full.ts';
+import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { makeCutOffArea } from '@core/embedding/index.ts';
+import { modulus } from '@core/moduli/modulus.ts';
+import { reduceModulus } from '@core/moduli/reduce.ts';
+import { RICH } from '@core/triangulations/index.ts';
 
 describe('marchModulus — transport a torus onto a modulus wall', () => {
   it('the wall family reads |Re τ̂| and holds flat ∧ the wall', () => {

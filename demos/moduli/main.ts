@@ -17,10 +17,10 @@
  * class, hover to read τ. r resets the view. Pure canvas 2D, no three.js.
  */
 
-import { RICH } from '../../src/triangulations';
-import { modulus } from '../../src/moduli/modulus';
-import type { Vec2 } from '../../src/geometry/vec2';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
+import { RICH } from '@core/triangulations';
+import { modulus } from '@core/moduli/modulus';
+import type { Vec2 } from '@core/geometry/vec2';
+import { RICH_REFERENCE } from '@core/sampling/reference';
 import seedsRaw from '../../data/explore-from-seeds/seeds.csv?raw';
 
 const DIM = RICH.vertexCount * 3;

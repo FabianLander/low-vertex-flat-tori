@@ -19,14 +19,14 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { byId } from '../../src/triangulations';
-import { paperFromRow } from '../../src/configuration/csv';
-import { makeTorusView } from '../../src/viewer/TorusView';
-import { paperMaterials } from '../../src/viewer/materials';
-import { slicePlane } from '../../src/viewer/slicePlane';
-import { skyEnvironment } from '../../src/render/stage';
-import { modulus } from '../../src/moduli/modulus';
-import { reduceModulus } from '../../src/moduli/reduce';
+import { byId } from '@core/triangulations';
+import { paperFromRow } from '@core/configuration/csv';
+import { makeTorusView } from '@display/viewer/TorusView';
+import { paperMaterials } from '@display/viewer/materials';
+import { slicePlane } from '@display/viewer/slicePlane';
+import { skyEnvironment } from '@app/render/stage';
+import { modulus } from '@core/moduli/modulus';
+import { reduceModulus } from '@core/moduli/reduce';
 
 // ---------------------------------------------------------------------------
 // Load the square torus (type 3); work in the bbox-centered render frame.

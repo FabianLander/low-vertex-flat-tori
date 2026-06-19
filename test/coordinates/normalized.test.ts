@@ -7,10 +7,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { normalized, normalizePose } from '../../src/coordinates/normalized.ts';
-import { coneDeficit } from '../../src/constraints/flat.ts';
-import { RICH } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { normalized, normalizePose } from '@core/coordinates/normalized.ts';
+import { coneDeficit } from '@core/constraints/flat.ts';
+import { RICH } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
 const V = RICH.vertexCount;
 const N = 3 * V;

@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { makeChordLengthSquared } from '../../src/embedding/index';
-import { makeCutOffArea } from '../../src/embedding/index';
-import { makeCellMargin, makeCellBarrier } from '../../src/embedding/index';
-import { minSeparation, minCellGap, linearSize } from '../../src/embedding/index';
-import { totalArea } from '../../src/moduli/develop';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { mulberry32 } from '../../src/sampling/rng';
-import { RICH } from '../../src/triangulations';
+import { makeChordLengthSquared } from '@core/embedding/index';
+import { makeCutOffArea } from '@core/embedding/index';
+import { makeCellMargin, makeCellBarrier } from '@core/embedding/index';
+import { minSeparation, minCellGap, linearSize } from '@core/embedding/index';
+import { totalArea } from '@core/moduli/develop';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { mulberry32 } from '@core/sampling/rng';
+import { RICH } from '@core/triangulations';
 
 const CHORD_LENGTH_SQUARED = makeChordLengthSquared(RICH);
 const CUTOFF_AREA = makeCutOffArea(RICH);

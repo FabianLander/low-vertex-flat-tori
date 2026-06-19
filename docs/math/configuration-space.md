@@ -4,8 +4,8 @@
 > configuration space `ℝ³ⱽ` of all realizations of `T` in space; a *problem's* configuration space is
 > a (possibly smaller) `ℝⁿ` mapped into `ℝ³ⱽ` by an embedding. The whole search lives on `ℝⁿ`: you
 > build functions there by sending a point up to `ℝ³ⱽ`, measuring with `T`, and reading the result
-> back down. This document is that one idea, made into objects. Code: `src/configuration/` (the
-> machinery), `src/coordinates/` (the coordinate systems), `src/functions/` (the `Embedding` contract).
+> back down. This document is that one idea, made into objects. Code: `src/core/configuration/` (the
+> machinery), `src/core/coordinates/` (the coordinate systems), `src/core/functions/` (the `Embedding` contract).
 
 ## The mathematics
 

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { triTriChord } from '../../src/geometry/intersectionChord';
-import { cellTables } from '../../src/embedding/index';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { RICH } from '../../src/triangulations';
+import { triTriChord } from '@core/geometry/intersectionChord';
+import { cellTables } from '@core/embedding/index';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { RICH } from '@core/triangulations';
 
 const TRIANGLES = RICH.triangles;
 const DISJOINT_TRIANGLE_PAIRS = cellTables(RICH).disjointTrianglePairs;

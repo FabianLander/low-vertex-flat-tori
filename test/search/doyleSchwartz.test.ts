@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { doyleSchwartzPositions } from '../../src/search/doyleSchwartz.ts';
-import { maxConeDeficit } from '../../src/constraints/flat.ts';
-import { modulus } from '../../src/moduli/modulus.ts';
-import { byId } from '../../src/triangulations/index.ts';
+import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { maxConeDeficit } from '@core/constraints/flat.ts';
+import { modulus } from '@core/moduli/modulus.ts';
+import { byId } from '@core/triangulations/index.ts';
 
 const torus = byId(7);
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];

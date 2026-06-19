@@ -12,15 +12,15 @@
 
 import * as THREE from 'three';
 
-import { RICH } from '../../src/triangulations';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { modulus } from '../../src/moduli/modulus';
-import { parseEmbeddings } from '../../src/configuration/csv';
-import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
-import { developedSheet, type DevelopedSheet } from '../../src/viewer/developedSheet';
-import { paperMaterials } from '../../src/viewer/materials';
-import { skyEnvironment } from '../../src/render/stage';
-import { Studio } from '../../src/render/studio';
+import { RICH } from '@core/triangulations';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { modulus } from '@core/moduli/modulus';
+import { parseEmbeddings } from '@core/configuration/csv';
+import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
+import { developedSheet, type DevelopedSheet } from '@display/viewer/developedSheet';
+import { paperMaterials } from '@display/viewer/materials';
+import { skyEnvironment } from '@app/render/stage';
+import { Studio } from '@app/render/studio';
 
 // ============================ tweak the whole piece here ============================
 const url = new URLSearchParams(location.search);

@@ -22,10 +22,10 @@
 import { appendFileSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { makeArgs, csvRow } from './lib/cli.mjs';
-import { byId } from '../src/triangulations/index.ts';
-import { makeRng } from '../src/sampling/rng.ts';
-import { collect } from '../src/search/collect.ts';
-import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '../src/search/semiSolution.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { makeRng } from '@core/sampling/rng.ts';
+import { collect } from '@core/search/collect.ts';
+import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '@core/search/semiSolution.ts';
 
 const a = makeArgs(process.argv);
 const triang = byId(7); // the DS construction is the degree-6-regular #7 torus

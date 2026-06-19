@@ -8,17 +8,17 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { project } from '../../src/solvers/project.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
+import { project } from '@core/solvers/project.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
 import {
   fixedModulus, modulusWall, pinTeichmuller, pinModuli, point, verticalLine, circle,
-} from '../../src/constraints/modulus.ts';
-import { modulus } from '../../src/moduli/modulus.ts';
-import { reduceModulus } from '../../src/moduli/reduce.ts';
-import type { Vec2 } from '../../src/geometry/vec2.ts';
-import type { Fn } from '../../src/functions/types.ts';
-import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+} from '@core/constraints/modulus.ts';
+import { modulus } from '@core/moduli/modulus.ts';
+import { reduceModulus } from '@core/moduli/reduce.ts';
+import type { Vec2 } from '@core/geometry/vec2.ts';
+import type { Fn } from '@core/functions/types.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
 const torus = byId(7);
 

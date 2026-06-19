@@ -11,11 +11,11 @@
 
 import * as THREE from 'three';
 
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { makeTorusView, type TorusViewOptions } from '../../src/viewer/TorusView';
-import { skyEnvironment } from '../../src/render/stage';
-import { attachRenderControls } from '../../src/render/controls';
-import { Studio } from '../../src/render/studio';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { makeTorusView, type TorusViewOptions } from '@display/viewer/TorusView';
+import { skyEnvironment } from '@app/render/stage';
+import { attachRenderControls } from '@app/render/controls';
+import { Studio } from '@app/render/studio';
 
 const studio = new Studio({ bounces: 6, pathTraceScale: 1, onModeChange });
 skyEnvironment(studio.scene, { intensity: 0.9, background: 0xeef0f3 });

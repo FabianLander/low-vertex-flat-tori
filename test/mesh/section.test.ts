@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { makeSection, perimeter, area } from '../../src/mesh/section';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { RICH } from '../../src/triangulations';
+import { makeSection, perimeter, area } from '@display/mesh/section';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { RICH } from '@core/triangulations';
 
 /** Bounding-box center of the V vertices. */
 function centroid(p: ArrayLike<number>, V: number): THREE.Vector3 {

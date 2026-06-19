@@ -7,15 +7,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { flow } from '../../src/solvers/flow.ts';
-import { flat, maxConeDeficit, coneDeficit } from '../../src/constraints/flat.ts';
-import { collinear } from '../../src/constraints/collinear.ts';
-import type { Fn, ScalarFn } from '../../src/functions/types.ts';
-import { scalarFn, stack, leastSquares } from '../../src/functions/compose.ts';
-import { isEmbedded } from '../../src/embedding/index.ts';
-import { makeCellMargin } from '../../src/embedding/index.ts';
-import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { flow } from '@core/solvers/flow.ts';
+import { flat, maxConeDeficit, coneDeficit } from '@core/constraints/flat.ts';
+import { collinear } from '@core/constraints/collinear.ts';
+import type { Fn, ScalarFn } from '@core/functions/types.ts';
+import { scalarFn, stack, leastSquares } from '@core/functions/compose.ts';
+import { isEmbedded } from '@core/embedding/index.ts';
+import { makeCellMargin } from '@core/embedding/index.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
 // --- toy: the unit sphere {‖x‖² = 1} in ℝ³ as an Fn ---
 const sphere: Fn = {

@@ -26,18 +26,18 @@
 
 import * as THREE from 'three';
 
-import { RICH } from '../../src/triangulations';
-import { modulus } from '../../src/moduli/modulus';
-import { reduceModulus } from '../../src/moduli/reduce';
-import { maxConeDeficit } from '../../src/constraints/flat';
-import { parseEmbeddings } from '../../src/configuration/csv';
-import type { PaperTorus } from '../../src/configuration/paperTorus.ts';
-import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
-import { developedSheet, type DevelopedSheet } from '../../src/viewer/developedSheet';
-import { modulusCell, type ModulusCell } from '../../src/viewer/modulusCell';
-import { paperMaterials } from '../../src/viewer/materials';
-import { skyEnvironment } from '../../src/render/stage';
-import { Studio } from '../../src/render/studio';
+import { RICH } from '@core/triangulations';
+import { modulus } from '@core/moduli/modulus';
+import { reduceModulus } from '@core/moduli/reduce';
+import { maxConeDeficit } from '@core/constraints/flat';
+import { parseEmbeddings } from '@core/configuration/csv';
+import type { PaperTorus } from '@core/configuration/paperTorus.ts';
+import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
+import { developedSheet, type DevelopedSheet } from '@display/viewer/developedSheet';
+import { modulusCell, type ModulusCell } from '@display/viewer/modulusCell';
+import { paperMaterials } from '@display/viewer/materials';
+import { skyEnvironment } from '@app/render/stage';
+import { Studio } from '@app/render/studio';
 
 // ============================ tweak the whole piece here ============================
 const url = new URLSearchParams(location.search);

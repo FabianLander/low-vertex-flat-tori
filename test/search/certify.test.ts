@@ -3,15 +3,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { certify } from '../../src/search/certify.ts';
-import { makeCellMargin, isEmbedded, clearance } from '../../src/embedding/index.ts';
-import { project } from '../../src/solvers/project.ts';
-import { flow } from '../../src/solvers/flow.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { modulus } from '../../src/moduli/modulus.ts';
-import { reduceModulus } from '../../src/moduli/reduce.ts';
-import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { certify } from '@core/search/certify.ts';
+import { makeCellMargin, isEmbedded, clearance } from '@core/embedding/index.ts';
+import { project } from '@core/solvers/project.ts';
+import { flow } from '@core/solvers/flow.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
+import { modulus } from '@core/moduli/modulus.ts';
+import { reduceModulus } from '@core/moduli/reduce.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
 const torus = byId(7);
 

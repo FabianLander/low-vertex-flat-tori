@@ -12,15 +12,15 @@
 
 import * as THREE from 'three';
 
-import { RICH } from '../../src/triangulations';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { parseEmbeddings } from '../../src/configuration/csv';
-import { makeTorusView, type TorusView, type TorusViewOptions } from '../../src/viewer/TorusView';
-import { graphPaperTexture } from '../../src/viewer/gridTexture';
-import { skyEnvironment, softSpot, backWall } from '../../src/render/stage';
-import { loadNormalMap } from '../../src/viewer/normalMap';
-import { attachRenderControls } from '../../src/render/controls';
-import { Studio } from '../../src/render/studio';
+import { RICH } from '@core/triangulations';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { parseEmbeddings } from '@core/configuration/csv';
+import { makeTorusView, type TorusView, type TorusViewOptions } from '@display/viewer/TorusView';
+import { graphPaperTexture } from '@display/viewer/gridTexture';
+import { skyEnvironment, softSpot, backWall } from '@app/render/stage';
+import { loadNormalMap } from '@display/viewer/normalMap';
+import { attachRenderControls } from '@app/render/controls';
+import { Studio } from '@app/render/studio';
 import seed7 from '../../data/explore-from-seeds/seed-7.csv?raw';
 
 // ============================ tweak the whole look here ============================

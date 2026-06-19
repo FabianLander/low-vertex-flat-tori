@@ -3,8 +3,8 @@
 > A **condition** is a property a configuration may or may not have. They come in two mathematically
 > distinct kinds, and the distinction is the whole shape of the search: **closed** conditions are
 > *submanifolds* `{g=0}` you land *on*; **open** conditions are *regions* you stay *inside*.
-> Code: the two kinds get two homes — the closed conditions in `src/constraints/`, the open
-> embedded region in `src/embedding/` — each a module owning its measurement (an `Fn` built from
+> Code: the two kinds get two homes — the closed conditions in `src/core/constraints/`, the open
+> embedded region in `src/core/embedding/` — each a module owning its measurement (an `Fn` built from
 > the `functions/` toolkit) and its usage (a `Held`/`Fn` constraint, or the `Region`).
 
 > **One concept underneath.** Every closed condition, and the potential of every open one, is the

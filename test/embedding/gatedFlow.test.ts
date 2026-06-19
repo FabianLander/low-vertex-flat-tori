@@ -5,11 +5,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isEmbedded, clearance, makeCellMargin, makeCutOffArea } from '../../src/embedding/index.ts';
-import { flow } from '../../src/solvers/flow.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { isEmbedded, clearance, makeCellMargin, makeCutOffArea } from '@core/embedding/index.ts';
+import { flow } from '@core/solvers/flow.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
 const torus = byId(7);
 

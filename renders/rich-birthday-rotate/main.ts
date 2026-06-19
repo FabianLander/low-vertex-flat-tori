@@ -10,14 +10,14 @@ import * as THREE from 'three';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { PhysicalSpotLight } from 'three-gpu-pathtracer';
 
-import { RICH } from '../../src/triangulations';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { parseEmbeddings } from '../../src/configuration/csv';
-import { makeTorusView, type TorusView } from '../../src/viewer/TorusView';
-import { paperMaterials } from '../../src/viewer/materials';
-import { skyEnvironment, backWall } from '../../src/render/stage';
-import { attachRenderControls } from '../../src/render/controls';
-import { Studio } from '../../src/render/studio';
+import { RICH } from '@core/triangulations';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { parseEmbeddings } from '@core/configuration/csv';
+import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
+import { paperMaterials } from '@display/viewer/materials';
+import { skyEnvironment, backWall } from '@app/render/stage';
+import { attachRenderControls } from '@app/render/controls';
+import { Studio } from '@app/render/studio';
 
 // ============================ tweak the whole piece here ============================
 const url = new URLSearchParams(location.search);

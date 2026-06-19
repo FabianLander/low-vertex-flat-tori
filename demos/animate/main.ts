@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { RICH } from '../../src/triangulations';
-import { makePaperTorus, clonePaperTorus, type PaperTorus } from '../../src/configuration/paperTorus.ts';
-import { coneAngleDeficits } from '../../src/constraints/flat.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { perturb } from '../../src/sampling/perturb';
-import { mulberry32 } from '../../src/sampling/rng';
-import { makeTorusView } from '../../src/viewer/TorusView';
-import { DEFICIT_PALETTE } from '../../src/viewer/palette';
+import { RICH } from '@core/triangulations';
+import { makePaperTorus, clonePaperTorus, type PaperTorus } from '@core/configuration/paperTorus.ts';
+import { coneAngleDeficits } from '@core/constraints/flat.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { perturb } from '@core/sampling/perturb';
+import { mulberry32 } from '@core/sampling/rng';
+import { makeTorusView } from '@display/viewer/TorusView';
+import { DEFICIT_PALETTE } from '@display/viewer/palette';
 
 // ---- Three.js boilerplate ----
 const renderer = new THREE.WebGLRenderer({ antialias: true });

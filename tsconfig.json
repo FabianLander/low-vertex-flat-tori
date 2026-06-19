@@ -14,6 +14,14 @@
     "moduleDetection": "force",
     "noEmit": true,
 
+    /* Ring aliases — the three-ring src/ layout (core/display/app) */
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["src/core/*"],
+      "@display/*": ["src/display/*"],
+      "@app/*": ["src/app/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

@@ -12,9 +12,9 @@
  * Controls:  ←/→ switch shape · ↑/↓ point count · [ / ] tube radius · r reseed
  */
 
-import { makeCurve, type PlaneCurve } from '../../src/geometry/curve.ts';
+import { makeCurve, type PlaneCurve } from '@core/geometry/curve.ts';
 import { sampleAlongCurve, type CloudPoint, type Match } from './curveCloudSample.ts';
-import type { Vec2 } from '../../src/geometry/vec2.ts';
+import type { Vec2 } from '@core/geometry/vec2.ts';
 
 // ---- tiny deterministic RNG ----
 function mulberry32(seed: number): () => number {

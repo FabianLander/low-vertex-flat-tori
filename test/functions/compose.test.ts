@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   fdFn, affine, postcompose, precompose, precomposeScalar, scalarFn, stack, leastSquares,
   type Embedding,
-} from '../../src/functions/compose.ts';
-import type { Fn } from '../../src/functions/types.ts';
+} from '@core/functions/compose.ts';
+import type { Fn } from '@core/functions/types.ts';
 
 // Toy map f : ℝ³ → ℝ², f(c) = [c0², c1·c2]; analytic Df = [[2c0,0,0],[0,c2,c1]].
 // Supplied value-only, so its Jacobian comes from fdFn (central differences).

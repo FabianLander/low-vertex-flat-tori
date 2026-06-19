@@ -34,7 +34,8 @@ Two structural lines run through all of it:
 - **intrinsic vs. extrinsic.** The topology half is *intrinsic* — independent of any ℝ³ embedding.
   The extrinsic half — the realization in space, the flatness/embeddedness maps, and the search — is
   the dependency-ordered stack `geometry/ → functions/ → {configuration, coordinates, conditions} →
-  solvers/ → sampling/ → search/`. Both halves rest on `geometry/`, the pure ℝ²/ℝ³ metric floor: the
+  solvers/ → sampling/ → search/` (these folders now all live under `src/core/`). Both halves rest on
+  `geometry/`, the pure ℝ²/ℝ³ metric floor: the
   developing map reads coordinates only to extract the intrinsic metric (edge lengths), and its planar
   net is built from `geometry`'s `Vec2`. So `geometry/` is the single bottom — `topology/` depends on
   it and nothing else.

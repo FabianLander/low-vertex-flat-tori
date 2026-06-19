@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { developNet } from '../../src/moduli/develop';
-import { modulus } from '../../src/moduli/modulus';
-import { reduceModulus, reduceModulusWithMatrix, applyMobius } from '../../src/moduli/reduce';
-import { totalArea } from '../../src/moduli/develop';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { RICH } from '../../src/triangulations';
+import { developNet } from '@core/moduli/develop';
+import { modulus } from '@core/moduli/modulus';
+import { reduceModulus, reduceModulusWithMatrix, applyMobius } from '@core/moduli/reduce';
+import { totalArea } from '@core/moduli/develop';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { RICH } from '@core/triangulations';
 
 describe('develop → modulus τ', () => {
   it('Rich: covolume = intrinsic area (unit-index basis) and holonomy is a pure translation', () => {

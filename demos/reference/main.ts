@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { RICH } from '../../src/triangulations';
-import { coneAngleAt, coneAngleDeficits } from '../../src/constraints/flat.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { makeTorusView } from '../../src/viewer/TorusView';
-import { DEFICIT_PALETTE, HIGHLIGHT_PALETTE, oneHot } from '../../src/viewer/palette';
-import { downloadObj } from '../../src/mesh/obj';
+import { RICH } from '@core/triangulations';
+import { coneAngleAt, coneAngleDeficits } from '@core/constraints/flat.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { makeTorusView } from '@display/viewer/TorusView';
+import { DEFICIT_PALETTE, HIGHLIGHT_PALETTE, oneHot } from '@display/viewer/palette';
+import { downloadObj } from '@display/mesh/obj';
 
 const TWO_PI = Math.PI * 2;
 

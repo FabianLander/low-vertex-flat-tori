@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { gridSeeds } from '../../src/sampling/seeds.ts';
-import { fullSpace } from '../../src/coordinates/full.ts';
-import { RICH } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
+import { gridSeeds } from '@core/sampling/seeds.ts';
+import { fullSpace } from '@core/coordinates/full.ts';
+import { RICH } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 
 describe('gridSeeds — deterministic Cartesian sweep over coordinate-system params', () => {
   const space = fullSpace(RICH);                // φ = id, so a param point IS the config

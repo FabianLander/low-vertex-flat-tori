@@ -22,15 +22,15 @@
  * the Re = ±½ walls. Hover for τ, reduced Re τ̂, cone deficit, and margin.
  */
 
-import { byId } from '../../src/triangulations';
-import type { Triangulation } from '../../src/topology/triangulation';
-import { modulus } from '../../src/moduli/modulus';
-import { reduceModulus } from '../../src/moduli/reduce';
-import { project } from '../../src/solvers/project';
-import { flat, maxConeDeficit } from '../../src/constraints/flat';
-import { isEmbedded } from '../../src/embedding/index';
-import { minSeparation, linearSize } from '../../src/embedding/index';
-import { makeRng } from '../../src/sampling/rng';
+import { byId } from '@core/triangulations';
+import type { Triangulation } from '@core/topology/triangulation';
+import { modulus } from '@core/moduli/modulus';
+import { reduceModulus } from '@core/moduli/reduce';
+import { project } from '@core/solvers/project';
+import { flat, maxConeDeficit } from '@core/constraints/flat';
+import { isEmbedded } from '@core/embedding/index';
+import { minSeparation, linearSize } from '@core/embedding/index';
+import { makeRng } from '@core/sampling/rng';
 
 import pushT7Raw from './data/push-t7-best.csv?raw';
 import pushT3Raw from './data/push-t3-best.csv?raw';

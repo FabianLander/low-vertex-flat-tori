@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   pointPointDist2, pointSegmentDist2, pointTriangleDist2,
   segmentSegmentDist2, triangleTriangleDist2,
-} from '../../src/geometry/distance';
+} from '@core/geometry/distance';
 
 describe('distance primitives (all return SQUARED distance)', () => {
   it('point–point', () => {

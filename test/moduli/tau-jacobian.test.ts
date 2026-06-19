@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { modulus, tauJacobian } from '../../src/moduli/modulus';
-import { project } from '../../src/solvers/project.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { ALL_TORI, RICH } from '../../src/triangulations';
-import { RICH_REFERENCE } from '../../src/sampling/reference';
-import { mulberry32 } from '../../src/sampling/rng';
-import type { Triangulation } from '../../src/topology/triangulation.ts';
+import { modulus, tauJacobian } from '@core/moduli/modulus';
+import { project } from '@core/solvers/project.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
+import { ALL_TORI, RICH } from '@core/triangulations';
+import { RICH_REFERENCE } from '@core/sampling/reference';
+import { mulberry32 } from '@core/sampling/rng';
+import type { Triangulation } from '@core/topology/triangulation.ts';
 
 function analytic(triang: Triangulation, p: ArrayLike<number>): Float64Array {
   const out = new Float64Array(2 * triang.vertexCount * 3);

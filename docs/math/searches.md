@@ -4,7 +4,7 @@
 > on a thin manifold (flat, maybe a fixed modulus) and inside a tiny open set (embedded). This
 > document is the geometric picture — what each search is doing to the point — and the one
 > conceptual fork that matters: solving *for* a modulus vs *marching* to it.
-> Code: `src/search/` (built on `src/solvers/` + the conditions).
+> Code: `src/core/search/` (built on `src/core/solvers/` + the conditions).
 
 ## The landscape in `C`
 

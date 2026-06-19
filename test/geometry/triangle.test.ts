@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   cornerAngle, cornerAngleGrad, triangleNormal, triangleArea,
   triangleSignedArea2, signedVolume6, planeCutRatio,
-} from '../../src/geometry/triangle.ts';
-import type { Vec3 } from '../../src/geometry/vec3.ts';
+} from '@core/geometry/triangle.ts';
+import type { Vec3 } from '@core/geometry/vec3.ts';
 
 describe('cornerAngle', () => {
   it('right angle at the apex of (origin, +x, +y) is π/2', () => {

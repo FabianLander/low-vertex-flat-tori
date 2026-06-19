@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_TORI, RICH } from '../../src/triangulations';
-import { harmonicLayout } from '../../src/topology/harmonicLayout';
-import { windingNet } from '../../src/topology/fundamentalDomain';
-import { signedArea2 } from '../../src/geometry/vec2';
+import { ALL_TORI, RICH } from '@core/triangulations';
+import { harmonicLayout } from '@core/topology/harmonicLayout';
+import { windingNet } from '@core/topology/fundamentalDomain';
+import { signedArea2 } from '@core/geometry/vec2';
 
 describe('harmonic winding develop net (abstract net, all tori)', () => {
   for (const torus of ALL_TORI) {

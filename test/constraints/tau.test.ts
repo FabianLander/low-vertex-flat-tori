@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { tau } from '../../src/constraints/modulus.ts';
-import { modulus } from '../../src/moduli/modulus.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
-import { RICH } from '../../src/triangulations/index.ts';
+import { tau } from '@core/constraints/modulus.ts';
+import { modulus } from '@core/moduli/modulus.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
+import { RICH } from '@core/triangulations/index.ts';
 
 describe('tau Fn', () => {
   const fn = tau(RICH);

@@ -22,14 +22,14 @@ import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 
 import { makeArgs } from './lib/cli.mjs';
-import { byId } from '../src/triangulations/index.ts';
-import { project } from '../src/solvers/project.ts';
-import { flow } from '../src/solvers/flow.ts';
-import { certify } from '../src/search/certify.ts';
-import { flat } from '../src/constraints/flat.ts';
-import { fixedModulus } from '../src/constraints/modulus.ts';
-import { isEmbedded, makeCutOffArea } from '../src/embedding/index.ts';
-import { makeRng } from '../src/sampling/rng.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { project } from '@core/solvers/project.ts';
+import { flow } from '@core/solvers/flow.ts';
+import { certify } from '@core/search/certify.ts';
+import { flat } from '@core/constraints/flat.ts';
+import { fixedModulus } from '@core/constraints/modulus.ts';
+import { isEmbedded, makeCutOffArea } from '@core/embedding/index.ts';
+import { makeRng } from '@core/sampling/rng.ts';
 
 const a = makeArgs(process.argv);
 const TYPE = a.num('--type', 7);

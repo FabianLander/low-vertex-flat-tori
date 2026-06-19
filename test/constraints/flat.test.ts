@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { coneAngles, coneAngleDeficits, maxConeDeficit, coneDeficit } from '../../src/constraints/flat.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
-import { mulberry32 } from '../../src/sampling/rng.ts';
-import { RICH } from '../../src/triangulations/index.ts';
+import { coneAngles, coneAngleDeficits, maxConeDeficit, coneDeficit } from '@core/constraints/flat.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
+import { mulberry32 } from '@core/sampling/rng.ts';
+import { RICH } from '@core/triangulations/index.ts';
 
 const TWO_PI = Math.PI * 2;
 

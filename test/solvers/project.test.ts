@@ -10,17 +10,17 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { project } from '../../src/solvers/project.ts';
-import { pinCoords } from '../../src/coordinates/pin.ts';
-import { pullHeld } from '../../src/search/pull.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { collinear } from '../../src/constraints/collinear.ts';
-import { doyleSchwartzPositions } from '../../src/search/doyleSchwartz.ts';
-import { modulus } from '../../src/moduli/modulus.ts';
-import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
-import { perturb } from '../../src/sampling/perturb.ts';
-import { mulberry32 } from '../../src/sampling/rng.ts';
+import { project } from '@core/solvers/project.ts';
+import { pinCoords } from '@core/coordinates/pin.ts';
+import { pullHeld } from '@core/search/pull.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
+import { collinear } from '@core/constraints/collinear.ts';
+import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { modulus } from '@core/moduli/modulus.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
+import { perturb } from '@core/sampling/perturb.ts';
+import { mulberry32 } from '@core/sampling/rng.ts';
 
 const torus = byId(7);
 const FROZEN_Z = [5, 8, 11, 14, 17, 20];

@@ -7,13 +7,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { symmetry, RICH_SYMMETRY } from '../../src/coordinates/symmetry.ts';
-import { pullHeld } from '../../src/search/pull.ts';
-import { project } from '../../src/solvers/project.ts';
-import { flat, maxConeDeficit } from '../../src/constraints/flat.ts';
-import { byId } from '../../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../../src/sampling/reference.ts';
-import { mulberry32 } from '../../src/sampling/rng.ts';
+import { symmetry, RICH_SYMMETRY } from '@core/coordinates/symmetry.ts';
+import { pullHeld } from '@core/search/pull.ts';
+import { project } from '@core/solvers/project.ts';
+import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
+import { mulberry32 } from '@core/sampling/rng.ts';
 
 const torus = byId(7);
 const { reflection: refl, pairing } = RICH_SYMMETRY;

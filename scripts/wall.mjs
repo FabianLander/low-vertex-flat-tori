@@ -29,14 +29,14 @@
 import { appendFileSync, mkdirSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { makeArgs, csvRow, readCsv } from './lib/cli.mjs';
-import { byId } from '../src/triangulations/index.ts';
-import { RICH_REFERENCE } from '../src/sampling/reference.ts';
-import { makeRng } from '../src/sampling/rng.ts';
-import { collect } from '../src/search/collect.ts';
-import { wallAttempt } from '../src/search/wall.ts';
-import { poolSeeds, logSigma } from '../src/sampling/seeds.ts';
-import { makeCutOffArea } from '../src/embedding/index.ts';
-import { makeChordLengthSquared } from '../src/embedding/index.ts';
+import { byId } from '@core/triangulations/index.ts';
+import { RICH_REFERENCE } from '@core/sampling/reference.ts';
+import { makeRng } from '@core/sampling/rng.ts';
+import { collect } from '@core/search/collect.ts';
+import { wallAttempt } from '@core/search/wall.ts';
+import { poolSeeds, logSigma } from '@core/sampling/seeds.ts';
+import { makeCutOffArea } from '@core/embedding/index.ts';
+import { makeChordLengthSquared } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);
 const triang = byId(a.num('--type', 7));
