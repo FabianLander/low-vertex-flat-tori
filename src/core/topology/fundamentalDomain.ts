@@ -15,9 +15,9 @@
  * Pure: no DOM/three.js.
  */
 
-import type { Combinatorics } from './triangulation.ts';
+import type { Combinatorics, Triangulation } from './triangulation.ts';
 import { edgeKey, edgeEnds } from './triangulation.ts';
-import { type HarmonicLayout, type HarmonicTile } from './harmonicLayout.ts';
+import { harmonicLayout, type HarmonicLayout, type HarmonicTile } from './harmonicLayout.ts';
 import type { Vec2 } from '@core/geometry/vec2.ts';
 import type { DevelopStep } from './triangulation.ts';
 
@@ -30,45 +30,61 @@ export type ExactDomainResult = {
 
 const EPS = 1e-6;
 
-export function exactMinCutDomain(triang: Combinatorics, layout: HarmonicLayout): ExactDomainResult {
-  const { edges, edgeToTris, triangles } = triang;
+/**
+ * Position the glued complement of `cut` in the plane, using the harmonic layout's tiles:
+ * BFS from triangle 0 across the non-cut edges, translating each tile (by a lattice vector)
+ * so its shared vertex coincides with the already-placed neighbor — yielding ONE contiguous
+ * copy of each triangle (the developed fundamental-domain net). Returns the positioned domain
+ * + BFS order, or `null` if `cut` does not open the torus to a consistent disk (the glued
+ * complement is disconnected, or a glued edge fails to coincide ⟹ residual holonomy).
+ *
+ * The shared core of two callers: `exactMinCutDomain` (which searches cuts for the minimal
+ * valid one) and drawing a net from a KNOWN cut — e.g. a precomputed marking's `cut` — with
+ * no search. `cut` is a set of `edgeKey`s.
+ */
+export function developDomainFromCut(
+  triang: Combinatorics,
+  layout: HarmonicLayout,
+  cut: ReadonlySet<number>,
+): { domain: HarmonicTile[]; order: number[] } | null {
+  const { edgeToTris, triangles } = triang;
   const { tiles } = layout;
   const F = triangles.length;
-  const E = edges.length;
-  const eKeys = edges.map(([u, v]) => edgeKey(u, v));
   const close = (a: Vec2, b: Vec2) => Math.abs(a[0] - b[0]) < EPS && Math.abs(a[1] - b[1]) < EPS;
 
-  // develop the glued complement of `cut`; valid iff connected AND every glued
-  // edge is coincident (a consistent disk). returns the domain+order or null.
-  const validate = (cut: Set<number>): { domain: HarmonicTile[]; order: number[] } | null => {
-    const gadj: { nbr: number; u: number }[][] = Array.from({ length: F }, () => []);
-    for (const [k, [t1, t2]] of edgeToTris) {
-      if (cut.has(k)) continue;
-      const [u] = edgeEnds(k);
-      gadj[t1].push({ nbr: t2, u }); gadj[t2].push({ nbr: t1, u });
+  const gadj: { nbr: number; u: number }[][] = Array.from({ length: F }, () => []);
+  for (const [k, [t1, t2]] of edgeToTris) {
+    if (cut.has(k)) continue;
+    const [u] = edgeEnds(k);
+    gadj[t1].push({ nbr: t2, u }); gadj[t2].push({ nbr: t1, u });
+  }
+  const placed: (Vec2[] | null)[] = new Array(F).fill(null);
+  placed[0] = tiles[0].corners.map(([x, y]): Vec2 => [x, y]);
+  const order = [0]; const q = [0];
+  for (let h = 0; h < q.length; h++) {
+    const p = q[h];
+    for (const { nbr, u } of gadj[p]) if (!placed[nbr]) {
+      const ip = triangles[p].indexOf(u), it = triangles[nbr].indexOf(u);
+      const dx = placed[p]![ip][0] - tiles[nbr].corners[it][0], dy = placed[p]![ip][1] - tiles[nbr].corners[it][1];
+      placed[nbr] = tiles[nbr].corners.map(([x, y]): Vec2 => [x + dx, y + dy]);
+      order.push(nbr); q.push(nbr);
     }
-    const placed: (Vec2[] | null)[] = new Array(F).fill(null);
-    placed[0] = tiles[0].corners.map(([x, y]): Vec2 => [x, y]);
-    const order = [0]; const q = [0];
-    for (let h = 0; h < q.length; h++) {
-      const p = q[h];
-      for (const { nbr, u } of gadj[p]) if (!placed[nbr]) {
-        const ip = triangles[p].indexOf(u), it = triangles[nbr].indexOf(u);
-        const dx = placed[p]![ip][0] - tiles[nbr].corners[it][0], dy = placed[p]![ip][1] - tiles[nbr].corners[it][1];
-        placed[nbr] = tiles[nbr].corners.map(([x, y]): Vec2 => [x + dx, y + dy]);
-        order.push(nbr); q.push(nbr);
-      }
-    }
-    if (order.length !== F) return null;                          // glued-dual disconnected
-    for (const [k, [t1, t2]] of edgeToTris) {                     // consistency: glued edges coincident
-      if (cut.has(k)) continue;
-      const [u, v] = edgeEnds(k);
-      const u1 = placed[t1]![triangles[t1].indexOf(u)], u2 = placed[t2]![triangles[t2].indexOf(u)];
-      const v1 = placed[t1]![triangles[t1].indexOf(v)], v2 = placed[t2]![triangles[t2].indexOf(v)];
-      if (!close(u1, u2) || !close(v1, v2)) return null;          // holonomy ⟹ not a disk
-    }
-    return { domain: placed.map((c, id): HarmonicTile => ({ id, corners: c! })), order };
-  };
+  }
+  if (order.length !== F) return null;                          // glued-dual disconnected
+  for (const [k, [t1, t2]] of edgeToTris) {                     // consistency: glued edges coincident
+    if (cut.has(k)) continue;
+    const [u, v] = edgeEnds(k);
+    const u1 = placed[t1]![triangles[t1].indexOf(u)], u2 = placed[t2]![triangles[t2].indexOf(u)];
+    const v1 = placed[t1]![triangles[t1].indexOf(v)], v2 = placed[t2]![triangles[t2].indexOf(v)];
+    if (!close(u1, u2) || !close(v1, v2)) return null;          // holonomy ⟹ not a disk
+  }
+  return { domain: placed.map((c, id): HarmonicTile => ({ id, corners: c! })), order };
+}
+
+export function exactMinCutDomain(triang: Combinatorics, layout: HarmonicLayout): ExactDomainResult {
+  const { edges } = triang;
+  const E = edges.length;
+  const eKeys = edges.map(([u, v]) => edgeKey(u, v));
 
   // enumerate cut sets by increasing size; first valid = the minimum cut
   for (let k = 2; k <= E; k++) {
@@ -76,7 +92,7 @@ export function exactMinCutDomain(triang: Combinatorics, layout: HarmonicLayout)
     for (;;) {
       const cut = new Set<number>();
       for (const i of comb) cut.add(eKeys[i]);
-      const res = validate(cut);
+      const res = developDomainFromCut(triang, layout, cut);
       if (res) return { domain: res.domain, developOrder: res.order, exterior: 2 * k, cut: comb.map((i) => eKeys[i]) };
       let i = k - 1;
       while (i >= 0 && comb[i] === E - k + i) i--;
@@ -86,6 +102,22 @@ export function exactMinCutDomain(triang: Combinatorics, layout: HarmonicLayout)
     }
   }
   throw new Error(`exactMinCutDomain: no valid cut`);
+}
+
+/**
+ * THE developed net of a triangulation: one contiguous planar copy of each triangle,
+ * unfolded along its **stored marking's cut** (the thing we precompute), realized with the
+ * harmonic flat structure's shapes. This — not `harmonicLayout.tiles`, which are the
+ * per-triangle base lifts that feed the unfolding (and fragment at period wraps) — is the
+ * picture to DRAW: it shows exactly the marking we computed. Cheap (no cut search; the cut
+ * is the marking's).
+ */
+export function developedNet(triang: Triangulation): HarmonicTile[] {
+  const layout = harmonicLayout(triang);
+  const cut = new Set(triang.marking.cut.map(([u, v]) => edgeKey(u, v)));
+  const res = developDomainFromCut(triang, layout, cut);
+  if (!res) throw new Error(`developedNet: ${triang.id}'s marking cut does not open a disk`);
+  return res.domain;
 }
 
 // ---------------------------------------------------------------------------

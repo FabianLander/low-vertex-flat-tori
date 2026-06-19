@@ -32,9 +32,13 @@ import { signedArea2 } from '@core/geometry/triangle.ts';
 export type HarmonicTile = { readonly id: number; readonly corners: Vec2[] };
 
 export type HarmonicLayout = {
-  /** 8 vertex base positions (one lift each). */
+  /** Vertex base positions (one lift each). */
   readonly vertexPos: Vec2[];
-  /** The 16 triangles, each developed from its first vertex's lift. */
+  /** Per-triangle base shapes: each triangle developed from its OWN first vertex's lift.
+   *  These are internal machinery — NOT a contiguous net. A period-wrapped triangle sits a
+   *  lattice vector away (touching at one vertex), so do not draw `tiles` as "the layout".
+   *  For the developed net use `fundamentalDomain.developedNet`; to tile the plane use
+   *  `periodicTiles` (both translate these into place). */
   readonly tiles: HarmonicTile[];
   /** Period lattice basis (after whitening). */
   readonly V1: Vec2;
