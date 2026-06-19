@@ -12,8 +12,7 @@ in `sampling/` — same machinery↔instances split as `topology/`↔`triangulat
 - `space.ts` — the `ConfigSpace` = (T, φ): `pull` (φ\*g, an ambient `Fn` → a real `Fn`
   on ℝⁿ), `push` (φ), `coords` (the retraction π, for seeds), `metric` (the pullback
   metric DφᵀDφ), `paperTorus`. Plus `makeConfigSpace`, the factory every coordinate
-  system in `coordinates/` is built from. The spine of the search — see
-  [docs/math/configuration-space.md](../../../docs/math/configuration-space.md).
+  system in `coordinates/` is built from. The spine of the search.
 - `paperTorus.ts` — the boundary bundle `{ triang, positions }`: the form a
   configuration takes at the IO / render / certify boundary, where it must carry its
   triangulation. `makePaperTorus` / `paperTorusFromVec3s` / `clonePaperTorus`.

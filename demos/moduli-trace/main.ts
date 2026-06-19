@@ -9,7 +9,7 @@
  * the tori that draw the torus. Press w to download them as a CSV.
  *
  * Controls:  arrows move · + / − scale · , / . point count · [ / ] tube
- *            b cloud · c curve · w download selected tori (CSV)
+ *            b cloud · t torus (donut curve + matched points) · w download selected tori (CSV)
  */
 
 import { RICH } from '@core/triangulations';
@@ -85,7 +85,7 @@ const TUBE = 0.02;                 // max distance from the curve to accept a po
 const baseScale = (DIAMETER / 2) / TORUS_HALF_W;
 let tx = CENTER[0], ty = CENTER[1], scale = baseScale;
 let count = N_POINTS, maxDist = TUBE;
-let showCloud = true, showCurve = true;
+let showCloud = true, showTorus = true;   // showTorus: the cartoon-torus curve + its matched ("highlighted") tori
 let triang = buildTorus(tx, ty, scale);
 
 function sampleShape(curves: PlaneCurve[]): { matches: Match<Src>[] } {
@@ -128,32 +128,56 @@ function draw(): void {
   const f = fit();
   const { matches } = sampleShape(triang);
 
+  // SL(2,ℤ) fundamental-domain walls — Re = ±½ (from the |τ|=1 corner up) and the |τ|=1 arc.
+  // A light dashed guide, drawn behind everything.
+  ctx.strokeStyle = 'rgba(235,238,245,0.6)'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.4;
+  for (const wall of [-0.5, 0.5]) {
+    ctx.beginPath();
+    ctx.moveTo(f.sx([wall, Math.sin(Math.PI / 3)]), f.sy([wall, Math.sin(Math.PI / 3)]));
+    ctx.lineTo(f.sx([wall, 20]), f.sy([wall, 20]));
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  for (let k = 0; k <= 96; k++) {
+    const re = -0.5 + k / 96, p: Vec2 = [re, Math.sqrt(1 - re * re)];
+    k ? ctx.lineTo(f.sx(p), f.sy(p)) : ctx.moveTo(f.sx(p), f.sy(p));
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+
   if (showCloud) {
     ctx.fillStyle = 'rgba(150,160,180,0.45)';
     for (const c of cloud) { ctx.beginPath(); ctx.arc(f.sx(c.p), f.sy(c.p), 1.3, 0, 2 * Math.PI); ctx.fill(); }
   }
 
-  if (showCurve) {
+  // the cartoon-torus overlay: the donut curve + the matched ("highlighted") tori — one toggle.
+  if (showTorus) {
     ctx.strokeStyle = 'rgba(235,238,245,0.85)'; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
     for (const cv of triang) {
       ctx.beginPath();
       cv.polyline.forEach((p, i) => { const X = f.sx(p), Y = f.sy(p); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
       ctx.stroke();
     }
+    ctx.strokeStyle = 'rgba(240,200,120,0.4)'; ctx.lineWidth = 1;
+    for (const mm of matches) { ctx.beginPath(); ctx.moveTo(f.sx(mm.p), f.sy(mm.p)); ctx.lineTo(f.sx(mm.curvePoint), f.sy(mm.curvePoint)); ctx.stroke(); }
+    for (const mm of matches) {
+      ctx.fillStyle = '#f0be5a';
+      ctx.beginPath(); ctx.arc(f.sx(mm.p), f.sy(mm.p), 4, 0, 2 * Math.PI); ctx.fill();
+      ctx.strokeStyle = '#0e0e12'; ctx.lineWidth = 1; ctx.stroke();
+    }
   }
 
-  ctx.strokeStyle = 'rgba(240,200,120,0.4)'; ctx.lineWidth = 1;
-  for (const mm of matches) { ctx.beginPath(); ctx.moveTo(f.sx(mm.p), f.sy(mm.p)); ctx.lineTo(f.sx(mm.curvePoint), f.sy(mm.curvePoint)); ctx.stroke(); }
-  for (const mm of matches) {
-    ctx.fillStyle = '#f0be5a';
-    ctx.beginPath(); ctx.arc(f.sx(mm.p), f.sy(mm.p), 4, 0, 2 * Math.PI); ctx.fill();
-    ctx.strokeStyle = '#0e0e12'; ctx.lineWidth = 1; ctx.stroke();
-  }
+  // the square torus τ = i (top of the |τ|=1 arc) — green marker
+  const iPt: Vec2 = [0, 1];
+  ctx.fillStyle = '#39d353';
+  ctx.beginPath(); ctx.arc(f.sx(iPt), f.sy(iPt), 5, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = '#0e0e12'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#39d353'; ctx.font = 'bold 13px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText('i', f.sx(iPt) + 9, f.sy(iPt));
 
   const lines = [
     `moduli τ ∈ ℍ — ${cloud.length} tori   (arrows move · +/− scale · ,/. points · [ ] tube)`,
     `points ${count}   selected ${matches.length}   tube ${maxDist.toFixed(3)}   scale ${(scale / baseScale).toFixed(2)}×`,
-    `b cloud ${showCloud ? 'on' : 'off'} · c curve ${showCurve ? 'on' : 'off'} · w download selected tori (CSV)`,
+    `b cloud ${showCloud ? 'on' : 'off'} · t torus + matches ${showTorus ? 'on' : 'off'} · w download selected tori (CSV)`,
   ];
   ctx.font = '13px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   let yy = 22;
@@ -194,7 +218,7 @@ window.addEventListener('keydown', (e) => {
   else if (k === ']') { maxDist = Math.min(1, maxDist + 0.005); }
   else if (k === '[') { maxDist = Math.max(0.002, maxDist - 0.005); }
   else if (k === 'b') { showCloud = !showCloud; }
-  else if (k === 'c') { showCurve = !showCurve; }
+  else if (k === 't') { showTorus = !showTorus; }
   else if (k === 'w') { downloadCSV(); return; }
   else return;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-', '_'].includes(k)) triang = buildTorus(tx, ty, scale);

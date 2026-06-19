@@ -17,7 +17,7 @@
  *
  * The min-norm step is taken in the working space's Euclidean metric (`g = I`). The
  * canonical, reparameterization-invariant choice is the pullback metric `DφᵀDφ` — deferred;
- * it coincides with `I` for every current restriction. See docs/math/configuration-space.md.
+ * it coincides with `I` for every current restriction. See configuration/README.md.
  *
  * Constraints carry no rank annotation: one that is rank-deficient by construction states it
  * at the source (`flat` emits its V−1 independent rows), and any residual rank deficiency is

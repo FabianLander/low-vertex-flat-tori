@@ -40,7 +40,7 @@ const THEME = {
   text: 'rgba(15,15,15,0.85)',
   gridMinor: 'rgba(20,20,20,0.09)',
   gridAxis: 'rgba(10,10,10,0.38)',
-  domain: 'rgba(120,75,0,0.85)',       // SL(2,ℤ) fundamental-domain walls
+  domain: 'rgba(120,75,0,0.28)',       // SL(2,ℤ) fundamental-domain walls (light guide)
   pointStroke: 'rgba(10,10,10,0.6)',
   legendTitle: '#101014',
   legendSub: 'rgba(20,20,20,0.75)',
@@ -151,7 +151,7 @@ function drawAxes(): void {
     ctx.fillStyle = THEME.text; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillText(`${im.toFixed(2)}i`, 6, Y); ctx.textBaseline = 'top';
   }
-  ctx.strokeStyle = THEME.domain; ctx.setLineDash([5, 5]); ctx.lineWidth = 1.5;
+  ctx.strokeStyle = THEME.domain; ctx.setLineDash([5, 5]); ctx.lineWidth = 1;
   for (const wall of [-0.5, 0.5]) {
     const X = sx(wall);
     ctx.beginPath(); ctx.moveTo(X, sy(Math.sin(Math.PI / 3))); ctx.lineTo(X, 0); ctx.stroke();

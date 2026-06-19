@@ -11,24 +11,23 @@ the other six mix degree 5/7, so nothing in the pipeline assumes degree 6.
 
 ## The mathematics, in layers
 
-The repository is organized so the code reads like the mathematics. See **[`docs/math/`](docs/math/)**
-for the full write-up of each layer.
+The repository is organized so the code reads like the mathematics. Each layer's home is a
+folder under `src/core/`, documented in that folder's README.
 
 1. **The torus** — the *topology* (a genus-1 surface). Never an object, just the fact that
    `V − E + F = 0`.
-2. **A [triangulation](docs/math/triangulation.md)** — the *discrete topology*: a combinatorial
-   structure realizing the torus. Pure combinatorics, all derived from a triangle list.
-3. **A [fundamental domain](docs/math/fundamental-domain.md)** — a developing *chart*: how to cut
-   the torus open along a minimal graph and unroll it into the plane. A presentation choice.
-4. **A [marking](docs/math/marking.md)** — a basis of `H₁(T²,ℤ)`, two oriented loops. The
-   Teichmüller marking.
-5. **The [developing map](docs/math/developing.md)** — unfold a flat realization → read the
-   holonomy of the marking → its modulus **τ ∈ ℍ** (its point in **Teichmüller** space). Forget
-   the marking (the `SL(2,ℤ)` quotient, `reduceModulus`) → **moduli** space.
+2. **A triangulation** — the *discrete topology*: a combinatorial structure realizing the
+   torus. Pure combinatorics, all derived from a triangle list. (`topology/`, `triangulations/`)
+3. **A fundamental domain** — a developing *chart*: how to cut the torus open along a minimal
+   graph and unroll it into the plane. A presentation choice. (`topology/`)
+4. **A marking** — a basis of `H₁(T²,ℤ)`, two oriented loops. The Teichmüller marking. (`topology/`)
+5. **The developing map** — unfold a flat realization → read the holonomy of the marking → its
+   modulus **τ ∈ ℍ** (its point in **Teichmüller** space). Forget the marking (the `SL(2,ℤ)`
+   quotient, `reduceModulus`) → **moduli** space. (`moduli/`)
 
 These five are *intrinsic* — true independent of any embedding. Realizing the flat torus as a
 polyhedron in ℝ³, and *searching* for flat embedded ones, is the **extrinsic** half — the
-[search system](docs/math/), below.
+search system, below.
 
 ## The search system
 
@@ -37,20 +36,21 @@ submanifold** (flat: every cone angle 2π, codim V−1; optionally a fixed modul
 **tiny open set** (embedded). Because the manifold is thin and the open set is small, you cannot
 one-shot a far/tiny target — you must move *along* the manifold while staying *inside* the open set.
 
-The kit models exactly that, as a few modular objects close to the math (full write-up in
-[`docs/math/`](docs/math/)):
+The kit models exactly that, as a few modular objects close to the math (each lives in its
+`src/core/` folder, documented in that folder's README):
 
-- a **[configuration space](docs/math/configuration-space.md)** `ConfigSpace = (T, φ)` — a
-  triangulation with an embedding `φ: ℝⁿ → ℝ³ⱽ` ([coordinate system](docs/math/configuration-space.md):
-  full, pinned, symmetry, Doyle–Schwartz). It **pull**s a condition to a real function on ℝⁿ, **push**es
-  a point up to ℝ³ⱽ, and gives the boundary `paperTorus(x)`;
-- **[conditions](docs/math/conditions.md)** of two kinds — closed **submanifolds** `{g=0}` (flat,
-  collinear, modulus) you *project onto*, and open **regions** (embedded) you *stay inside*;
-- three **[operations](docs/math/solvers.md)**, all on one QR kernel (the constraint Jacobian's
-  `Jᵀ = QR`): **project** (corrector onto the manifold), **minimize** (Riemannian gradient descent
-  *along* it, into the region), **continuation** (*tracks* the manifold∩region as a target moves) —
-  the tool for the tiny far set — plus **certify** to record the result (raw τ and reduced τ̂, margin,
-  embeddedness).
+- a **configuration space** `ConfigSpace = (T, φ)` — a triangulation with an embedding
+  `φ: ℝⁿ → ℝ³ⱽ` (coordinate system: full, pinned, symmetry, Doyle–Schwartz). It **pull**s a
+  condition to a real function on ℝⁿ, **push**es a point up to ℝ³ⱽ, and gives the boundary
+  `paperTorus(x)`. (`configuration/`, `coordinates/`)
+- **conditions** of two kinds — closed **submanifolds** `{fn = target}` (flat, collinear,
+  modulus) you *project onto* (`constraints/`), and open **regions** (embedded) you *stay
+  inside* (`embedding/`);
+- three **operations**, all on one QR kernel (the constraint Jacobian's `Jᵀ = QR`): **project**
+  (corrector onto the manifold), **minimize** (Riemannian gradient descent *along* it, into the
+  region), **continuation** (*tracks* the manifold∩region as a target moves) — the tool for the
+  tiny far set — plus **certify** to record the result (raw τ and reduced τ̂, margin,
+  embeddedness). (`solvers/`, `search/`)
 
 The solvers run entirely on the problem's space ℝⁿ — they take pulled `Fn`s and a gate predicate,
 never a `Triangulation`, a coordinate system, or a chart.
@@ -87,7 +87,7 @@ src/core/            THE PURE, HEADLESS CORE — no three.js, no DOM; every fold
                          makeTriangulation (eager; building LOADS the marking, never computes it)
     (depends on topology)
 
-  THE SEARCH STACK — a modular, problem-agnostic kit for constrained search (see docs/math).
+  THE SEARCH STACK — a modular, problem-agnostic kit for constrained search (see per-folder READMEs).
   Dependency-ordered, each layer using only the ones below:
     geometry → functions → {configuration, coordinates, constraints, embedding} → solvers → sampling → search
 

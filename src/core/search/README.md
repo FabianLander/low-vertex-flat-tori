@@ -1,8 +1,8 @@
 # search/ — composing a search and running it
 
-**What the searches are doing, geometrically, is written up in
-[`docs/math/searches.md`](../../../docs/math/searches.md)** — the flat manifold, the
-modulus foliation, the embedded region, and the direct-solve vs `continuation` fork.
+What the searches are doing, geometrically: land on the flat manifold, move along it (the
+modulus foliation) while staying inside the embedded region — the direct-solve vs `continuation`
+fork.
 
 The top layer: wire seeds + a recipe into a driver, and certify the results.
 Depends on everything below; nothing depends on it. There is **no `Problem`

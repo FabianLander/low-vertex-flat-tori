@@ -7,7 +7,7 @@
  *
  * Logs each outcome: `reached` (a flat embedded torus on the wall) or `blocked`
  * (pinched short, at the boundary |Re τ̂|). Thin runner — logic in
- * src/search/marchModulus.ts; see docs/math/searches.md.
+ * src/search/marchModulus.ts; see search/README.md.
  *
  * Usage:  npm run march-modulus -- [options]
  *   --c N             target wall |Re τ̂| (default 0 = rectangular; 0.5 = rhombic)

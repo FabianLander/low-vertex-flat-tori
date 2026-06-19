@@ -260,7 +260,6 @@ home is `configuration/csv.ts` (`parseEmbeddings`/`paperFromRow` read, `paperToR
 
 ## Docs
 
-`docs/math/` is the architecture, mathematically: each layer described first as math, then as code
-(`README.md` overview; `configuration-space.md` the `ConfigSpace`/coordinate-system spine,
-`conditions.md`, `solvers.md`, `searches.md`, `developing.md`, …). Keep it current. `docs/` also
-holds figures and older design plans.
+The architecture docs are the **per-folder `README.md`s** under `src/core/` (and `src/display/`):
+each describes its layer first as math, then as code, and is the source of truth — keep them
+current with the code. `docs/` holds figures and older design plans (not architecture reference).

@@ -14,7 +14,7 @@
  *                (a retraction onto the restricted space for off-space inputs); for SEEDS.
  *   paperTorus(x)  the (T, positions) boundary bundle for certify / IO / render.
  * plus metric(x) = Dφᵀ Dφ, the pullback metric (the canonical solver metric; the
- * solver currently defaults to I — see docs/math/configuration-space.md). The metric is
+ * solver currently defaults to I — see configuration/README.md). The metric is
  * meaningful precisely because φ is an immersion (Dφ full column rank) — the contract on
  * the φ handed in, never enforced by the numerics.
  *

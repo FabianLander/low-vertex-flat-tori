@@ -9,7 +9,7 @@
  * the SL(2,ℤ) chart at the current point and `project`s onto `[flat, modulusWall(s)]`
  * with the embedded gate active — so it crosses chambers, navigates around
  * embeddedness obstacles, and finds the **pinch** (the extremal |Re τ̂| where Ω
- * closes) when it can't reach the wall. See docs/math/searches.md.
+ * closes) when it can't reach the wall. See search/README.md.
  *
  * Every attempt yields an OUTCOME (not accept/reject): `reached` (landed on the
  * wall) or `blocked` (pinched short of it, at `reached` = the boundary value). The
