@@ -14,6 +14,7 @@
     "collect-imaginary": "tsx scripts/collect-imaginary.mjs",
     "march-to-i": "tsx scripts/march-to-i.mjs",
     "random-imaginary": "tsx scripts/random-imaginary.mjs",
+    "build-moduli-data": "tsx scripts/build-moduli-data.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
