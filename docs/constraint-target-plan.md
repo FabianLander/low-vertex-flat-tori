@@ -17,6 +17,7 @@ type Constraint = { fn: Fn; target?: ArrayLike<number> };   // drive fn(x) → t
   `stack`/`leastSquares`/`compose`. A constraint *pairs* a map with a target.
 - This sharpens the map ↔ constraint distinction that `coneDeficit` (map) vs `flat` (constraint)
   already embodies; it becomes the rule.
+
 The solver drives `fn(x) − target → 0`. The Jacobian is `∂fn/∂x` (the constant `target` doesn't
 enter), so the QR step / tangent projection / convergence are unchanged — `target` only shifts the
 residual. `compose` is untouched: a constraint's `fn` is built by composing pure maps as now, and

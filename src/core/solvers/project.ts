@@ -15,9 +15,16 @@
  * solve `J·step = F` (min-norm) via the QR of `Jᵀ` (`qr.ts`), and set `x ← x − step`. The QR
  * conditions at κ(J), not the κ(J)² of the old normal equations — see docs/solvers-overhaul.md.
  *
- * The min-norm step is taken in the working space's Euclidean metric (`g = I`). The
- * canonical, reparameterization-invariant choice is the pullback metric `DφᵀDφ` — deferred;
- * it coincides with `I` for every current restriction. See configuration/README.md.
+ * METRIC — we deliberately take the min-norm step in the Euclidean metric `g = I` for now.
+ * The canonical, reparameterization-invariant choice is the pullback metric `DφᵀDφ`
+ * (`ConfigSpace.metric`), but it is an EXACT no-op for every coordinate system that exists
+ * today: all have a uniform `g` (`full`/`pin`/`normalized` → I, `symmetry` → 2I), and a
+ * uniform `g = cI` leaves both the min-norm direction and the tangent projection unchanged
+ * (scaling the objective doesn't move the argmin; uniform scaling preserves orthogonality).
+ * It would only bite for a genuinely NON-uniform `Dφ` — a curved chart, none of which exist
+ * yet. Wiring it in is cheap in flops (`n` is small, the Cholesky is negligible) but adds a
+ * weighting/Cholesky branch to the one-QR kernel, so it stays deferred until such a chart
+ * is built. See configuration/README.md and `ConfigSpace.metric`.
  *
  * Constraints carry no rank annotation: one that is rank-deficient by construction states it
  * at the source (`flat` emits its V−1 independent rows), and any residual rank deficiency is

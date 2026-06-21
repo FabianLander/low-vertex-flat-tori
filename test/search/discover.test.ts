@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { collect } from '@core/search/collect.ts';
-import { discoverAttempt } from '@core/search/discover.ts';
+import { discover } from '@core/search/discover.ts';
 import { perturbedSeeds, uniformSigma } from '@core/sampling/seeds.ts';
 import { makeCutOffArea } from '@core/embedding/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
@@ -13,7 +13,7 @@ describe('discover search components', () => {
   it('collect drives the loop and only accepts genuine flat+embedded certs', () => {
     const rng = mulberry32(1234);
     const drawSeed = perturbedSeeds(RICH_REFERENCE.positions, uniformSigma(0.01, 0.08, rng), rng);
-    const attempt = discoverAttempt(RICH, { energy: makeCutOffArea(RICH), angleTol: 1e-9, maxFlowIters: 60 });
+    const attempt = discover(RICH, { energy: makeCutOffArea(RICH), angleTol: 1e-9, maxFlowIters: 60 });
 
     const accepts: number[] = [];
     const stats = collect(drawSeed, attempt, {

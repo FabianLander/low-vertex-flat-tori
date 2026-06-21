@@ -1,11 +1,11 @@
 /**
  * discover — find flat embedded 8-vertex tori, on the new search stack.
  *
- *   seed → project([flat]) → flow([flat], energy, region = embedded) → certify
+ *   seed → project([flat]) → minimize([flat], energy) → measure (verify flat ∧ embedded)
  *
- * A thin runner: it wires a seed source + the `discoverAttempt` recipe into the
- * `collect` driver and writes each accepted torus as a 24-float CSV row. All the
- * search logic is in src/search/; this file is just args + IO.
+ * A thin runner: it wires a seed source + the `discover` routine into the `collect`
+ * driver and writes each accepted torus as a 24-float CSV row. All the search logic is
+ * in src/core/search/; this file is just args + IO.
  *
  * Usage:  npm run discover -- [options]
  *   --type N            triangulation 1-7 (default 7 = Rich)
@@ -31,7 +31,7 @@ import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 import { makeRng } from '@core/sampling/rng.ts';
 import { collect } from '@core/search/collect.ts';
-import { discoverAttempt } from '@core/search/discover.ts';
+import { discover } from '@core/search/discover.ts';
 import { perturbedSeeds, uniformSeeds, uniformSigma, logSigma } from '@core/sampling/seeds.ts';
 import { makeCutOffArea } from '@core/embedding/index.ts';
 import { makeChordLengthSquared } from '@core/embedding/index.ts';
@@ -51,7 +51,7 @@ const drawSeed = mode === 'uniform'
   : perturbedSeeds(RICH_REFERENCE.positions, sigma, rng);
 
 const energy = (a.flag('--energy') ?? 'cutoff') === 'chord2' ? makeChordLengthSquared(triang) : makeCutOffArea(triang);
-const attempt = discoverAttempt(triang, {
+const attempt = discover(triang, {
   energy,
   angleTol: a.num('--angle-tol', 1e-10),
   stepSize: a.num('--step-size', 0.001),
@@ -74,10 +74,10 @@ process.on('SIGINT', () => { console.log('\n— interrupted —'); process.exit(
 const stats = collect(drawSeed, attempt, {
   maxTries: a.num('--max-tries', Infinity),
   maxAccepts: a.num('--max-accepts', 100),
-  onAccept: (cert, p) => {
+  onAccept: (m, p) => {
     appendFileSync(out, csvRow(p) + '\n');
     console.log(`  + #${String(++accepted).padStart(4)}`
-      + `  Im τ̂=${cert.tauHat[1].toFixed(4)}  |Re τ̂|=${Math.abs(cert.tauHat[0]).toFixed(4)}  margin=${cert.margin.toFixed(4)}`);
+      + `  Im τ̂=${m.tauHat[1].toFixed(4)}  |Re τ̂|=${Math.abs(m.tauHat[0]).toFixed(4)}  clearance=${m.clearance.toFixed(4)}`);
   },
   onTry: (_acc, _p, s) => {
     if (Date.now() - lastReport > reportMs) {

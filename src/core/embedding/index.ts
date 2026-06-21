@@ -11,7 +11,7 @@
 
 export { type Region } from './types.ts';
 export {
-  isEmbedded, firstViolation, allViolations, violationFaceScalars, clearance,
+  isEmbedded, firstViolation, allViolations, violationFaceScalars, clearance, embeddedRegion,
   type EmbeddingViolation,
 } from './embedded.ts';
 export {

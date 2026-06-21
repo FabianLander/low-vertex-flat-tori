@@ -95,7 +95,7 @@ export function minimize(
 
     energy.grad(x, gradX);               // ∇E in ℝⁿ
     heldJac();                           // J at current x
-    tangentProject(qr, J, K, d, gradX, gTan);   // g_T = P_T ∇E
+    tangentProject(qr, J, K, d, gradX, gTan);   // g_T = P_T ∇E (Euclidean metric g = I; see project.ts)
 
     let g2 = 0;
     for (let i = 0; i < d; i++) g2 += gTan[i] * gTan[i];

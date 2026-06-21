@@ -28,6 +28,11 @@ import type { Fn, ScalarFn } from './types.ts';
 
 const DEFAULT_H = 1e-7;
 
+/** Brand set of the maps produced by `identity()`, so `compose` can recognize an identity
+ *  inner and short-circuit it (`outer ∘ id = outer`). A `WeakSet` rather than a label/flag
+ *  so the recognition is by identity of the actual map, never a spoofable string. */
+const identityMaps = new WeakSet<Fn>();
+
 /**
  * Build an `Fn` from a value-only map by central finite differences: the returned
  * Jacobian is `outDim`×`inDim`, computed with 2·inDim evaluations of `value` over a
@@ -174,9 +179,35 @@ export function affine(A: ArrayLike<number>, b: ArrayLike<number>, label = 'affi
 }
 
 /**
+ * The identity map id : ℝⁿ → ℝⁿ (value = copy, Jacobian = I). Branded (see `identityMaps`)
+ * so `compose` recognizes it and returns the other operand untouched — the natural
+ * algebraic fact `g ∘ id = g`. The one user is the full configuration space (`coordinates/full`,
+ * φ = id): its `pull(g) = compose(g, identity)` then returns the ambient `g` itself, with zero
+ * pullback overhead and bit-identical to working ambiently — handled by the algebra rather
+ * than a per-instance special case.
+ */
+export function identity(n: number): Fn {
+  const fn: Fn = {
+    label: 'id',
+    inDim: n,
+    outDim: n,
+    value(x, out) { for (let i = 0; i < n; i++) out[i] = x[i]; },
+    jacobian(_x, out) { out.fill(0); for (let i = 0; i < n; i++) out[i * n + i] = 1; },
+  };
+  identityMaps.add(fn);
+  return fn;
+}
+
+/** Whether `fn` was produced by `identity()` (an exact identity map, recognized by brand). */
+export function isIdentity(fn: Fn): boolean {
+  return identityMaps.has(fn);
+}
+
+/**
  * Compose two `Fn`s by the chain rule: `compose(outer, inner)` = `outer ∘ inner`, value
  * `outer(inner(x))`, Jacobian `D_outer(inner(x)) · D_inner(x)`. Requires
  * `outer.inDim === inner.outDim`; result has `inDim = inner.inDim`, `outDim = outer.outDim`.
+ * An identity `inner` (from `identity()`) short-circuits to `outer` unchanged (`g ∘ id = g`).
  *
  * The one composition operation. As a PULLBACK it is `ConfigSpace.pull`: `compose(g, φ)`
  * turns an ambient measurement `g` into an `Fn` on the reduced space (inner = the
@@ -192,6 +223,7 @@ export function compose(outer: Fn, inner: Fn, label = `${outer.label}∘${inner.
       `compose: outer.inDim ${outer.inDim} ≠ inner.outDim ${inner.outDim} (${outer.label} ∘ ${inner.label})`,
     );
   }
+  if (identityMaps.has(inner)) return outer;   // g ∘ id = g (no wrapper, returns g itself)
   const inDim = inner.inDim, outDim = outer.outDim, mid = inner.outDim;
   const innerVal = new Float64Array(mid);
   const outerJac = new Float64Array(outDim * mid);

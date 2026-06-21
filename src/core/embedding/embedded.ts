@@ -22,6 +22,7 @@
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import { segmentTriangleIntersect, triangleTriangleIntersect } from '@core/geometry/intersection.ts';
 import { segmentTriangleDist2, triangleTriangleDist2 } from '@core/geometry/distance.ts';
+import type { Region } from './types.ts';
 import { cellTables } from './cells.ts';
 import { linearSize } from './separation.ts';
 
@@ -149,4 +150,22 @@ export function clearance(triang: Triangulation, p: ArrayLike<number>): number {
     if (dB < min2) min2 = dB;
   }
   return Math.sqrt(min2) / linearSize(triang, p);
+}
+
+// ─── the embedded set as a Region (the value the gated solvers stay inside) ───
+
+/**
+ * The embedded set Ω as a `Region`: `contains` is the topological gate `isEmbedded`;
+ * `margin` is its continuous companion `clearance` (>0 strictly inside Ω, 0 on ∂Ω). This is
+ * THE instance of the `Region` contract — close it over a triangulation and hand it to
+ * `minimize`/`continuation` as `{ region }`.
+ *
+ * It reads bare positions (ℝ³ⱽ). On the full configuration space the working point IS the
+ * positions, so it applies directly; a routine on a restricted chart pulls it through φ.
+ */
+export function embeddedRegion(triang: Triangulation): Region {
+  return {
+    contains: (p) => isEmbedded(triang, p),
+    margin: (p) => clearance(triang, p),
+  };
 }

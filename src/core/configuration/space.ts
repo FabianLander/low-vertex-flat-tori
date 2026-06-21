@@ -47,7 +47,8 @@ export interface ConfigSpace {
   push(x: ArrayLike<number>, outP: Float64Array): void;
   /** coords: read the ℝⁿ coordinates off an ambient config (left-inverse of push). */
   coords(p: ArrayLike<number>, outX: Float64Array): void;
-  /** The pullback metric g(x) = Dφ(x)ᵀ Dφ(x), n×n row-major. */
+  /** The pullback metric g(x) = Dφ(x)ᵀ Dφ(x), n×n row-major. NOT yet consumed by any solver
+   *  — they run g = I, an exact no-op while every chart's g is uniform; see project.ts. */
   metric(x: ArrayLike<number>, outG: Float64Array): void;
   /** The (T, positions) boundary bundle at x. */
   paperTorus(x: ArrayLike<number>): PaperTorus;
