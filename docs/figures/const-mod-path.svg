@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420" font-family="system-ui, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="34" y="30" font-size="16" fill="#16324f" font-weight="700">A constant-modulus sequence of embedded flat tori → graceful immersion</text>
+<text x="34" y="50" font-size="12.5" fill="#555">type 7 · τ̂ held to |Δτ̂| ≤ 4e-14 across all 25 tori · all flat (cone deficit ~1e-13) and embedded</text>
+<line x1="70" y1="90" x2="70" y2="370" stroke="#333" stroke-width="1.2"/>
+<line x1="70" y1="370" x2="540" y2="370" stroke="#333" stroke-width="1.2"/>
+<line x1="70" y1="356.63625206910643" x2="540" y2="356.63625206910643" stroke="#eee" stroke-width="1"/>
+<text x="62" y="356.63625206910643" font-size="11" fill="#777" text-anchor="end" dominant-baseline="central">1e-5</text>
+<line x1="70" y1="241.42194586407703" x2="540" y2="241.42194586407703" stroke="#eee" stroke-width="1"/>
+<text x="62" y="241.42194586407703" font-size="11" fill="#777" text-anchor="end" dominant-baseline="central">1e-4</text>
+<line x1="70" y1="126.2076396590476" x2="540" y2="126.2076396590476" stroke="#eee" stroke-width="1"/>
+<text x="62" y="126.2076396590476" font-size="11" fill="#777" text-anchor="end" dominant-baseline="central">1e-3</text>
+<line x1="70" y1="370" x2="540" y2="370" stroke="#c0392b" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="540" y="386" font-size="11" fill="#c0392b" text-anchor="end">margin → 0  (graceful immersion, ∂Ω)</text>
+<polyline points="70.0,90.0 89.6,99.5 109.2,113.9 128.8,123.4 148.3,128.2 167.9,132.9 187.5,137.7 207.1,142.5 226.7,147.2 246.3,152.0 265.8,156.8 285.4,161.5 305.0,166.3 324.6,171.1 344.2,175.8 363.8,181.0 383.3,186.7 402.9,193.2 422.5,200.7 442.1,209.5 461.7,220.2 481.3,233.7 500.8,252.4 520.4,282.5 540.0,370.0" fill="none" stroke="#1f5fd0" stroke-width="2"/>
+<circle cx="70.0" cy="90.0" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="89.6" cy="99.5" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="109.2" cy="113.9" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="128.8" cy="123.4" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="148.3" cy="128.2" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="167.9" cy="132.9" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="187.5" cy="137.7" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="207.1" cy="142.5" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="226.7" cy="147.2" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="246.3" cy="152.0" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="265.8" cy="156.8" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="285.4" cy="161.5" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="305.0" cy="166.3" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="324.6" cy="171.1" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="344.2" cy="175.8" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="363.8" cy="181.0" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="383.3" cy="186.7" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="402.9" cy="193.2" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="422.5" cy="200.7" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="442.1" cy="209.5" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="461.7" cy="220.2" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="481.3" cy="233.7" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="500.8" cy="252.4" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="520.4" cy="282.5" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<circle cx="540.0" cy="370.0" r="4" fill="#1f5fd0" stroke="#fff" stroke-width="1.3"/>
+<text x="305" y="404" font-size="12.5" fill="#333" text-anchor="middle">torus index (1 = strict seed → 25 = nearest the fold)</text>
+<text x="22" y="230" font-size="12.5" fill="#333" text-anchor="middle" transform="rotate(-90 22 230)">embedding margin (log)</text>
+<rect x="600" y="120" width="165" height="230" fill="#fbfcfe" stroke="#ccd"/>
+<line x1="682.5" y1="120" x2="682.5" y2="350" stroke="#8b94a8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="751.25" y1="120" x2="751.25" y2="350" stroke="#d7b0a0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="613.75" y1="120" x2="613.75" y2="350" stroke="#d7b0a0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<circle cx="657.8" cy="251.3" r="6" fill="#1f5fd0" stroke="#fff" stroke-width="2"/>
+<text x="657.8" y="239.32144349337977" font-size="11.5" fill="#16324f" text-anchor="middle">all 25 tori: τ̂=(-0.179, 1.100)</text>
+<text x="682.5" y="368" font-size="11.5" fill="#333" text-anchor="middle">moduli (Re τ̂, Im τ̂)</text>
+<text x="682.5" y="112" font-size="11.5" fill="#555" text-anchor="middle">modulus: one point</text>
+</svg>

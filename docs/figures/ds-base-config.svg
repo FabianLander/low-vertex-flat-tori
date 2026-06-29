@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="772" height="470" viewBox="0 0 772 470" font-family="system-ui, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<line x1="29.000000000000007" y1="372" x2="460.99999999999994" y2="372" stroke="#c9ced9" stroke-width="1.6" stroke-dasharray="6 6"/>
+<line x1="92.0" y1="372.0" x2="146.0" y2="66.0" stroke="#1f5fd0" stroke-width="3.6" stroke-linecap="round"/>
+<line x1="272.0" y1="372.0" x2="443.0" y2="237.0" stroke="#d04f1f" stroke-width="3.6" stroke-linecap="round"/>
+<circle cx="119.0" cy="219.0" r="11" fill="#fff" stroke="#1f5fd0" stroke-width="3"/><text x="119.0" y="219.0" font-size="13" font-weight="700" fill="#1f5fd0" text-anchor="middle" dominant-baseline="central">2</text>
+<circle cx="357.5" cy="304.5" r="11" fill="#fff" stroke="#d04f1f" stroke-width="3"/><text x="357.5" y="304.5" font-size="13" font-weight="700" fill="#d04f1f" text-anchor="middle" dominant-baseline="central">5</text>
+<circle cx="92.0" cy="372.0" r="15" fill="#111" stroke="#fff" stroke-width="2"/><text x="92.0" y="372.0" font-size="14" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">1</text>
+<circle cx="272.0" cy="372.0" r="15" fill="#111" stroke="#fff" stroke-width="2"/><text x="272.0" y="372.0" font-size="14" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">4</text>
+<circle cx="146.0" cy="66.0" r="13" fill="#c0392b" stroke="#fff" stroke-width="2"/><text x="146.0" y="66.0" font-size="14" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">3</text>
+<circle cx="443.0" cy="237.0" r="13" fill="#c0392b" stroke="#fff" stroke-width="2"/><text x="443.0" y="237.0" font-size="14" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">6</text>
+<text x="92" y="402" font-size="13" fill="#333" text-anchor="middle">(0, 0)</text>
+<text x="272" y="402" font-size="13" fill="#333" text-anchor="middle">(1, 0)</text>
+<text x="40" y="26" font-size="15" fill="#333">Planar base of the tent scaffold (type 7): two pinned–free segments split at their midpoints.</text>
+<circle cx="520" cy="150" r="8" fill="#111" stroke="#fff" stroke-width="1.6"/>
+<text x="542" y="150" font-size="12.5" fill="#333" dominant-baseline="central">pinned&#160;&#160;v1, v4&#160;&#160;(fixed)</text>
+<circle cx="520" cy="177" r="8" fill="#c0392b" stroke="#fff" stroke-width="1.6"/>
+<text x="542" y="177" font-size="12.5" fill="#333" dominant-baseline="central">free&#160;&#160;v3, v6&#160;&#160;(2 params each)</text>
+<circle cx="520" cy="204" r="7" fill="#fff" stroke="#777" stroke-width="2.4"/>
+<text x="542" y="204" font-size="12.5" fill="#333" dominant-baseline="central">midpoint&#160;&#160;v2, v5&#160;&#160;(determined)</text>
+<text x="512" y="235" font-size="12" fill="#777" dominant-baseline="central">+ tent poles v0, v7 lift out of plane (z &#8800; 0)</text>
+</svg>

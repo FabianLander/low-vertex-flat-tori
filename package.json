@@ -9,6 +9,8 @@
     "preview": "node scripts/run-demo.mjs preview",
     "compute-markings": "tsx scripts/compute-markings.mjs",
     "discover": "tsx scripts/discover.mjs",
+    "discover-ds": "tsx scripts/discover-ds.mjs",
+    "graceful-path": "tsx scripts/graceful-path.mjs",
     "wall": "tsx scripts/wall.mjs",
     "semi-solutions": "tsx scripts/semi-solutions.mjs",
     "march-modulus": "tsx scripts/march-modulus.mjs",
