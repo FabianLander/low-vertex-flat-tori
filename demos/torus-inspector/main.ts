@@ -28,6 +28,7 @@ import { byId } from '@core/triangulations';
 import { paperFromRow } from '@core/configuration/csv';
 import { makeTorusView } from '@display/viewer/TorusView';
 import { paperMaterials } from '@display/viewer/materials';
+import { downloadObj, downloadNetObj } from '@display/mesh/obj';
 import { skyEnvironment } from '@app/render/stage';
 import { modulus } from '@core/moduli/modulus';
 import { developNet, developLoop } from '@core/moduli/develop';
@@ -292,8 +293,14 @@ ui.innerHTML =
   + `<div style="margin-top:8px">show loops:&nbsp;`
   +   `<label style="cursor:pointer;user-select:none;margin-right:8px"><input id="loopA" type="checkbox" style="vertical-align:middle"> <span style="color:#1d4ed8;font-weight:700">α</span></label>`
   +   `<label style="cursor:pointer;user-select:none;margin-right:8px"><input id="loopB" type="checkbox" style="vertical-align:middle"> <span style="color:#dc2626;font-weight:700">β</span></label>`
-  +   `<label style="cursor:pointer;user-select:none"><input id="loopBoth" type="checkbox" style="vertical-align:middle"> both</label></div>`;
+  +   `<label style="cursor:pointer;user-select:none"><input id="loopBoth" type="checkbox" style="vertical-align:middle"> both</label></div>`
+  + `<div style="margin-top:10px;display:flex;gap:6px">`
+  +   `<button id="dl3d" style="flex:1;padding:6px 8px;font:11px ui-monospace,monospace;cursor:pointer;border:1px solid #166534;border-radius:6px;background:#fff;color:#166534">⬇ .obj · 3D</button>`
+  +   `<button id="dlnet" style="flex:1;padding:6px 8px;font:11px ui-monospace,monospace;cursor:pointer;border:1px solid #166534;border-radius:6px;background:#fff;color:#166534">⬇ .obj · net</button></div>`;
 document.body.appendChild(ui);
+// full-precision OBJ export of THIS torus: folded polyhedron + unfolded developed net
+ui.querySelector<HTMLButtonElement>('#dl3d')!.onclick = () => downloadObj(paper, `torus-type${typeNum}.obj`);
+ui.querySelector<HTMLButtonElement>('#dlnet')!.onclick = () => downloadNetObj(paper, `torus-type${typeNum}-net.obj`);
 const zEl = ui.querySelector<HTMLInputElement>('#z')!;
 const zv = ui.querySelector<HTMLSpanElement>('#zv')!;
 zEl.addEventListener('input', () => { pivot.position.z = parseFloat(zEl.value); zv.textContent = pivot.position.z.toFixed(3); });

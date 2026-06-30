@@ -25,6 +25,7 @@ import { paperFromRow } from '@core/configuration/csv';
 import { makeTorusView } from '@display/viewer/TorusView';
 import { developedSheet } from '@display/viewer/developedSheet';
 import { paperMaterials } from '@display/viewer/materials';
+import { downloadObj, downloadNetObj } from '@display/mesh/obj';
 import { skyEnvironment } from '@app/render/stage';
 
 // data/ = committed curated examples; live/ = gitignored symlinks into samples/
@@ -246,7 +247,20 @@ const investBtn = document.createElement('button');
 investBtn.textContent = 'Investigate this torus ↗';
 investBtn.style.cssText = 'margin:8px 11px 4px;padding:6px 10px;font:12px ui-monospace,monospace;cursor:pointer;'
   + 'border:none;border-radius:6px;background:#166534;color:#fff';
-panel.append(statsDiv, investBtn, glHost);
+// full-precision OBJ export of the selected torus: folded polyhedron + unfolded net
+// (targets set per-selection in showTorus3D, like investBtn).
+const dl3dBtn = document.createElement('button');
+dl3dBtn.textContent = '⬇ .obj · 3D';
+const dlNetBtn = document.createElement('button');
+dlNetBtn.textContent = '⬇ .obj · net';
+for (const b of [dl3dBtn, dlNetBtn]) {
+  b.style.cssText = 'flex:1;padding:6px 8px;font:11px ui-monospace,monospace;cursor:pointer;'
+    + 'border:1px solid #166534;border-radius:6px;background:#fff;color:#166534';
+}
+const dlRow = document.createElement('div');
+dlRow.style.cssText = 'display:flex;gap:6px;margin:0 11px 6px';
+dlRow.append(dl3dBtn, dlNetBtn);
+panel.append(statsDiv, investBtn, dlRow, glHost);
 document.body.appendChild(panel);
 
 /** URL of the slice view for a torus — dev (per-demo djb2 port) or the Pages build (sibling path). */
@@ -362,6 +376,8 @@ function showTorus3D(c: Klass, i: number): void {
     + `flatness (cone def) ${c.cone[i].toExponential(3)}`;
 
   investBtn.onclick = () => window.open(sliceUrl(c.type, c.pos[i]), '_blank');
+  dl3dBtn.onclick = () => downloadObj(paper, `torus-type${c.type}.obj`);
+  dlNetBtn.onclick = () => downloadNetObj(paper, `torus-type${c.type}-net.obj`);
 
   panel.style.display = 'flex';
   insetVisible = true;
