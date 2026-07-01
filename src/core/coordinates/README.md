@@ -23,8 +23,12 @@ Each φ is just an `Fn`; the coordinate system pairs it with BOTH directions of 
     mirror of `moduli/reduce` (the SL(2,ℤ) quotient of ℍ); replaces the old
     `configuration/gauge`. Searching here removes the similarity null space (full-rank
     constraints) and deduplicates up to similarity.
-
-(The Doyle–Schwartz parametric family is a value-only SEED, not a coordinate system — it
-lives in `search/doyleSchwartz.ts`.)
+- **models** — a construction's own degrees of freedom (a parametric family, not a subspace of
+  ℝ³ⱽ):
+  - `dsScaffold.ts` — `dsScaffold`: the Doyle–Schwartz tent as a 10-dimensional `ConfigSpace` for
+    the type-7 torus — two coplanar pinned–free segments (each split at its midpoint) plus two
+    lifted tent-pole vertices. Searching here (`discover(triang, { space: dsScaffold(triang) })`)
+    flows in the DS model's own DOF; its ρ-symmetric, fixed-modulus slice is the value-only
+    closed-form seed `sampling/doyleSchwartz` (which is NOT a coordinate system — no Jacobian).
 
 Pure: no three.js, no DOM.

@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RICH } from '@core/triangulations';
 import { paperFromRow } from '@core/configuration/csv';
-import { certify } from '@core/search/certify';
+import { certify } from '@core/search/legacy/certify';
 import { developNet } from '@core/moduli/develop';
 import { makeTorusView, type TorusView } from '@display/viewer/TorusView';
 import { paperMaterials } from '@display/viewer/materials';

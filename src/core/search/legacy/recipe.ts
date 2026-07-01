@@ -24,7 +24,7 @@ import { fullSpace } from '@core/coordinates/full.ts';
 import { isEmbedded } from '@core/embedding/index.ts';
 import { project } from '@core/solvers/project.ts';
 import { minimize } from '@core/solvers/minimize.ts';
-import { pullHeld, ambientRegion } from './pull.ts';
+import { pullHeld, ambientRegion } from '../pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 export interface FlowSearchOptions {

@@ -33,7 +33,7 @@ import { skyEnvironment } from '@app/render/stage';
 import { modulus } from '@core/moduli/modulus';
 import { developNet, developLoop } from '@core/moduli/develop';
 import { edgeKey } from '@core/topology/triangulation';
-import { certify } from '@core/search/certify';
+import { certify } from '@core/search/legacy/certify';
 import type { Vec2 } from '@core/geometry/vec2';
 
 // ---------------------------------------------------------------------------

@@ -25,7 +25,7 @@ import { makeArgs, csvRow } from './lib/cli.mjs';
 import { byId } from '@core/triangulations/index.ts';
 import { makeRng } from '@core/sampling/rng.ts';
 import { collect } from '@core/search/collect.ts';
-import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '@core/search/semiSolution.ts';
+import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '@core/search/legacy/semiSolution.ts';
 
 const a = makeArgs(process.argv);
 const triang = byId('v8-7'); // the DS construction is the degree-6-regular #7 torus

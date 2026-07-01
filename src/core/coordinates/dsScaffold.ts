@@ -2,7 +2,7 @@
  * dsScaffold — the Doyle–Schwartz tent scaffold as a coordinate system: a 10-dimensional
  * `ConfigSpace` for the type-7 (Rich) torus whose configurations are, by construction, two
  * coplanar pinned–free segments (each split at its midpoint) plus two tent-pole vertices
- * lifted out of the z = 0 plane. It is a strict generalization of `search/doyleSchwartz`'s
+ * lifted out of the z = 0 plane. It is a strict generalization of `sampling/doyleSchwartz`'s
  * closed form — the same combinatorial scaffold, with the ρ-symmetry and the specific
  * modulus dropped — so the whole DS family is the ρ-symmetric slice of this space.
  *

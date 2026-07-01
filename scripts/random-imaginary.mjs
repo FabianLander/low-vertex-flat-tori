@@ -25,7 +25,7 @@ import { makeArgs } from './lib/cli.mjs';
 import { byId } from '@core/triangulations/index.ts';
 import { project } from '@core/solvers/project.ts';
 import { minimize } from '@core/solvers/minimize.ts';
-import { certify } from '@core/search/certify.ts';
+import { certify } from '@core/search/legacy/certify.ts';
 import { flat } from '@core/constraints/flat.ts';
 import { fixedModulus } from '@core/constraints/modulus.ts';
 import { isEmbedded, makeCutOffArea } from '@core/embedding/index.ts';

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { certify } from '@core/search/certify.ts';
+import { certify } from '@core/search/legacy/certify.ts';
 import { makeCellMargin, isEmbedded, clearance } from '@core/embedding/index.ts';
 import { project } from '@core/solvers/project.ts';
 import { minimize } from '@core/solvers/minimize.ts';

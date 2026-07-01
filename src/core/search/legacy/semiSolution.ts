@@ -23,10 +23,10 @@ import type { Triangulation } from '@core/topology/triangulation.ts';
 import { pinCoords } from '@core/coordinates/pin.ts';
 import { flat } from '@core/constraints/flat.ts';
 import { collinear } from '@core/constraints/collinear.ts';
-import { doyleSchwartzPositions } from './doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '@core/sampling/doyleSchwartz.ts';
 import { gaussian } from '@core/sampling/rng.ts';
 import { project } from '@core/solvers/project.ts';
-import { pullHeld } from './pull.ts';
+import { pullHeld } from '../pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 /** z-coordinate indices of the six base vertices P1..P6 (vertex i → 3i+2). */

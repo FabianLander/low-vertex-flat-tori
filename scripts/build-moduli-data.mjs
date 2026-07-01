@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { resolve, dirname } from 'path';
 
 import { byId } from '@core/triangulations/index.ts';
-import { certify } from '@core/search/certify.ts';
+import { certify } from '@core/search/legacy/certify.ts';
 
 // ---------------------------------------------------------------------------
 // Flags

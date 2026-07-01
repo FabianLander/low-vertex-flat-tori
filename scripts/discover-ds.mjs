@@ -31,7 +31,7 @@ import { resolve, dirname } from 'path';
 import { makeArgs, csvRow } from './lib/cli.mjs';
 import { RICH } from '@core/triangulations/index.ts';
 import { dsScaffold } from '@core/coordinates/dsScaffold.ts';
-import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '@core/sampling/doyleSchwartz.ts';
 import { makeRng } from '@core/sampling/rng.ts';
 import { collect } from '@core/search/collect.ts';
 import { discover } from '@core/search/discover.ts';

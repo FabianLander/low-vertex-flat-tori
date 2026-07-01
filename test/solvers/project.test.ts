@@ -15,7 +15,7 @@ import { pinCoords } from '@core/coordinates/pin.ts';
 import { pullHeld } from '@core/search/pull.ts';
 import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
 import { collinear } from '@core/constraints/collinear.ts';
-import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '@core/sampling/doyleSchwartz.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';

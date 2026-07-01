@@ -31,7 +31,7 @@ import { minimize } from '@core/solvers/minimize.ts';
 import { continuation } from '@core/solvers/continuation.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { reduceModulus } from '@core/moduli/reduce.ts';
-import { pullHeld, ambientRegion } from './pull.ts';
+import { pullHeld, ambientRegion } from '../pull.ts';
 import { certify, type Certificate } from './certify.ts';
 
 /**

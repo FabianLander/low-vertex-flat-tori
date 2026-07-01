@@ -1,41 +1,61 @@
 # search/ — composing a search and running it
 
-What the searches are doing, geometrically: land on the flat manifold, move along it (the
-modulus foliation) while staying inside the embedded region — the direct-solve vs `continuation`
-fork.
+What the searches do, geometrically: **land on the flat manifold F, then move within F ∩ Ω**
+(flat ∧ embedded) — either *entering* Ω from outside (ungated) or *staying* inside it (gated).
+Every routine is a short composition of the three `solvers/` verbs over one mutable
+configuration, ending in `measure`. There is **no `Problem` god-object and no shared recipe**: a
+search is a **seed source** (`sampling/`) × an **attempt** (`(seed) => Result | null`, written
+out in full here) × the **`collect`** driver — wired in a few lines by the thin `scripts/`
+runners. Depends on everything below; nothing depends on it.
 
-The top layer: wire seeds + a recipe into a driver, and certify the results.
-Depends on everything below; nothing depends on it. There is **no `Problem`
-god-object** — a search is just a seed source, an `attempt` recipe, and the
-`collect` driver, composed in a few lines (the thin `scripts/discover.mjs` /
-`scripts/wall.mjs` runners show it).
+## The substrate — the fixed mechanism every routine uses
 
-- `certify.ts` — turn a config into a `Certificate` (cone deficit, embedded,
-  margin, raw τ AND reduced τ̂, area, rotDefect). Every search ends here.
-- `collect.ts` — the rejection-sampling driver: `collect(drawSeed, attempt, …)`.
-  Pure control flow; all IO via `onAccept`/`onTry` callbacks. (Seed sources themselves
-  live in `sampling/`.)
-- `pull.ts` — pull a `Constraint` (and an ambient `Region` via `ambientRegion`) into a coordinate
-  system: the bridge between `configuration/`+`coordinates/` and the conditions
-  (`constraints/`+`embedding/`), so the ℝⁿ solvers get pulled `Fn`s and a `Region`.
-- `recipe.ts` — `flattenFlowEmbed(torus, buildHeld, accept, energy)`: the shared recipe
-  `seed → project(held) → minimize(held, energy, region=embedded) → certify`, on `fullSpace`.
-- `discover.ts` — find any flat embedded torus. `held = [flat]`.
-- `wall.ts` — find flat embedded tori on a modulus wall `|Re τ̂| = c` (rectangular
-  c=0, rhombic c=½). `held = [flat, modulusWall(seed, c)]` — the same recipe, descending
-  while staying on the wall (frozen chart, near targets only).
-- `marchModulus.ts` — reach a FAR wall by `continuation` instead of one direct solve:
-  track the target `|Re τ̂|` leaf-by-leaf (re-freezing the chart each step, embedded
-  region active), crossing chambers and reporting the **pinch** where Ω closes if the
-  wall is unreachable. `wallFamily` + `marchToWallAttempt`.
-- `semiSolution.ts` — the Doyle–Schwartz semi-solution scan: a flat *immersion*
-  search ("semi" = embeddedness recorded, not required). DS tent seeds → `project(
-  pinCoords(baseZ), [flat, collinear(1,2,3), collinear(4,5,6)])` → certify;
-  `semiSolutionAttempt` + `doyleSchwartzTentSeeds`.
+- `measure.ts` — `measure(triang, positions): Measurement`, the standard readout of a
+  realization: `coneDeficit` (flatness), `embedded` + `clearance`, raw `tau` AND reduced
+  `tauHat`, `area`, `rotDefect`. It is **verification, not output** — a routine re-measures the
+  truth (including quantities it did not target), because a solver only *thinks* it converged.
+  Lives here because it is the lowest layer allowed to import all three condition folders
+  (`constraints`/`embedding`/`moduli`) at once.
+- `collect.ts` — the rejection-sampling driver `collect(drawSeed, attempt, …)`: draw seeds, run
+  the attempt, keep the non-null results. Pure control flow; IO via `onAccept`/`onTry`. The
+  iteration axis (perturbations / a growing pool / a target grid) is the caller's.
+- `pull.ts` — the bridge from a `ConfigSpace` to ℝⁿ: pull a `Constraint[]`/`Region` through φ so
+  the solvers get pulled `Fn`s (`pullHeld`, `ambientRegion`). A no-op under `fullSpace` (φ = id);
+  it earns its keep for the pinned/symmetry charts (`discover` takes an optional reduced `space`).
 
-The runnable searches are thin `scripts/` wrappers over this folder: `npm run discover`,
-`npm run wall`, `npm run semi-solutions`, `npm run march-modulus`. The core operations
-(`project`/`minimize`/`continuation`) live in `solvers/`; the conditions (closed `{g=0}` in
-`constraints/`, the open embedded region in `embedding/`); the map toolkit in `functions/`; coordinate systems in
-`coordinates/`; seed sources in `sampling/`. The old scripts are archived (read-only) in
-`scripts/legacy/`.
+## The routines — each a plain attempt, written out (no shared recipe)
+
+The one distinction that organizes them is the relationship to Ω: **enter (ungated)** vs **stay
+(gated)** — the gate is `embeddedRegion` (`embedding/`), and it is forced by the job, not a knob.
+
+- `discover.ts` — find a flat embedded torus. `project([flat])` lands on F, then `minimize([flat],
+  overlap)` flows ALONG F toward Ω **ungated** (discover starts *outside* Ω and falls in — a gate
+  would forbid the very entry it exists to make), embeddedness emerging as the overlap energy → 0;
+  `measure` verifies flat ∧ embedded. Seed-agnostic; does NOT fatten or gate.
+- `improve.ts` — deepen a flat embedded torus: `minimize([flat], barrier, region=embeddedRegion)`,
+  **gated**, pushing clearance toward the basin's intrinsic ceiling while staying in Ω. The mirror
+  of `discover` (enter-ungated vs stay-gated) and the first consumer of `embeddedRegion`. Tori
+  pinned right on ∂Ω are left for a future `push-off-boundary` routine.
+- `steer-modulus.ts` — transport a flat embedded torus to a prescribed Teichmüller modulus τ₀ by a
+  **fatten-interleaved continuation** along the hyperbolic geodesic in ℍ: repeat[ fatten at the
+  current τ (barrier, *modulus held* so clearance can't drift τ) → march toward τ₀ (continuation,
+  gated) ], keeping the whole path in Ω and reporting the pinch where the embedded component ends.
+  A sufficient-but-not-necessary constructive existence test for "is there an embedded torus at
+  τ₀." Records its trajectory via `onRound` for the `demos/steer-modulus` animation.
+
+## `legacy/` — transitional, superseded but still wired to scripts/tests
+
+Quarantined in `legacy/` (mirroring `scripts/legacy/`), still functional until their scripts/tests
+migrate onto the substrate above: `recipe.ts` (the `flattenFlowEmbed` god-recipe the new routines
+replace), `wall.ts`, `marchModulus.ts` (→ `steer-modulus`), `semiSolution.ts` (the Doyle–Schwartz
+flat-immersion scan), and `certify.ts` (→ `measure`). Do not build on these. (The DS closed-form
+seed `doyleSchwartzPositions` is not here — it moved to `sampling/doyleSchwartz.ts` where seed
+sources live; the DS coordinate system is `coordinates/dsScaffold`.)
+
+## Running them
+
+Thin `scripts/` wrappers: `npm run discover` (plus `wall`/`semi-solutions`/`march-modulus` over
+the legacy routines). The verbs (`project`/`minimize`/`continuation`) live in `solvers/`; the
+conditions in `constraints/` (closed `{g = target}`) + `embedding/` (the open `Region`); the map
+toolkit in `functions/`; coordinate systems in `coordinates/`; seed sources in `sampling/`.
+`scripts/legacy/` is a read-only archive.

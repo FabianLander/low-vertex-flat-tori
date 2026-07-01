@@ -49,7 +49,7 @@ import { coneAngleDeficits, maxConeDeficit } from '@core/constraints/flat.ts';
 import { supportMargins } from '@core/geometry/convexHull.ts';
 import { makeRng } from '@core/sampling/rng.ts';
 import { poolSeeds, logSigma } from '@core/sampling/seeds.ts';
-import { flattenFlowEmbed } from '@core/search/recipe.ts';
+import { flattenFlowEmbed } from '@core/search/legacy/recipe.ts';
 import { makeCutOffArea, makeChordLengthSquared } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);

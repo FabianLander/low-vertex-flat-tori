@@ -6,7 +6,7 @@ The **closed** conditions: level sets `{fn(x) = target}` you *project onto*. A `
 A bare `Fn` is a MAP, not a constraint — the sharpened line `coneDeficit` (map) vs `flat`
 (constraint). A constraint rank-deficient by construction states its rank at the source by emitting
 only its independent rows in `fn`. Each module owns its *measurement* (the `Fn`) and its *constraint*
-form; downstream (`certify`, the viewer) imports the measurement straight from the module.
+form; downstream (`measure`, the viewer) imports the measurement straight from the module.
 
 - `types.ts` — the `Constraint` contract (`{ fn: Fn; target?: ArrayLike<number> }`).
 - `flat.ts` — the cone-angle deficit measurement (`coneDeficit`, a bare map) + the `flat` constraint

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { dsScaffold, DS_ROLES } from '@core/coordinates/dsScaffold.ts';
 import { RICH, byId } from '@core/triangulations/index.ts';
 import { flat, maxConeDeficit } from '@core/constraints/flat.ts';
-import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '@core/sampling/doyleSchwartz.ts';
 import { pullHeld } from '@core/search/pull.ts';
 import { project } from '@core/solvers/project.ts';
 

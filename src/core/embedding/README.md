@@ -30,9 +30,11 @@ magnitude**:
 
 `Region` — the OPEN-condition contract ({ `contains`, optional `margin` }) — lives in
 `types.ts`, the open-condition twin of `constraints/Constraint` (contract separated from its
-instance, mirroring `constraints/types.ts`). The embedded set is its sole instance:
-`isEmbedded` → `contains`, `clearance` → `margin`. `search/pull`'s `ambientRegion` pulls it onto
-the solver's working space ℝⁿ for `minimize`/`continuation`.
+instance, mirroring `constraints/types.ts`). The embedded set is its sole instance, exposed as the
+value `embeddedRegion(triang)` (`embedded.ts`): it closes `isEmbedded` → `contains` and
+`clearance` → `margin` into the thing the gated solvers (`minimize`/`continuation`) stay inside.
+Under `fullSpace` it applies to positions directly (the working point *is* the config); on a
+restricted chart `search/pull`'s `ambientRegion` pulls it onto ℝⁿ.
 
 The torus-blind intersection/distance kernels are in `geometry/` (`triangleIntersect`,
 `distance`, `intersectionChord`, `triangle`). Pure: no three.js, no DOM.

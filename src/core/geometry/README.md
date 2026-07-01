@@ -17,7 +17,7 @@ The vector spaces (tuple algebra):
 
 - `vec2.ts` — `Vec2` + 2D ops (sub/add/scale/dot/len/dist/dist2/lerp) and **`det2`** (the
   2×2 determinant `aₓbᵧ − aᵧbₓ` = signed parallelogram area, the "2D cross"). The one ℝ²
-  point type — `topology`'s developed net, the harmonic layout, the modulus τ, certificates.
+  point type — `topology`'s developed net, the harmonic layout, the modulus τ, the `measure` record.
 - `vec3.ts` — `Vec3` + 3D ops (sub/add/scale/dot/len/dist/normalize), **`cross`** (the
   vector cross product) and **`det3`** (the 3×3 determinant `a·(b×c)` = scalar triple
   product). The one ℝ³ point type — normals/poses/centers in `@display/mesh`, the canonical
@@ -37,6 +37,10 @@ in, allocation-free (the hot tier):
   `segmentTriangleIntersect`/`triangleTriangleIntersect` (behind `isEmbedded`), the
   `triTriChord` (where two triangles meet), and `planeCutRatio` (how much a plane divides a
   triangle, for the overlap energy).
+- `convexHull.ts` — a whole-set primitive (not a two-simplex relation): classify each point of a
+  finite ℝ³ set as on the convex-hull boundary ∂H or strictly interior, via the support margin
+  `m*(i) = max_{‖d‖=1} min_{j≠i} (xᵢ − xⱼ)·d` (Schwartz's ∂H-vs-interior dichotomy — `m* < 0` ⟺
+  an interior vertex; the metric-floor primitive behind the Hull-Lemma experiment).
 
 (The `PlaneCurve` construct — parametric plane curves with an arclength table — is NOT here:
 it is a constructed object, not a metric kernel, and is demo-only, so it lives in

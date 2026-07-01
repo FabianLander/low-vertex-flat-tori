@@ -51,6 +51,11 @@ Two kinds of derived data, and the split is load-bearing:
   fundamental domain by exhaustive cut-set search (exact and fast at E ≈ 24).
   `windingDevelop`/`windingNet`: order that domain as a centered outward spiral —
   the canonical `developOrder`, and the develop-winding animation net.
+- `pachner.ts` — the Pachner **1↔3** moves (subdivide a face into three; `collapse` a degree-3
+  vertex back) and `isReducible`: whether a triangulation is *just* a 1→3 subdivision of a smaller
+  one (irreducible ⟺ genuinely new at its vertex count — the 1↔3 notion, distinct from
+  edge-contraction irreducibility). Combinatorial, validity gated by `deriveCombinatorics`; used
+  to classify the censuses, not on the hot path.
 
 Of these, only `triangulation` (cheap combinatorics) is on the search/render hot
 path. `marking` + its two layout helpers run **offline** (the marking generator), not

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { marchToWallAttempt, wallFamily } from '@core/search/marchModulus.ts';
+import { marchToWallAttempt, wallFamily } from '@core/search/legacy/marchModulus.ts';
 import { fullSpace } from '@core/coordinates/full.ts';
-import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '@core/sampling/doyleSchwartz.ts';
 import { makeCutOffArea } from '@core/embedding/index.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { reduceModulus } from '@core/moduli/reduce.ts';

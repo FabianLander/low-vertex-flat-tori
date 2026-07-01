@@ -27,5 +27,5 @@ through, not the type — the same plain-tuple convention as `geometry/`.
 
 Depends on `topology/` (the `Triangulation` + its combinatorial decoration) and
 `geometry/` (`Vec2`, triangle area). Consumed by `constraints/modulus` (which pins
-τ / τ̂), `search/certify` (records both), and the viewer's modulus decorations.
+τ / τ̂), `search/measure` (records both), and the viewer's modulus decorations.
 Pure: no three.js, no DOM.

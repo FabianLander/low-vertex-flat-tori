@@ -28,7 +28,7 @@ import { byId } from '@core/triangulations/index.ts';
 import { RICH_REFERENCE } from '@core/sampling/reference.ts';
 import { makeRng } from '@core/sampling/rng.ts';
 import { collect } from '@core/search/collect.ts';
-import { marchToWallAttempt } from '@core/search/marchModulus.ts';
+import { marchToWallAttempt } from '@core/search/legacy/marchModulus.ts';
 import { perturbedSeeds, logSigma } from '@core/sampling/seeds.ts';
 import { makeCutOffArea } from '@core/embedding/index.ts';
 import { makeChordLengthSquared } from '@core/embedding/index.ts';

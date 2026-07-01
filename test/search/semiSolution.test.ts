@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '@core/search/semiSolution.ts';
-import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { semiSolutionAttempt, doyleSchwartzTentSeeds } from '@core/search/legacy/semiSolution.ts';
+import { doyleSchwartzPositions } from '@core/sampling/doyleSchwartz.ts';
 import { maxConeDeficit } from '@core/constraints/flat.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { mulberry32 } from '@core/sampling/rng.ts';

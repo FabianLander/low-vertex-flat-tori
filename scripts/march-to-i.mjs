@@ -31,9 +31,9 @@ import { makeArgs } from './lib/cli.mjs';
 import { byId } from '@core/triangulations/index.ts';
 import { fullSpace } from '@core/coordinates/full.ts';
 import { continuation } from '@core/solvers/continuation.ts';
-import { imaginaryFamily } from '@core/search/marchModulus.ts';
+import { imaginaryFamily } from '@core/search/legacy/marchModulus.ts';
 import { ambientRegion } from '@core/search/pull.ts';
-import { certify } from '@core/search/certify.ts';
+import { certify } from '@core/search/legacy/certify.ts';
 import { isEmbedded } from '@core/embedding/index.ts';
 
 const a = makeArgs(process.argv);

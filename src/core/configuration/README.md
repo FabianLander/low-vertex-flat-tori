@@ -14,7 +14,7 @@ in `sampling/` — same machinery↔instances split as `topology/`↔`triangulat
   metric DφᵀDφ), `paperTorus`. Plus `makeConfigSpace`, the factory every coordinate
   system in `coordinates/` is built from. The spine of the search.
 - `paperTorus.ts` — the boundary bundle `{ triang, positions }`: the form a
-  configuration takes at the IO / render / certify boundary, where it must carry its
+  configuration takes at the IO / render / measure boundary, where it must carry its
   triangulation. `makePaperTorus` / `paperTorusFromVec3s` / `clonePaperTorus`.
 (The canonical similarity pose — the gauge — is now a coordinate system, the section of
 C → C/Sim in `coordinates/normalized.ts`; storage/dedup uses its `coords` retraction.)

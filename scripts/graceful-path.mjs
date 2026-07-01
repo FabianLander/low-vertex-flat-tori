@@ -29,7 +29,7 @@ import { resolve } from 'path';
 import { readFileSync } from 'fs';
 import { makeArgs, csvRow } from './lib/cli.mjs';
 import { byId } from '@core/triangulations/index.ts';
-import { certify } from '@core/search/certify.ts';
+import { certify } from '@core/search/legacy/certify.ts';
 import { isEmbedded, clearance, embeddedRegion, makeCellBarrier } from '@core/embedding/index.ts';
 import { flat } from '@core/constraints/flat.ts';
 import { fixedModulus } from '@core/constraints/modulus.ts';

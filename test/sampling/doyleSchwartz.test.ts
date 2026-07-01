@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { doyleSchwartzPositions } from '@core/search/doyleSchwartz.ts';
+import { doyleSchwartzPositions } from '@core/sampling/doyleSchwartz.ts';
 import { maxConeDeficit } from '@core/constraints/flat.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import { byId } from '@core/triangulations/index.ts';

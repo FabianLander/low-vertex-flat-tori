@@ -49,8 +49,10 @@ npm run march-modulus  -- --c 0    # transport a torus onto a wall by continuati
 ```
 
 These write 24-float CSV rows and are thin runners over `src/core/search/` (flags in each script
-header). **`scripts/legacy/` is a read-only archive** — its files still import the deleted `src/math/`
-and are intentionally left stale, NOT built or run.
+header). `discover` runs on the new substrate; `wall`/`semi-solutions`/`march-modulus` still drive the
+quarantined `search/legacy/` routines pending migration (`march-modulus` is superseded by the
+`steer-modulus` routine). Separately, **`scripts/legacy/` is a read-only archive** — its files still
+import the deleted `src/math/` and are intentionally left stale, NOT built or run.
 
 ## Architecture
 
@@ -85,7 +87,7 @@ geometry/ → functions/ → { configuration/, coordinates/, constraints/, embed
 below *everything*. The intrinsic side rests on it too: `topology/` (combinatorial — the discrete torus +
 its marking; the harmonic *scratch* layout uses `geometry/vec2`) → `triangulations/` (the 7 as data); and
 `moduli/` (develop a metric torus → its modulus τ, and the space ℍ/SL(2,ℤ)) is a separate pure leaf on
-`geometry/` + `topology/`, consumed by `constraints/modulus` and `search/certify`. So `geometry/` is the
+`geometry/` + `topology/`, consumed by `constraints/modulus` and `search/measure`. So `geometry/` is the
 one true bottom. Do not import three.js or touch `window`/`document` from any of these. **Machinery and
 its instances are flat siblings, never nested** — `topology/`↔`triangulations/`, `functions/`↔`constraints/`,
 `configuration/`↔`coordinates/` — because the arrow is *dependency*, not *containment* (so a
@@ -125,7 +127,7 @@ A configuration is just `positions` (length 3·V); the `Triangulation` rides in 
 closures, never bundled with the coordinates. There is **no global triangulation singleton, no hidden
 `RICH` default** — thread the `torus` parameter (or close over it in a factory). `PaperTorus`
 (`configuration/paperTorus.ts`) is the explicit `{triang, positions}` **boundary bundle** (a plain
-interface) — the form a configuration takes at the serialize / render / certify edge, where it must carry
+interface) — the form a configuration takes at the serialize / render / measure edge, where it must carry
 its triangulation; not used on the interior hot path.
 
 ### Intrinsic: `topology/` (combinatorics) + `triangulations/` (data)
@@ -219,11 +221,17 @@ does the measurement and owns the target space.
   `Triangulation`, coordinate system, or chart. Metric = I (the
   pullback-metric `DφᵀDφ` is a documented, deferred seam).
 - `sampling/` — producing seeds: `rng`, `perturb`, `seeds` (random `perturbedSeeds`/… + deterministic
-  `gridSeeds`, a finite Cartesian sweep over a coordinate system's params), `reference` (`RICH_REFERENCE`).
-- `search/` — `certify` (the result record: cone deficit, embedded, margin, raw τ AND reduced τ̂),
-  `collect` (rejection-sampling driver), `pull` (pull a `Constraint`/`Region` into a coordinate system),
-  and the recipes `discover` (`held=[flat]`), `wall` (`held=[flat, modulusWall(c)]`) via `flattenFlowEmbed`
-  (`seed → project(held) → minimize(held, energy, region=embedded) → certify`), `semiSolution`, `marchModulus`.
+  `gridSeeds`, a finite Cartesian sweep over a coordinate system's params), `reference` (`RICH_REFERENCE`),
+  and `doyleSchwartz` (the DS closed-form seed family `doyleSchwartzPositions`).
+- `search/` — the **substrate** (`measure` — the standard readout/verification of a realization: cone
+  deficit, embedded, clearance, raw τ AND reduced τ̂, area; `collect` — the rejection-sampling driver;
+  `pull` — pull a `Constraint`/`Region` into a coordinate system) plus the **routines**, each a plain
+  attempt (no shared recipe), distinguished by their relationship to Ω: `discover` (land on F, flow into Ω
+  **ungated**), `improve` (deepen clearance **gated** by `embeddedRegion`), `steer-modulus` (transport to a
+  prescribed Teichmüller modulus by a fatten-interleaved **continuation** along the hyperbolic geodesic,
+  gated). The superseded recipe-based routines (`recipe`/`flattenFlowEmbed`, `wall`, `marchModulus`,
+  `semiSolution`, `certify`) are quarantined in `search/legacy/`, still wired to their scripts/tests pending
+  migration.
 
 ### Rendering — one subject, the k-cells realized (`display/` = `mesh/` + `viewer/`; `app/` = `render/` harness)
 
