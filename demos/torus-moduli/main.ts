@@ -7,6 +7,9 @@
  * march-to-i-t* classes are the margin→0 frontiers; note type 3 reaches Im ≈ 1.009
  * (near the square torus i) while type 7 stops at ≈ 1.134.
  *
+ * hex-rho-t3 is starred like the square torus: the first flat embedded 8-vertex tori
+ * found AT the hexagonal point ρ = e^{iπ/3} (type 3, scripts/discover-at-hex.mjs, 2026-07).
+ *
  * Each file is the 28-col format (24 positions, coneDeficit, Re τ̂, Im τ̂, margin);
  * the stored Re τ̂ / Im τ̂ ARE the reduced modulus — points of moduli space — so we
  * plot them directly against the SL(2,ℤ) fundamental domain (walls Re = ±½, arc
@@ -52,10 +55,10 @@ const THEME = {
 // one colour per triangulation type (saturated so they read on a bright bg)
 const TYPE_COLOR: Record<number, string> = { 3: '#1d4ed8', 6: '#15803d', 7: '#dc2626' };
 const FALLBACK = '#6b7280';
-const HILITE = '#f59e0b';   // gold — the highlighted square torus at τ̂ = i
+const HILITE = '#f59e0b';   // gold — the starred special tori (square τ̂ = i, hex τ̂ = ρ)
 
 type Klass = {
-  name: string; type: number; wall: string; color: string; visible: boolean;
+  name: string; type: number; wall: string; label: string; color: string; visible: boolean;
   highlight: boolean;        // drawn as a gold star, on top, with a label
   re: Float64Array; im: Float64Array; cone: Float64Array; margin: Float64Array;
   pos: Float64Array[]; n: number;
@@ -64,8 +67,10 @@ type Klass = {
 function parseClass(path: string, text: string): Klass {
   const name = path.match(/([^/]+)\.csv$/)![1];                       // e.g. "rhombic-t6"
   const type = Number((name.match(/t(\d)/) || [])[1]);
-  const highlight = name.startsWith('square');                        // the square torus τ̂ = i
-  const wall = highlight ? 'square torus (τ̂ = i)'
+  const highlight = name.startsWith('square') || name.startsWith('hex'); // the starred special tori
+  const label = name.startsWith('hex') ? 'hex torus · τ = ρ' : 'square torus · τ = i';
+  const wall = name.startsWith('square') ? 'square torus (τ̂ = i)'
+    : name.startsWith('hex') ? 'hexagonal torus (τ̂ = ρ)'
     : name.startsWith('rect') ? 'rectangular (Re τ̂ = 0)' : 'rhombic (|Re τ̂| = ½)';
   const re: number[] = [], im: number[] = [], cone: number[] = [], margin: number[] = [];
   const pos: Float64Array[] = [];
@@ -78,7 +83,7 @@ function parseClass(path: string, text: string): Klass {
     pos.push(Float64Array.from(p.slice(0, 24), Number));
   }
   return {
-    name, type, wall, color: highlight ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
+    name, type, wall, label, color: highlight ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
     visible: true, highlight,
     re: Float64Array.from(re), im: Float64Array.from(im),
     cone: Float64Array.from(cone), margin: Float64Array.from(margin), pos, n: re.length,
@@ -182,8 +187,8 @@ function starPath(X: number, Y: number, outerR: number, innerR: number): void {
   ctx.closePath();
 }
 
-/** The highlighted square torus: gold star + halo + a leader-line label. */
-function drawHighlightMarker(X: number, Y: number, color: string): void {
+/** A starred special torus (square at i, hex at ρ): gold star + halo + a leader-line label. */
+function drawHighlightMarker(X: number, Y: number, color: string, label: string): void {
   ctx.beginPath(); ctx.arc(X, Y, 13, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(245,158,11,0.18)'; ctx.fill();           // soft halo
   starPath(X, Y, 9.5, 4.2);
@@ -193,7 +198,7 @@ function drawHighlightMarker(X: number, Y: number, color: string): void {
   const lx = X + 14, ly = Y - 14;
   ctx.strokeStyle = 'rgba(124,74,0,0.55)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(lx, ly); ctx.stroke();
-  const text = 'square torus · τ = i';
+  const text = label;
   ctx.font = '600 12px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   const tw = ctx.measureText(text).width;
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -216,7 +221,7 @@ function drawPoints(): void {
   }
   for (const c of classes) {                             // highlighted tori on top
     if (!c.visible || !c.highlight) continue;
-    for (let i = 0; i < c.n; i++) drawHighlightMarker(sx(c.re[i]), sy(c.im[i]), c.color);
+    for (let i = 0; i < c.n; i++) drawHighlightMarker(sx(c.re[i]), sy(c.im[i]), c.color, c.label);
   }
 }
 
@@ -236,7 +241,7 @@ function drawLegend(): void {
   ctx.font = `${fs}px ui-monospace, monospace`;
   classes.forEach((c, i) => {
     const y = y0 + (mob ? 44 : 48) + i * rowH;
-    const label = c.highlight ? `★ square torus  τ = i  (${c.n})` : `${c.name}  (${c.n})`;
+    const label = c.highlight ? `★ ${c.label}  (${c.n})` : `${c.name}  (${c.n})`;
     const labW = sw + 8 + ctx.measureText(label).width + 10;
     legendHits.push({ x: x0 - 4, y: y - rowH / 2, w: labW, h: rowH, klass: c });
     ctx.globalAlpha = c.visible ? 1 : 0.32;
