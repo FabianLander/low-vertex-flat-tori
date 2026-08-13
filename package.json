@@ -4,7 +4,6 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build:all": "node scripts/build-all.mjs",
     "dev": "node scripts/run-demo.mjs dev",
     "build": "node scripts/run-demo.mjs build",
     "preview": "node scripts/run-demo.mjs preview",
