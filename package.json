@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "build:all": "node scripts/build-all.mjs",
     "dev": "node scripts/run-demo.mjs dev",
     "build": "node scripts/run-demo.mjs build",
     "preview": "node scripts/run-demo.mjs preview",
@@ -19,8 +20,12 @@
     "march-to-i": "tsx scripts/march-to-i.mjs",
     "random-imaginary": "tsx scripts/random-imaginary.mjs",
     "build-moduli-data": "tsx scripts/build-moduli-data.mjs",
+    "hunt-hex": "tsx scripts/hunt-hex.mjs",
+    "walk-fatten": "tsx scripts/walk-fatten.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "steer-modulus": "tsx scripts/steer-modulus.mjs",
+    "discover-at": "tsx scripts/discover-at.mjs"
   },
   "devDependencies": {
     "@types/three": "^0.184.1",
