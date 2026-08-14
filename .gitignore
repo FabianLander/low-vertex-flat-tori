@@ -34,3 +34,6 @@ package-lock.json
 
 # per-demo live exploration folders (symlinks into gitignored samples/)
 demos/*/live/
+
+# Rich Schwartz's papers, kept locally as reference, not redistributed here
+rich/*.pdf
