@@ -53,3 +53,35 @@ export function pinVertices(
   for (const v of vertices) for (const a of axes) frozen.push(3 * v + a);
   return pinCoords(triang, frozen, pin);
 }
+
+/**
+ * The space in which only the listed coordinates VARY, every other coordinate held at
+ * its own value in `base`. The affine sibling of `pinCoords` (which holds all the frozen
+ * ones at a single constant): φ is the same selection matrix, but the constant term is
+ * the base configuration rather than `pin`. Used to move a chosen handful of coordinates
+ * of a given configuration and freeze the rest exactly where they are.
+ */
+export function freeCoords(
+  triang: Triangulation,
+  base: ArrayLike<number>,
+  free: readonly number[],
+): ConfigSpace {
+  const n = triang.vertexCount * 3;
+  if (base.length !== n) throw new Error(`freeCoords: base has ${base.length} coords, expected ${n}`);
+  const held = new Float64Array(base);
+  const d = free.length;
+  const phi: Fn = {
+    label: `free(${d})`,
+    inDim: d,
+    outDim: n,
+    value(x, out) {
+      out.set(held);
+      for (let k = 0; k < d; k++) out[free[k]] = x[k];
+    },
+    jacobian(_x, out) {
+      out.fill(0);                          // n×d
+      for (let k = 0; k < d; k++) out[free[k] * d + k] = 1;
+    },
+  };
+  return makeConfigSpace(triang, phi, (p, outX) => { for (let k = 0; k < d; k++) outX[k] = p[free[k]]; });
+}

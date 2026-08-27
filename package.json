@@ -24,7 +24,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "steer-modulus": "tsx scripts/steer-modulus.mjs",
-    "discover-at": "tsx scripts/discover-at.mjs"
+    "discover-at": "tsx scripts/discover-at.mjs",
+    "inflate-fold": "tsx scripts/inflate-fold.mjs",
+    "hunt-fiber": "tsx scripts/hunt-fiber.mjs",
+    "hunt-hole": "tsx scripts/hunt-hole.mjs",
+    "paper-push": "tsx scripts/paper-push.mjs"
   },
   "devDependencies": {
     "@types/three": "^0.184.1",

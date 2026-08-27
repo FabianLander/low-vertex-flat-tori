@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>low-vertex-flat-tori</title>
+  <style>
+    :root { --bg:#f7f5f0; --ink:#2c2c2c; --teal:#3e938f; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 40px 32px 64px;
+      background: var(--bg); color: var(--ink);
+      font: 14px/1.6 ui-monospace, monospace;
+    }
+    header { max-width: 1100px; margin: 0 auto 28px; }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 6px; }
+    .count { opacity: 0.5; font-size: 12px; }
+    #filter {
+      display: block; width: 100%; max-width: 340px; margin-top: 18px;
+      padding: 8px 11px; font: inherit; color: inherit;
+      background: #fff; border: 1px solid rgba(0,0,0,0.15); border-radius: 6px;
+    }
+    #filter:focus { outline: none; border-color: var(--teal); }
+    .grid {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; gap: 7px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+    .demo {
+      display: block; padding: 9px 12px;
+      background: #fff; border: 1px solid rgba(0,0,0,0.10); border-radius: 6px;
+      color: inherit; text-decoration: none;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .demo:hover { border-color: var(--teal); color: var(--teal); }
+    .demo[hidden] { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#1c1c1a; --ink:#e8e6e0; }
+      #filter, .demo { background: #262624; border-color: rgba(255,255,255,0.12); }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>low-vertex-flat-tori</h1>
+    <div class="count">22 demos</div>
+    <input id="filter" type="search" placeholder="filter…" autocomplete="off" />
+  </header>
+  <div class="grid" id="grid">
+      <a class="demo" href="/low-vertex-flat-tori/animate/">animate</a>
+      <a class="demo" href="/low-vertex-flat-tori/curated-moduli/">curated-moduli</a>
+      <a class="demo" href="/low-vertex-flat-tori/curve-cloud/">curve-cloud</a>
+      <a class="demo" href="/low-vertex-flat-tori/develop-winding/">develop-winding</a>
+      <a class="demo" href="/low-vertex-flat-tori/flat-samples/">flat-samples</a>
+      <a class="demo" href="/low-vertex-flat-tori/grid/">grid</a>
+      <a class="demo" href="/low-vertex-flat-tori/grid-25/">grid-25</a>
+      <a class="demo" href="/low-vertex-flat-tori/harmonic-tiling/">harmonic-tiling</a>
+      <a class="demo" href="/low-vertex-flat-tori/hex-hunt/">hex-hunt</a>
+      <a class="demo" href="/low-vertex-flat-tori/low-vertex-nets/">low-vertex-nets</a>
+      <a class="demo" href="/low-vertex-flat-tori/moduli/">moduli</a>
+      <a class="demo" href="/low-vertex-flat-tori/moduli-trace/">moduli-trace</a>
+      <a class="demo" href="/low-vertex-flat-tori/path-inspector/">path-inspector</a>
+      <a class="demo" href="/low-vertex-flat-tori/rect-gallery/">rect-gallery</a>
+      <a class="demo" href="/low-vertex-flat-tori/reference/">reference</a>
+      <a class="demo" href="/low-vertex-flat-tori/steer-modulus/">steer-modulus</a>
+      <a class="demo" href="/low-vertex-flat-tori/tori-grid/">tori-grid</a>
+      <a class="demo" href="/low-vertex-flat-tori/torus-inspector/">torus-inspector</a>
+      <a class="demo" href="/low-vertex-flat-tori/torus-moduli/">torus-moduli</a>
+      <a class="demo" href="/low-vertex-flat-tori/wall-gallery/">wall-gallery</a>
+      <a class="demo" href="/low-vertex-flat-tori/wall-moduli/">wall-moduli</a>
+      <a class="demo" href="/low-vertex-flat-tori/wall-walk/">wall-walk</a>
+  </div>
+  <script>
+    const input = document.getElementById('filter');
+    const items = [...document.querySelectorAll('.demo')];
+    input.addEventListener('input', () => {
+      const q = input.value.toLowerCase();
+      for (const el of items) el.hidden = !el.textContent.toLowerCase().includes(q);
+    });
+  </script>
+</body>
+
+</html>

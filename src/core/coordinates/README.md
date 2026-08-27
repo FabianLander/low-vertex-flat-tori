@@ -11,7 +11,9 @@ Each φ is just an `Fn`; the coordinate system pairs it with BOTH directions of 
 
 - **restrictions** — carve out a subspace you *solve in*:
   - `full.ts` — `fullSpace`: the trivial system, all of ℝ³ⱽ (φ = id).
-  - `pin.ts` — `pinCoords` / `pinVertices`: hold some coordinates fixed.
+  - `pin.ts` — `pinCoords` / `pinVertices`: hold some coordinates fixed (all at one constant);
+    `freeCoords`: hold them at their OWN values in a given configuration, so a chosen handful
+    of coordinates move and the rest stay exactly where they are.
   - `symmetry.ts` — `symmetry` (+ `RICH_SYMMETRY`): configs invariant under an
     involution + vertex pairing, exactly symmetric in half the dimension.
 - **sections** — a chosen representative of a group quotient:

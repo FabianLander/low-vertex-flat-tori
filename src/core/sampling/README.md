@@ -13,6 +13,12 @@ like `solvers/`).
   (`uniformSigma`/`logSigma`).
 - `reference.ts` — `RICH_REFERENCE`, Rich's known flat embedded torus: a perturbation
   center for seeding and the standard fixture for tests/renders.
+- `foldedBases.ts` — Lander's two FOLDED BASES: the exact planar configurations that are already
+  flat tori of modulus exactly `i` (on `v8-7`) and exactly `ρ` (on `v8-3`), with eight of their
+  sixteen triangles folded over so the sheet overlaps itself, plus the rational direction ζ that
+  pulls those sheets apart. `liftedPositions(base, t)` puts vertex v at `(Q_v, t·ζ_v)` — embedded
+  for every `t > 0`, exactly flat only at `t = 0`. The seed source the `search/correct-fold`
+  routine and the folded-tori / fiber-cloud / hole-hunt demos start from.
 - `doyleSchwartz.ts` — the Doyle–Schwartz seed family: `doyleSchwartzPositions(x, y)`, the
   closed-form #7 flat torus of modulus τ = x + iy as bare positions (value-only, no Jacobian —
   the seed sibling of `RICH_REFERENCE`). The DS model *as a coordinate system* — the same tent

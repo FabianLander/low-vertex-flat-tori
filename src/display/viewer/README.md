@@ -26,7 +26,13 @@ The **appearance** (injected look — material *primitives* + the one paper *the
 
 - `materials.ts` — surface (plain/grid), crease, vertex material primitives + `paperMaterials`
   (the graph-paper theme used by the `renders/` renders).
-- `gridTexture.ts` — the fundamental-domain lattice grid + graph-paper canvas textures.
+- `gridTexture.ts` — the fundamental-domain lattice grid + graph-paper canvas textures, plus
+  `latticeEdgeTexture`, which BAKES the triangulation's edges into the paper. The lattice UVs are
+  the developed position in lattice coordinates and developing takes each edge to a straight
+  segment, so the 1-skeleton is just some straight lines in UV space. That matters because it is
+  a plain texture — a material property — so it survives the path tracer, which ignores
+  `onBeforeCompile` shader work; and it has no thickness, so unlike crease tubes it cannot poke
+  through the coincident sheets of a folded-flat torus.
 - `normalMap.ts` — load a tileable paper-grain normal map from `assets/textures`.
 - `palette.ts` — scalar→color palettes (`DEFICIT`, `HIGHLIGHT`) + `colorsFromScalars` (the
   `setCellColors` feed).

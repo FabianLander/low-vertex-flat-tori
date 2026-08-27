@@ -43,6 +43,25 @@ The one distinction that organizes them is the relationship to Ω: **enter (unga
   A sufficient-but-not-necessary constructive existence test for "is there an embedded torus at
   τ₀." Records its trajectory via `onRound` for the `demos/steer-modulus` animation.
 
+- `correct-fold.ts` — snap a pushed-off folded base (`sampling/foldedBases`) back onto
+  `{flat} ∩ {τ = τ₀}`: Gauss–Newton on nine rows of deficit plus two of modulus. At
+  `free: 'paper'` it is Lander §6's implicit-function-theorem step run in floating point (a
+  square 9×9 system with no room to move); freeing more coordinates opens a fiber that
+  `fatten: true` then descends the cell barrier along, gated, which is what carries the family
+  far off the plane instead of losing embeddedness around t ≈ 0.16.
+- `fiber-cloud.ts` — explore the fiber `{flat ∧ τ = τ₀}` in the `normalized` chart (similarity
+  quotiented out, so the search space is the 8-dimensional shape fiber) under a choice of
+  objective. **Which strategy wins depends on the objective, measured, and in opposite
+  directions**: unselected `'roam'` for `'clearance'`, elitist `'climb'` for `'inflation'`. A
+  stateful driver rather than the usual `(seed) => Measurement | null` attempt, so a demo can
+  drive it a frame at a time.
+- `shape.ts` — extrinsic shape descriptors, the sibling of `measure` and a separate concern from
+  it: `volumeRatio` (how inflated), `squash` (how far from planar), `creaseRoom` (how far the
+  tightest crease is from being no crease), and `holeSize`/`bestHoleView` (can you see through
+  it). All scale-free. `holeSize` is 0 on every closed torus, so it ranks but cannot steer —
+  pair it with an unselected walk, and note it must sample MANY viewing directions, aimed at
+  the equator of the flattest axis, because these holes are visible only edge-on.
+
 ## `legacy/` — transitional, superseded but still wired to scripts/tests
 
 Quarantined in `legacy/` (mirroring `scripts/legacy/`), still functional until their scripts/tests
@@ -55,7 +74,8 @@ sources live; the DS coordinate system is `coordinates/dsScaffold`.)
 ## Running them
 
 Thin `scripts/` wrappers: `npm run discover` (plus `wall`/`semi-solutions`/`march-modulus` over
-the legacy routines). The verbs (`project`/`minimize`/`continuation`) live in `solvers/`; the
+the legacy routines), `npm run inflate-fold` (march a folded base off the plane, checkpointing
+each verified rung) and `npm run hunt-fiber` (long fiber-cloud runs, checkpointed and resumable). The verbs (`project`/`minimize`/`continuation`) live in `solvers/`; the
 conditions in `constraints/` (closed `{g = target}`) + `embedding/` (the open `Region`); the map
 toolkit in `functions/`; coordinate systems in `coordinates/`; seed sources in `sampling/`.
 `scripts/legacy/` is a read-only archive.

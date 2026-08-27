@@ -50,7 +50,7 @@ import { measure, type Measurement } from './measure.ts';
 /** The hyperbolic geodesic in ℍ from `from` to `to`: a point map (s ∈ [0,1]) and the inverse
  *  (where a τ sits along it, as a fraction). Vertical segment if Re's match (Im interpolated
  *  geometrically — the hyperbolic arclength param), else the real-axis-centered semicircle. */
-function hyperbolicGeodesic(from: Vec2, to: Vec2): { point: (s: number) => Vec2; fraction: (tau: Vec2) => number } {
+export function hyperbolicGeodesic(from: Vec2, to: Vec2): { point: (s: number) => Vec2; fraction: (tau: Vec2) => number } {
   const dRe = to[0] - from[0];
   if (Math.abs(dRe) < 1e-9) {
     const re = from[0], y0 = from[1], logRatio = Math.log(to[1] / y0);

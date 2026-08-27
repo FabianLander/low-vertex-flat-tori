@@ -39,6 +39,8 @@ export interface SurfaceConfig {
   material?: THREE.Material;           // caller-owned override
   color?: THREE.ColorRepresentation;   // base look color (the plain fill). default gold
   uvRepeat?: number;                   // default 1 (whole torus = one fundamental domain)
+  /** Compute the UVs from this configuration rather than the drawn one — see `mesh/faces`. */
+  uvFrom?: ArrayLike<number>;
   thickness?: number;                  // solidify into a slab. default 0
   grid?: GridTextureOptions;
   roughness?: number;
@@ -92,6 +94,7 @@ export function makeTorusView(triang: Triangulation, opts: TorusViewOptions = {}
       baseColor: cfg.color ?? (style === 'grid' ? 0xffffff : SURFACE_GOLD),
       uv: style === 'grid',
       uvRepeat: cfg.uvRepeat ?? 1,
+      uvFrom: cfg.uvFrom,
       thickness: cfg.thickness,
     }));
   }

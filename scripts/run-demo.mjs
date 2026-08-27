@@ -22,9 +22,18 @@ function listViews() {
   }
   return out;
 }
+// A name must identify ONE entry. demos/ and renders/ are scanned in order, so a name used in
+// both would silently resolve to the demos/ one — and, since the port is derived from the name,
+// the render would also try to serve on the demo's port. Both failures look like "my edits do
+// nothing", so refuse the name instead of guessing which one was meant.
 function baseFor(name) {
-  for (const base of BASE_DIRS) if (existsSync(resolve(root, base, name, 'main.ts'))) return base;
-  return null;
+  const found = BASE_DIRS.filter((base) => existsSync(resolve(root, base, name, 'main.ts')));
+  if (found.length > 1) {
+    console.error(`"${name}" exists in ${found.map((b) => `${b}/`).join(' and ')} — names must be`
+      + ` unique across demos/ and renders/ (they share the name→port map). Rename one.`);
+    process.exit(1);
+  }
+  return found[0] ?? null;
 }
 
 const [command, demoName] = process.argv.slice(2);

@@ -26,7 +26,9 @@ Plus the standalone maps + pure helpers:
 
 - `section.ts` — `makeSection`: plane ∩ the realization → ordered, **measurable**
   loops (`perimeter` / `area`), not a segment soup.
-- `obj.ts` — `paperToObj` (pure) + `downloadObj`: the realization as a Wavefront OBJ
+- `obj.ts` — `paperToObj` / `paperFromObj` (pure) + `downloadObj`: the realization as a Wavefront
+  OBJ, and back. Reading IDENTIFIES the triangulation from the file's own face list rather than
+  trusting a caller, so a mislabelled file is rejected instead of rendering as the wrong torus
   polyhedron, on disk (the disk-sibling of the three.js realization).
 - `orient.ts` — outward-normal helpers (push tubes/spheres proud of the faces;
   offset the solidified inner skin).

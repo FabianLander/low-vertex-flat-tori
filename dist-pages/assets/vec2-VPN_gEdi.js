@@ -1,0 +1,1 @@
+const n=(s,t)=>Math.hypot(s[0]-t[0],s[1]-t[1]),c=(s,t)=>{const o=s[0]-t[0],d=s[1]-t[1];return o*o+d*d},e=(s,t,o)=>[s[0]+(t[0]-s[0])*o,s[1]+(t[1]-s[1])*o],r=(s,t)=>s[0]*t[1]-s[1]*t[0];export{n as a,c as b,r as d,e as l};

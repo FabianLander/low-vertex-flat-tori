@@ -1,0 +1,1 @@
+function l(e){let t=e[0],r=e[1],n=1,u=0,o=0,a=1;for(let d=0;d<1e3;d++){const s=Math.round(t);t-=s,n-=s*o,u-=s*a;const c=t*t+r*r;if(c>=1-1e-15)break;t=-t/c,r=r/c;const i=-o,f=-a;o=n,a=u,n=i,u=f}return{tau:[t,r],m:[n,u,o,a]}}function M(e){return l(e).tau}const h=[.5,Math.sqrt(3)/2];export{h as H,M as r};

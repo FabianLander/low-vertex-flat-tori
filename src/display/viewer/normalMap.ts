@@ -1,14 +1,21 @@
 /**
  * Texture assets, kept out of the demo folders. Drop image files in
- * `assets/textures/` (repo root) and load them by name. Vite needs a static,
- * file-relative glob — from `src/viewer/` the assets dir is `../../assets/textures`.
+ * `assets/textures/` (repo root) and load them by name.
+ *
+ * Vite needs a STATIC, file-relative glob, so the depth is baked into the string and cannot be
+ * derived — which means moving this file silently empties it. That happened: the glob still
+ * said `../../assets/textures` from the old `src/viewer/`, and after the ring refactor to
+ * `src/display/viewer/` that resolves to `src/assets/textures`, which does not exist. Every
+ * normal map had been quietly absent since, `loadNormalMap` returning null and the renders
+ * losing their paper grain with only a console warning to say so. From here the repo root is
+ * three levels up.
  *
  * Impure render boundary (three.js).
  */
 
 import * as THREE from 'three';
 
-const ASSET_URLS = import.meta.glob('../../assets/textures/*.{png,jpg,jpeg,webp}', {
+const ASSET_URLS = import.meta.glob('../../../assets/textures/*.{png,jpg,jpeg,webp}', {
   query: '?url',
   import: 'default',
   eager: true,
@@ -16,7 +23,7 @@ const ASSET_URLS = import.meta.glob('../../assets/textures/*.{png,jpg,jpeg,webp}
 
 /** URL for an asset by filename (e.g. 'paper-normal.jpg'), or undefined if absent. */
 export function textureUrl(filename: string): string | undefined {
-  return ASSET_URLS[`../../assets/textures/${filename}`];
+  return ASSET_URLS[`../../../assets/textures/${filename}`];
 }
 
 /** Names of all available texture assets. */

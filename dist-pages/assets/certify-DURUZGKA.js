@@ -1,0 +1,1 @@
+import{m}from"./modulus-D9P98Cww.js";import{r as t}from"./reduce-Dr9sydM5.js";import{m as c}from"./flat-gqwc_RzZ.js";import{c as o,i as u}from"./embedded-C_-9rZf-.js";function D(e,r){const a=m(e,r);return{coneDeficit:c(e,r),embedded:u(e,r),margin:o(e,r),tau:a.tau,tauHat:t(a.tau),area:a.area,rotDefect:a.rotDefect}}export{D as c};

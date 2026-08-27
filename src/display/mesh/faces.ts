@@ -35,6 +35,19 @@ export interface FacesOptions {
   /** Attach intrinsic lattice UVs (the fundamental-domain grid texture). */
   uv?: boolean;
   uvRepeat?: number;          // default 1
+  /**
+   * Compute the UVs from THIS configuration instead of the one being drawn.
+   *
+   * The lattice UVs are the developed net read in lattice coordinates, so they are a property
+   * of the METRIC — change the shape and they change with it. That is what you want while the
+   * shape is a real flat torus. It is not what you want when the drawn shape is a deliberate
+   * distortion of one (a figure exaggerating a small deflection, say): the paper texture, and
+   * anything baked into it such as `viewer/latticeEdgeTexture`'s edge lines, belongs to the
+   * TRUE torus, and computing the UVs from the distorted copy slides the texture off it.
+   * Pin the UVs to the true positions and the map stays where it belongs while the geometry
+   * is free to lie.
+   */
+  uvFrom?: ArrayLike<number>;
   /** Solidify into a slab of this thickness (0 = zero-thickness sheet). Fixed at build. */
   thickness?: number;
 }
@@ -93,7 +106,7 @@ export function makeFaces(triang: Triangulation, opts: FacesOptions = {}): Part 
     }
 
     if (uv) {
-      const outerUV = latticeUV(triang, positions, { repeat: uvRepeat });
+      const outerUV = latticeUV(triang, opts.uvFrom ?? positions, { repeat: uvRepeat });
       uv.set(outerUV, 0);
       if (thickness > 0) {
         const innerUV = outerUV.slice();

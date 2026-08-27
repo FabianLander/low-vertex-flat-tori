@@ -1,0 +1,5 @@
+import{a}from"./modulus-D9P98Cww.js";function u(t,o="flat-torus"){const e=t.positions,i=[`# ${o} — ${t.triang.name} (V=${t.triang.vertexCount}, F=${t.triang.triangles.length})`,`o ${o}`];for(let n=0;n<t.triang.vertexCount;n++)i.push(`v ${e[3*n]} ${e[3*n+1]} ${e[3*n+2]}`);for(const[n,r,s]of t.triang.triangles)i.push(`f ${n+1} ${r+1} ${s+1}`);return i.join(`
+`)+`
+`}function b(t,o="flat-torus-net"){const e=t.triang.triangles.length,i=a(t.triang,t.positions),n=[`# ${o} — developed net of ${t.triang.name} (V=${t.triang.vertexCount}, F=${e}), flat in z=0`,`o ${o}`];for(let r=0;r<e;r++)for(let s=0;s<3;s++){const[l,$]=i.corners[r][s];n.push(`v ${l} ${$} 0`)}for(let r=0;r<e;r++){const s=3*r+1;n.push(`f ${s} ${s+1} ${s+2}`)}return n.join(`
+`)+`
+`}function c(t,o){const e=new Blob([t],{type:"text/plain"}),i=URL.createObjectURL(e),n=document.createElement("a");n.href=i,n.download=o.endsWith(".obj")?o:`${o}.obj`,n.click(),URL.revokeObjectURL(i)}function g(t,o="flat-torus.obj"){c(u(t,o.replace(/\.obj$/i,"")),o)}function j(t,o="flat-torus-net.obj"){c(b(t,o.replace(/\.obj$/i,"")),o)}export{g as a,j as d};
