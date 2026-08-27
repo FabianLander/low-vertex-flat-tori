@@ -7,8 +7,11 @@
  * march-to-i-t* classes are the margin→0 frontiers; note type 3 reaches Im ≈ 1.009
  * (near the square torus i) while type 7 stops at ≈ 1.134.
  *
- * hex-rho-t3 is starred like the square torus: the first flat embedded 8-vertex tori
- * found AT the hexagonal point ρ = e^{iπ/3} (type 3, scripts/discover-at-hex.mjs, 2026-07).
+ * hex-rho-t3 is starred like the square torus: the certified center of the paper
+ * (code/data/rho-type3.csv), at the RIGHT corner Re τ̂ = +½ of the hexagonal point
+ * ρ = e^{iπ/3}. hex-rho-left-t3 is a second configuration at the LEFT corner
+ * Re τ̂ = −½ (same moduli point, the two corners are identified) that is NOT in
+ * the paper, labeled as such (type 3, scripts/discover-at-hex.mjs, 2026-07).
  *
  * Each file is the 28-col format (24 positions, coneDeficit, Re τ̂, Im τ̂, margin);
  * the stored Re τ̂ / Im τ̂ ARE the reduced modulus — points of moduli space — so we
@@ -68,7 +71,8 @@ function parseClass(path: string, text: string): Klass {
   const name = path.match(/([^/]+)\.csv$/)![1];                       // e.g. "rhombic-t6"
   const type = Number((name.match(/t(\d)/) || [])[1]);
   const highlight = name.startsWith('square') || name.startsWith('hex'); // the starred special tori
-  const label = name.startsWith('hex') ? 'hex torus · τ = ρ' : 'square torus · τ = i';
+  const label = name.startsWith('hex-rho-left') ? 'hex torus · τ = ρ (not in the paper)'
+    : name.startsWith('hex') ? 'hex torus · τ = ρ' : 'square torus · τ = i';
   const wall = name.startsWith('square') ? 'square torus (τ̂ = i)'
     : name.startsWith('hex') ? 'hexagonal torus (τ̂ = ρ)'
     : name.startsWith('rect') ? 'rectangular (Re τ̂ = 0)' : 'rhombic (|Re τ̂| = ½)';
