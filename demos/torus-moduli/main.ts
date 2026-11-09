@@ -13,6 +13,11 @@
  * Re τ̂ = −½ (same moduli point, the two corners are identified) that is NOT in
  * the paper, labeled as such (type 3, scripts/discover-at-hex.mjs, 2026-07).
  *
+ * featured-t6 is one torus picked because it looks nice: line 14 of embedded-t6
+ * (= data/flat-embedded/type-6.csv row 4), copied into its own file. Drawn as a
+ * diamond in its type colour, not a gold star — it is not a special point of moduli
+ * space — and counted once in the total (2026-11).
+ *
  * Each file is the 28-col format (24 positions, coneDeficit, Re τ̂, Im τ̂, margin);
  * the stored Re τ̂ / Im τ̂ ARE the reduced modulus — points of moduli space — so we
  * plot them directly against the SL(2,ℤ) fundamental domain (walls Re = ±½, arc
@@ -59,10 +64,16 @@ const THEME = {
 const TYPE_COLOR: Record<number, string> = { 3: '#1d4ed8', 6: '#15803d', 7: '#dc2626' };
 const FALLBACK = '#6b7280';
 const HILITE = '#f59e0b';   // gold — the starred special tori (square τ̂ = i, hex τ̂ = ρ)
+// halo / outline / leader / pill-edge colours of the two on-top markers
+const MARK = {
+  star: { halo: 'rgba(245,158,11,0.18)', ink: '#7c4a00', line: 'rgba(124,74,0,0.55)', edge: 'rgba(124,74,0,0.35)' },
+  featured: { halo: 'rgba(21,128,61,0.18)', ink: '#0b4d25', line: 'rgba(11,77,37,0.55)', edge: 'rgba(11,77,37,0.35)' },
+};
 
 type Klass = {
   name: string; type: number; wall: string; label: string; color: string; visible: boolean;
   highlight: boolean;        // drawn as a gold star, on top, with a label
+  featured: boolean;         // a highlight drawn as a diamond in its type colour instead
   re: Float64Array; im: Float64Array; cone: Float64Array; margin: Float64Array;
   pos: Float64Array[]; n: number;
 };
@@ -70,10 +81,13 @@ type Klass = {
 function parseClass(path: string, text: string): Klass {
   const name = path.match(/([^/]+)\.csv$/)![1];                       // e.g. "rhombic-t6"
   const type = Number((name.match(/t(\d)/) || [])[1]);
-  const highlight = name.startsWith('square') || name.startsWith('hex'); // the starred special tori
-  const label = name.startsWith('hex-rho-left') ? 'hex torus · τ = ρ (not in the paper)'
+  const featured = name.startsWith('featured');                        // picked for its looks
+  const highlight = featured || name.startsWith('square') || name.startsWith('hex'); // the starred special tori
+  const label = featured ? `featured · type ${type}`
+    : name.startsWith('hex-rho-left') ? 'hex torus · τ = ρ (not in the paper)'
     : name.startsWith('hex') ? 'hex torus · τ = ρ' : 'square torus · τ = i';
-  const wall = name.startsWith('square') ? 'square torus (τ̂ = i)'
+  const wall = featured ? `featured (also in embedded-t${type})`
+    : name.startsWith('square') ? 'square torus (τ̂ = i)'
     : name.startsWith('hex') ? 'hexagonal torus (τ̂ = ρ)'
     : name.startsWith('rect') ? 'rectangular (Re τ̂ = 0)' : 'rhombic (|Re τ̂| = ½)';
   const re: number[] = [], im: number[] = [], cone: number[] = [], margin: number[] = [];
@@ -87,8 +101,8 @@ function parseClass(path: string, text: string): Klass {
     pos.push(Float64Array.from(p.slice(0, 24), Number));
   }
   return {
-    name, type, wall, label, color: highlight ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
-    visible: true, highlight,
+    name, type, wall, label, color: highlight && !featured ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
+    visible: true, highlight, featured,
     re: Float64Array.from(re), im: Float64Array.from(im),
     cone: Float64Array.from(cone), margin: Float64Array.from(margin), pos, n: re.length,
   };
@@ -97,7 +111,7 @@ function parseClass(path: string, text: string): Klass {
 const classes: Klass[] = Object.keys(files)
   .sort()
   .map((path) => parseClass(path, files[path]));
-const totalPts = classes.reduce((s, c) => s + c.n, 0);
+const totalPts = classes.reduce((s, c) => s + (c.featured ? 0 : c.n), 0);   // featured rows are copies
 
 const dataBounds = (() => {
   let minRe = Infinity, maxRe = -Infinity, minIm = Infinity, maxIm = -Infinity;
@@ -191,24 +205,32 @@ function starPath(X: number, Y: number, outerR: number, innerR: number): void {
   ctx.closePath();
 }
 
-/** A starred special torus (square at i, hex at ρ): gold star + halo + a leader-line label. */
-function drawHighlightMarker(X: number, Y: number, color: string, label: string): void {
+/** A diamond path centered at (X,Y), corners at distance r. */
+function diamondPath(X: number, Y: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(X, Y - r); ctx.lineTo(X + r, Y); ctx.lineTo(X, Y + r); ctx.lineTo(X - r, Y);
+  ctx.closePath();
+}
+
+/** A highlighted torus: gold star (square at i, hex at ρ) or diamond (featured) + halo + a leader-line label. */
+function drawHighlightMarker(X: number, Y: number, color: string, label: string, featured: boolean): void {
+  const m = featured ? MARK.featured : MARK.star;
   ctx.beginPath(); ctx.arc(X, Y, 13, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(245,158,11,0.18)'; ctx.fill();           // soft halo
-  starPath(X, Y, 9.5, 4.2);
+  ctx.fillStyle = m.halo; ctx.fill();                             // soft halo
+  if (featured) diamondPath(X, Y, 9); else starPath(X, Y, 9.5, 4.2);
   ctx.fillStyle = color; ctx.fill();
-  ctx.lineWidth = 1.6; ctx.strokeStyle = '#7c4a00'; ctx.stroke();
+  ctx.lineWidth = 1.6; ctx.strokeStyle = m.ink; ctx.stroke();
   // leader line up-right to a labelled pill
   const lx = X + 14, ly = Y - 14;
-  ctx.strokeStyle = 'rgba(124,74,0,0.55)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = m.line; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(lx, ly); ctx.stroke();
   const text = label;
   ctx.font = '600 12px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   const tw = ctx.measureText(text).width;
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
   ctx.beginPath(); ctx.roundRect(lx + 2, ly - 9, tw + 12, 18, 5); ctx.fill();
-  ctx.strokeStyle = 'rgba(124,74,0,0.35)'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = '#7c4a00'; ctx.fillText(text, lx + 8, ly + 1);
+  ctx.strokeStyle = m.edge; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = m.ink; ctx.fillText(text, lx + 8, ly + 1);
 }
 
 function drawPoints(): void {
@@ -225,7 +247,7 @@ function drawPoints(): void {
   }
   for (const c of classes) {                             // highlighted tori on top
     if (!c.visible || !c.highlight) continue;
-    for (let i = 0; i < c.n; i++) drawHighlightMarker(sx(c.re[i]), sy(c.im[i]), c.color, c.label);
+    for (let i = 0; i < c.n; i++) drawHighlightMarker(sx(c.re[i]), sy(c.im[i]), c.color, c.label, c.featured);
   }
 }
 
@@ -245,12 +267,13 @@ function drawLegend(): void {
   ctx.font = `${fs}px ui-monospace, monospace`;
   classes.forEach((c, i) => {
     const y = y0 + (mob ? 44 : 48) + i * rowH;
-    const label = c.highlight ? `★ ${c.label}  (${c.n})` : `${c.name}  (${c.n})`;
+    const label = c.featured ? `◆ ${c.label}  (${c.n})` : c.highlight ? `★ ${c.label}  (${c.n})` : `${c.name}  (${c.n})`;
     const labW = sw + 8 + ctx.measureText(label).width + 10;
     legendHits.push({ x: x0 - 4, y: y - rowH / 2, w: labW, h: rowH, klass: c });
     ctx.globalAlpha = c.visible ? 1 : 0.32;
     ctx.fillStyle = c.color;
-    if (c.highlight) { starPath(x0 + sw / 2, y, sw / 2 + 1, (sw / 2 + 1) * 0.44); ctx.fill(); }
+    if (c.featured) { diamondPath(x0 + sw / 2, y, sw / 2 + 1); ctx.fill(); }
+    else if (c.highlight) { starPath(x0 + sw / 2, y, sw / 2 + 1, (sw / 2 + 1) * 0.44); ctx.fill(); }
     else ctx.fillRect(x0, y - sw / 2, sw, sw);
     ctx.fillStyle = THEME.legendLabel;
     ctx.fillText(label, x0 + sw + 8, y + 1);
