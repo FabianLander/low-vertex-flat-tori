@@ -33,7 +33,9 @@
  *
  * The info panel's "cutout PDF" button opens a cut-and-fold sheet of the net it shows, in the
  * same arrangement, made in the page by ./cutout.ts (mountain folds dash-dot, valley folds
- * dashed, glue tabs, the coding of the square and hex paper's fold nets).
+ * dashed, glue tabs, the coding of the square and hex paper's fold nets). Before the PDF an
+ * editor (./cutoutEditor.ts) lets the reader move a triangle across a seam to the seam's other
+ * copy, and a tab to the other copy of its seam.
  *
  * CLICK a point to read its τ, embedding margin, and flatness (max cone deficit);
  * click empty space to dismiss. Scroll to zoom, drag to pan, click a legend row to
@@ -49,7 +51,7 @@ import { developedSheet } from '@display/viewer/developedSheet';
 import { paperMaterials } from '@display/viewer/materials';
 import { downloadObj, downloadNetObj } from '@display/mesh/obj';
 import { skyEnvironment } from '@app/render/stage';
-import { cutoutPdf } from './cutout';
+import { openCutoutEditor } from './cutoutEditor';
 
 // data/ = committed curated examples; live/ = gitignored symlinks into samples/
 // for watching an active search (re-run a script, refresh, it updates). Use
@@ -374,8 +376,8 @@ const dlNetBtn = document.createElement('button');
 dlNetBtn.textContent = '⬇ .obj · net';
 // a cut-and-fold PDF of the net below, in exactly its arrangement (see ./cutout.ts)
 const pdfBtn = document.createElement('button');
-pdfBtn.textContent = 'cutout PDF ↗';
-pdfBtn.title = 'a cut-and-fold sheet of the net shown below, in the same arrangement: mountain folds dash-dot, valley folds dashed, glue tabs';
+pdfBtn.textContent = 'cutout PDF …';
+pdfBtn.title = 'a cut-and-fold sheet of the net shown below: arrange it (move triangles and tabs across their seams), then open the PDF';
 for (const b of [dl3dBtn, dlNetBtn, pdfBtn]) {
   b.style.cssText = 'flex:1;padding:6px 8px;font:11px ui-monospace,monospace;cursor:pointer;'
     + 'border:1px solid #166534;border-radius:6px;background:#fff;color:#166534';
@@ -509,27 +511,31 @@ function showTorus3D(c: Klass, i: number): void {
   insetVisible = true;
   layoutPanel();
 }
-/** Make the cut-and-fold PDF of the selected torus and open it in a new tab (or save it, if pop-ups are blocked). */
+/**
+ * The cut-and-fold sheet of the selected torus: first an editor in which the reader may move
+ * triangles and tabs (./cutoutEditor.ts), then the PDF, opened in a new tab (or saved, if
+ * pop-ups are blocked).
+ */
 function openCutout(c: Klass, i: number, positions: ArrayLike<number>): void {
   const name = `${c.name}-row${i + 1}`;
-  let pdf: ReturnType<typeof cutoutPdf>;
+  const info = {
+    title: `Cut-and-fold net of a type-${c.type} paper torus`,
+    subtitle: `${c.name}, row ${i + 1}, modulus ${c.re[i].toFixed(4)} ${c.im[i] < 0 ? '-' : '+'} ${Math.abs(c.im[i]).toFixed(4)} i`,
+  };
   try {
-    pdf = cutoutPdf(byId('v8-' + c.type), positions, {
-      title: `Cut-and-fold net of a type-${c.type} paper torus`,
-      subtitle: `${c.name}, row ${i + 1}, modulus ${c.re[i].toFixed(4)} ${c.im[i] < 0 ? '-' : '+'} ${Math.abs(c.im[i]).toFixed(4)} i`,
+    openCutoutEditor(byId('v8-' + c.type), positions, info, (bytes) => {
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
+      const tab = window.open(url, '_blank');
+      if (!tab) {
+        const a = document.createElement('a');
+        a.href = url; a.download = `cutout-${name}.pdf`;
+        document.body.append(a); a.click(); a.remove();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);
     });
   } catch (err) {
     alert(`No cutout for this torus: ${err instanceof Error ? err.message : String(err)}`);
-    return;
   }
-  const url = URL.createObjectURL(new Blob([pdf.bytes as BlobPart], { type: 'application/pdf' }));
-  const tab = window.open(url, '_blank');
-  if (!tab) {
-    const a = document.createElement('a');
-    a.href = url; a.download = `cutout-${name}.pdf`;
-    document.body.append(a); a.click(); a.remove();
-  }
-  window.setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);
 }
 function hideTorus3D(): void { panel.style.display = 'none'; insetVisible = false; }
 
