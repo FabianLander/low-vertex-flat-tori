@@ -18,12 +18,8 @@
  * diamond in its type colour, not a gold star — it is not a special point of moduli
  * space — and counted once in the total (2026-11).
  *
- * holes-t3 holds the six tori kept from the hole search on T(46666677) (2026-11-13/14,
- * paper-tori-proofs universality/inflation/data/focus/best/): the largest holes found,
- * 0.18 to 0.21 % of the area. Four of them share the featured torus's modulus, the search
- * having started there. Drawn as purple rings with their label below the point, so the
- * diamond's label stays readable. holes-t3.notes.json says what each one is, shown when it
- * is clicked. Clicking again on the same spot steps through every torus drawn there.
+ * A file may have notes, <name>.notes.json beside <name>.csv, one line per row, shown when the
+ * row is clicked. Clicking again on the same spot steps through every torus drawn there.
  *
  * Each file is the 28-col format (24 positions, coneDeficit, Re τ̂, Im τ̂, margin);
  * the stored Re τ̂ / Im τ̂ ARE the reduced modulus — points of moduli space — so we
@@ -81,19 +77,16 @@ const THEME = {
 const TYPE_COLOR: Record<number, string> = { 3: '#1d4ed8', 6: '#15803d', 7: '#dc2626' };
 const FALLBACK = '#6b7280';
 const HILITE = '#f59e0b';   // gold — the starred special tori (square τ̂ = i, hex τ̂ = ρ)
-const HOLE = '#7c3aed';     // purple — the tori kept from the hole search
 // halo / outline / leader / pill-edge colours of the two on-top markers
 const MARK = {
   star: { halo: 'rgba(245,158,11,0.18)', ink: '#7c4a00', line: 'rgba(124,74,0,0.55)', edge: 'rgba(124,74,0,0.35)' },
   featured: { halo: 'rgba(21,128,61,0.18)', ink: '#0b4d25', line: 'rgba(11,77,37,0.55)', edge: 'rgba(11,77,37,0.35)' },
-  hole: { halo: 'rgba(124,58,237,0.14)', ink: '#4c1d95', line: 'rgba(76,29,149,0.55)', edge: 'rgba(76,29,149,0.35)' },
 };
 
 type Klass = {
   name: string; type: number; wall: string; label: string; color: string; visible: boolean;
   highlight: boolean;        // drawn as a gold star, on top, with a label
   featured: boolean;         // a highlight drawn as a diamond in its type colour instead
-  hole: boolean;             // a highlight drawn as a purple ring: a torus kept from the hole search
   notes: string[];           // one line per row, from <name>.notes.json, or empty
   re: Float64Array; im: Float64Array; cone: Float64Array; margin: Float64Array;
   pos: Float64Array[]; n: number;
@@ -103,14 +96,11 @@ function parseClass(path: string, text: string): Klass {
   const name = path.match(/([^/]+)\.csv$/)![1];                       // e.g. "rhombic-t6"
   const type = Number((name.match(/t(\d)/) || [])[1]);
   const featured = name.startsWith('featured');                        // picked for its looks
-  const hole = name.startsWith('holes');                               // kept from the hole search
-  const highlight = featured || hole || name.startsWith('square') || name.startsWith('hex'); // drawn on top
-  const label = hole ? 'large hole'
-    : featured ? `featured · type ${type}`
+  const highlight = featured || name.startsWith('square') || name.startsWith('hex'); // the starred special tori
+  const label = featured ? `featured · type ${type}`
     : name.startsWith('hex-rho-left') ? 'hex torus · τ = ρ (not in the paper)'
     : name.startsWith('hex') ? 'hex torus · τ = ρ' : 'square torus · τ = i';
-  const wall = hole ? 'kept from the hole search (2026-11), hole about 0.2 % of the area'
-    : featured ? `featured (also in embedded-t${type})`
+  const wall = featured ? `featured (also in embedded-t${type})`
     : name.startsWith('square') ? 'square torus (τ̂ = i)'
     : name.startsWith('hex') ? 'hexagonal torus (τ̂ = ρ)'
     : name.startsWith('rect') ? 'rectangular (Re τ̂ = 0)' : 'rhombic (|Re τ̂| = ½)';
@@ -127,8 +117,8 @@ function parseClass(path: string, text: string): Klass {
   const noteFile = noteFiles[path.replace(/\.csv$/, '.notes.json')];
   const notes = noteFile ? noteFile.rows.map((r) => r.note) : [];
   return {
-    name, type, wall, label, color: hole ? HOLE : highlight && !featured ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
-    visible: true, highlight, featured, hole, notes,
+    name, type, wall, label, color: highlight && !featured ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
+    visible: true, highlight, featured, notes,
     re: Float64Array.from(re), im: Float64Array.from(im),
     cone: Float64Array.from(cone), margin: Float64Array.from(margin), pos, n: re.length,
   };
@@ -239,28 +229,19 @@ function diamondPath(X: number, Y: number, r: number): void {
 }
 
 /**
- * A highlighted torus: gold star (square at i, hex at ρ), diamond (featured) or purple ring
- * (hole search) + halo + a leader-line label. A ring's label goes down-right, the others' up-right,
- * so a ring on top of the featured diamond leaves the diamond's label readable. `withLabel`
- * false draws the marker alone (a second torus at the same spot).
+ * A highlighted torus: gold star (square at i, hex at ρ) or diamond (featured) + halo + a
+ * leader-line label. `withLabel` false draws the marker alone (a second torus at the same spot).
  */
-function drawHighlightMarker(X: number, Y: number, color: string, label: string, kind: 'star' | 'featured' | 'hole', withLabel = true): void {
+function drawHighlightMarker(X: number, Y: number, color: string, label: string, kind: 'star' | 'featured', withLabel = true): void {
   const m = MARK[kind];
-  if (kind === 'hole') {
-    ctx.beginPath(); ctx.arc(X, Y, 15, 0, Math.PI * 2);
-    ctx.fillStyle = m.halo; ctx.fill();
-    ctx.beginPath(); ctx.arc(X, Y, 11.5, 0, Math.PI * 2);
-    ctx.lineWidth = 2.6; ctx.strokeStyle = color; ctx.stroke();
-  } else {
-    ctx.beginPath(); ctx.arc(X, Y, 13, 0, Math.PI * 2);
-    ctx.fillStyle = m.halo; ctx.fill();                           // soft halo
-    if (kind === 'featured') diamondPath(X, Y, 9); else starPath(X, Y, 9.5, 4.2);
-    ctx.fillStyle = color; ctx.fill();
-    ctx.lineWidth = 1.6; ctx.strokeStyle = m.ink; ctx.stroke();
-  }
+  ctx.beginPath(); ctx.arc(X, Y, 13, 0, Math.PI * 2);
+  ctx.fillStyle = m.halo; ctx.fill();                             // soft halo
+  if (kind === 'featured') diamondPath(X, Y, 9); else starPath(X, Y, 9.5, 4.2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.lineWidth = 1.6; ctx.strokeStyle = m.ink; ctx.stroke();
   if (!withLabel) return;
-  // leader line to a labelled pill
-  const lx = X + 14, ly = kind === 'hole' ? Y + 16 : Y - 14;
+  // leader line up-right to a labelled pill
+  const lx = X + 14, ly = Y - 14;
   ctx.strokeStyle = m.line; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(lx, ly); ctx.stroke();
   const text = label;
@@ -289,7 +270,7 @@ function drawPoints(): void {
     const labelled = new Set<string>();                  // one label per spot, however many tori sit there
     for (let i = 0; i < c.n; i++) {
       const X = sx(c.re[i]), Y = sy(c.im[i]), spot = `${Math.round(X)},${Math.round(Y)}`;
-      const kind = c.hole ? 'hole' : c.featured ? 'featured' : 'star';
+      const kind = c.featured ? 'featured' : 'star';
       drawHighlightMarker(X, Y, c.color, c.label, kind, !labelled.has(spot));
       labelled.add(spot);
     }
@@ -312,13 +293,12 @@ function drawLegend(): void {
   ctx.font = `${fs}px ui-monospace, monospace`;
   classes.forEach((c, i) => {
     const y = y0 + (mob ? 44 : 48) + i * rowH;
-    const label = c.hole ? `○ ${c.label}  (${c.n})` : c.featured ? `◆ ${c.label}  (${c.n})` : c.highlight ? `★ ${c.label}  (${c.n})` : `${c.name}  (${c.n})`;
+    const label = c.featured ? `◆ ${c.label}  (${c.n})` : c.highlight ? `★ ${c.label}  (${c.n})` : `${c.name}  (${c.n})`;
     const labW = sw + 8 + ctx.measureText(label).width + 10;
     legendHits.push({ x: x0 - 4, y: y - rowH / 2, w: labW, h: rowH, klass: c });
     ctx.globalAlpha = c.visible ? 1 : 0.32;
     ctx.fillStyle = c.color;
-    if (c.hole) { ctx.beginPath(); ctx.arc(x0 + sw / 2, y, sw / 2 - 0.5, 0, Math.PI * 2); ctx.lineWidth = 2.2; ctx.strokeStyle = c.color; ctx.stroke(); }
-    else if (c.featured) { diamondPath(x0 + sw / 2, y, sw / 2 + 1); ctx.fill(); }
+    if (c.featured) { diamondPath(x0 + sw / 2, y, sw / 2 + 1); ctx.fill(); }
     else if (c.highlight) { starPath(x0 + sw / 2, y, sw / 2 + 1, (sw / 2 + 1) * 0.44); ctx.fill(); }
     else ctx.fillRect(x0, y - sw / 2, sw, sw);
     ctx.fillStyle = THEME.legendLabel;
@@ -517,13 +497,19 @@ function showTorus3D(c: Klass, i: number): void {
  * pop-ups are blocked).
  */
 function openCutout(c: Klass, i: number, positions: ArrayLike<number>): void {
-  const name = `${c.name}-row${i + 1}`;
+  // the sheet names the torus by its triangulation and its modulus, not by a file and a row
+  const T = byId('v8-' + c.type);
+  const valence = new Array<number>(T.vertexCount).fill(0);
+  for (const f of T.triangles) for (const v of f) valence[v]++;
+  const degrees = `T(${valence.sort((a, b) => a - b).join('')})`;
+  const modulus = `${c.re[i].toFixed(4)} ${c.im[i] < 0 ? '-' : '+'} ${Math.abs(c.im[i]).toFixed(4)} i`;
+  const name = `type${c.type}-${c.re[i].toFixed(4)}${c.im[i] < 0 ? '-' : '+'}${Math.abs(c.im[i]).toFixed(4)}i`;
   const info = {
-    title: `Cut-and-fold net of a type-${c.type} paper torus`,
-    subtitle: `${c.name}, row ${i + 1}, modulus ${c.re[i].toFixed(4)} ${c.im[i] < 0 ? '-' : '+'} ${Math.abs(c.im[i]).toFixed(4)} i`,
+    title: 'Cut-and-fold net of a flat paper torus',
+    subtitle: `triangulation type ${c.type}, ${degrees}, modulus ${modulus}`,
   };
   try {
-    openCutoutEditor(byId('v8-' + c.type), positions, info, (bytes) => {
+    openCutoutEditor(T, positions, info, (bytes) => {
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
       const tab = window.open(url, '_blank');
       if (!tab) {
