@@ -33,6 +33,11 @@
  * editor (./cutoutEditor.ts) lets the reader move a triangle across a seam to the seam's other
  * copy, and a tab to the other copy of its seam.
  *
+ * A second button, "cutout PDF · domain", cuts a FUNDAMENTAL DOMAIN instead of the net: the
+ * reader places the parallelogram of the reduced period basis (a square for the square torus) on
+ * the tiling of the plane by the torus's faces (./domainEditor.ts), and the sheet is what lies
+ * inside it, with flaps that slide into each other along slits (./domainCutout.ts).
+ *
  * CLICK a point to read its τ, embedding margin, and flatness (max cone deficit);
  * click empty space to dismiss. Scroll to zoom, drag to pan, click a legend row to
  * toggle a file, r resets the view, f fits all.
@@ -48,6 +53,7 @@ import { paperMaterials } from '@display/viewer/materials';
 import { downloadObj, downloadNetObj } from '@display/mesh/obj';
 import { skyEnvironment } from '@app/render/stage';
 import { openCutoutEditor } from './cutoutEditor';
+import { openDomainEditor } from './domainEditor';
 
 // data/ = committed curated examples; live/ = gitignored symlinks into samples/
 // for watching an active search (re-run a script, refresh, it updates). Use
@@ -356,16 +362,23 @@ const dlNetBtn = document.createElement('button');
 dlNetBtn.textContent = '⬇ .obj · net';
 // a cut-and-fold PDF of the net below, in exactly its arrangement (see ./cutout.ts)
 const pdfBtn = document.createElement('button');
-pdfBtn.textContent = 'cutout PDF …';
+pdfBtn.textContent = 'cutout PDF · net …';
 pdfBtn.title = 'a cut-and-fold sheet of the net shown below: arrange it (move triangles and tabs across their seams), then open the PDF';
-for (const b of [dl3dBtn, dlNetBtn, pdfBtn]) {
+// a cut-and-fold PDF of a fundamental domain, placed by the reader on the tiling (see ./domainCutout.ts)
+const domBtn = document.createElement('button');
+domBtn.textContent = 'cutout PDF · domain …';
+domBtn.title = 'a cut-and-fold sheet of a fundamental domain: place the domain on the tiling of the plane by the faces of the torus, then open the PDF';
+for (const b of [dl3dBtn, dlNetBtn, pdfBtn, domBtn]) {
   b.style.cssText = 'flex:1;padding:6px 8px;font:11px ui-monospace,monospace;cursor:pointer;'
     + 'border:1px solid #166534;border-radius:6px;background:#fff;color:#166534';
 }
 const dlRow = document.createElement('div');
 dlRow.style.cssText = 'display:flex;gap:6px;margin:0 11px 6px';
-dlRow.append(dl3dBtn, dlNetBtn, pdfBtn);
-panel.append(statsDiv, investBtn, dlRow, glHost);
+dlRow.append(dl3dBtn, dlNetBtn);
+const pdfRow = document.createElement('div');
+pdfRow.style.cssText = 'display:flex;gap:6px;margin:0 11px 6px';
+pdfRow.append(pdfBtn, domBtn);
+panel.append(statsDiv, investBtn, dlRow, pdfRow, glHost);
 document.body.appendChild(panel);
 
 /** URL of the slice view for a torus — dev (per-demo djb2 port) or the Pages build (sibling path). */
@@ -417,7 +430,7 @@ function layoutPanel(): void {
     s.left = '8px'; s.right = '8px'; s.bottom = '8px'; s.width = 'auto'; s.height = '42vh';
   } else {
     const w = Math.min(360, Math.max(300, Math.round(window.innerWidth * 0.26)));
-    s.left = 'auto'; s.right = '16px'; s.bottom = '16px'; s.width = `${w}px`; s.height = `${Math.round(w * 1.12)}px`;
+    s.left = 'auto'; s.right = '16px'; s.bottom = '16px'; s.width = `${w}px`; s.height = `${Math.round(w * 1.12) + 34}px`;   // 34: the row of the two PDF buttons
   }
   const rect = glHost.getBoundingClientRect();
   const w = Math.max(80, Math.floor(rect.width)), h = Math.max(80, Math.floor(rect.height));
@@ -485,18 +498,20 @@ function showTorus3D(c: Klass, i: number): void {
   investBtn.onclick = () => window.open(sliceUrl(c.type, c.pos[i]), '_blank');
   dl3dBtn.onclick = () => downloadObj(paper, `torus-type${c.type}.obj`);
   dlNetBtn.onclick = () => downloadNetObj(paper, `torus-type${c.type}-net.obj`);
-  pdfBtn.onclick = () => openCutout(c, i, paper.positions);
+  pdfBtn.onclick = () => openCutout(c, i, paper.positions, 'net');
+  domBtn.onclick = () => openCutout(c, i, paper.positions, 'domain');
 
   panel.style.display = 'flex';
   insetVisible = true;
   layoutPanel();
 }
 /**
- * The cut-and-fold sheet of the selected torus: first an editor in which the reader may move
- * triangles and tabs (./cutoutEditor.ts), then the PDF, opened in a new tab (or saved, if
- * pop-ups are blocked).
+ * A cut-and-fold sheet of the selected torus: first an editor, then the PDF, opened in a new tab
+ * (or saved, if pop-ups are blocked). For the net the reader may move triangles and tabs
+ * (./cutoutEditor.ts), for a fundamental domain the reader places it on the tiling
+ * (./domainEditor.ts).
  */
-function openCutout(c: Klass, i: number, positions: ArrayLike<number>): void {
+function openCutout(c: Klass, i: number, positions: ArrayLike<number>, which: 'net' | 'domain'): void {
   // the sheet names the torus by its triangulation and its modulus, not by a file and a row
   const T = byId('v8-' + c.type);
   const valence = new Array<number>(T.vertexCount).fill(0);
@@ -505,16 +520,16 @@ function openCutout(c: Klass, i: number, positions: ArrayLike<number>): void {
   const modulus = `${c.re[i].toFixed(4)} ${c.im[i] < 0 ? '-' : '+'} ${Math.abs(c.im[i]).toFixed(4)} i`;
   const name = `type${c.type}-${c.re[i].toFixed(4)}${c.im[i] < 0 ? '-' : '+'}${Math.abs(c.im[i]).toFixed(4)}i`;
   const info = {
-    title: 'Cut-and-fold net of a flat paper torus',
+    title: which === 'net' ? 'Cut-and-fold net of a flat paper torus' : 'Cut-and-fold fundamental domain of a flat paper torus',
     subtitle: `triangulation type ${c.type}, ${degrees}, modulus ${modulus}`,
   };
   try {
-    openCutoutEditor(T, positions, info, (bytes) => {
+    (which === 'net' ? openCutoutEditor : openDomainEditor)(T, positions, info, (bytes) => {
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
       const tab = window.open(url, '_blank');
       if (!tab) {
         const a = document.createElement('a');
-        a.href = url; a.download = `cutout-${name}.pdf`;
+        a.href = url; a.download = `cutout-${which}-${name}.pdf`;
         document.body.append(a); a.click(); a.remove();
       }
       window.setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);

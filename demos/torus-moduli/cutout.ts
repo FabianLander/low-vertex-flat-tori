@@ -66,8 +66,9 @@ export const CUT_LW = 0.4, TAB_LW = 0.35;
 
 // ---- the page, in mm ----
 const A4: V2 = [210, 297];
-const MARGIN = 11, TAB_ROOM = 6, HEADER = 26;
-const TAB_H = 6, TAB_MIN_DEPTH = 2.5, TAB_MIN_BASE = 4, TAB_MIN_AREA = 20;
+export const MARGIN = 11, TAB_ROOM = 6, HEADER = 26;
+export const TAB_H = 6;
+const TAB_MIN_DEPTH = 2.5, TAB_MIN_BASE = 4, TAB_MIN_AREA = 20;
 const TAB_FACE_CLEAR = 1.2, TAB_NET_CLEAR = 0.5, TAB_TAB_CLEAR = 1.0;
 
 const sub3 = (p: V3, q: V3): V3 => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
@@ -103,7 +104,7 @@ export function creaseKinds(triang: Triangulation, positions: ArrayLike<number>)
 }
 
 /** The printed side is the side the face normals point to: is that the outside of the solid? */
-function normalsPointOut(triang: Triangulation, positions: ArrayLike<number>): boolean {
+export function normalsPointOut(triang: Triangulation, positions: ArrayLike<number>): boolean {
   let vol = 0;
   for (const [a, b, c] of triang.triangles) {
     const A: V3 = [positions[3 * a], positions[3 * a + 1], positions[3 * a + 2]];
@@ -116,7 +117,7 @@ function normalsPointOut(triang: Triangulation, positions: ArrayLike<number>): b
 
 // ---- convex polygons ----
 /** Keep the part of `poly` on the left of the directed line a → b, moved left by `off`. */
-function clipLeft(poly: V2[], a: V2, b: V2, off: number): V2[] {
+export function clipLeft(poly: V2[], a: V2, b: V2, off: number): V2[] {
   const L = dist(a, b), nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L;
   const side = (p: V2): number => (p[0] - a[0]) * nx + (p[1] - a[1]) * ny - off;
   const out: V2[] = [];
@@ -127,7 +128,7 @@ function clipLeft(poly: V2[], a: V2, b: V2, off: number): V2[] {
   }
   return out;
 }
-function area(poly: readonly V2[]): number {
+export function area(poly: readonly V2[]): number {
   let s = 0;
   for (let i = 0; i < poly.length; i++) { const p = poly[i], q = poly[(i + 1) % poly.length]; s += p[0] * q[1] - q[0] * p[1]; }
   return s / 2;
@@ -538,7 +539,7 @@ export function cutoutPdf(triang: Triangulation, positions: ArrayLike<number>, i
 }
 
 // ---- a one-page PDF with lines, fills and Helvetica text, in mm ----
-class Page {
+export class Page {
   private ops: string[] = [];
   private readonly W: number;
   private readonly H: number;
