@@ -42,6 +42,10 @@
  * the tiling of the plane by the torus's faces (./domainEditor.ts), and the sheet is what lies
  * inside it, with flaps that slide into each other along slits (./domainCutout.ts).
  *
+ * For a type-6 torus both editors offer "colours": the faces filled in the σ-pair pastels of the
+ * symmetric-paper-tori viewer (σ = (0 3)(1 5)(2 7)(4 6) is an automorphism of v8-6, and a face and
+ * its σ-partner share a colour). The other types have no such pairing, so no colours.
+ *
  * CLICK a point to read its τ, embedding margin, and flatness (max cone deficit);
  * click empty space to dismiss. Scroll to zoom, drag to pan, click a legend row to
  * toggle a file, r resets the view, f fits all.
@@ -58,6 +62,8 @@ import { downloadObj, downloadNetObj } from '@display/mesh/obj';
 import { skyEnvironment } from '@app/render/stage';
 import { openCutoutEditor } from './cutoutEditor';
 import { openDomainEditor } from './domainEditor';
+import type { Rgb } from './cutout';
+import type { Triangulation } from '@core/topology/triangulation';
 
 // data/ = committed curated examples; live/ = gitignored symlinks into samples/
 // for watching an active search (re-run a script, refresh, it updates). Use
@@ -528,6 +534,26 @@ function showTorus3D(c: Klass, i: number): void {
   layoutPanel();
 }
 /**
+ * The face colours of a type-6 sheet: the σ-pair pastels of the symmetric-paper-tori viewer, assigned
+ * as there (in face order, a face and its σ-partner take the next colour), so a face has the same
+ * colour on both sites' sheets.
+ */
+const SIGMA_V86 = [3, 5, 7, 0, 6, 1, 4, 2];   // σ = (0 3)(1 5)(2 7)(4 6)
+const PAIR_COLOURS = ['#f2b8b5', '#b9d3ee', '#f6dca0', '#d8c3ee', '#a9ddd8', '#f3c1dc', '#d9dcb0', '#9fd39a'];
+function sigmaPairColours(T: Triangulation): Rgb[] {
+  const key = (f: readonly number[]): string => [...f].sort((a, b) => a - b).join(',');
+  const index = new Map(T.triangles.map((f, i) => [key(f), i]));
+  const pair = new Array<number>(T.triangles.length).fill(-1);
+  let np = 0;
+  T.triangles.forEach((f, i) => {
+    if (pair[i] >= 0) return;
+    pair[i] = pair[index.get(key(f.map((v) => SIGMA_V86[v])))!] = np++;
+  });
+  const rgb = (h: string): Rgb => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
+  return pair.map((p) => rgb(PAIR_COLOURS[p % PAIR_COLOURS.length]));
+}
+
+/**
  * A cut-and-fold sheet of the selected torus: first an editor, then the PDF, opened in a new tab
  * (or saved, if pop-ups are blocked). For the net the reader may move triangles and tabs
  * (./cutoutEditor.ts), for a fundamental domain the reader places it on the tiling
@@ -544,6 +570,7 @@ function openCutout(c: Klass, i: number, positions: ArrayLike<number>, which: 'n
   const info = {
     title: which === 'net' ? 'Cut-and-fold net of a flat paper torus' : 'Cut-and-fold fundamental domain of a flat paper torus',
     subtitle: `triangulation type ${c.type}, ${degrees}, modulus ${modulus}`,
+    faceColours: c.type === 6 ? sigmaPairColours(T) : undefined,
   };
   try {
     (which === 'net' ? openCutoutEditor : openDomainEditor)(T, positions, info, (bytes) => {
