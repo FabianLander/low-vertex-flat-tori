@@ -408,9 +408,10 @@ const insetCam = new THREE.PerspectiveCamera(40, 1, 0.01, 100);
 const insetControls = new OrbitControls(insetCam, insetRenderer.domElement);
 insetControls.enableDamping = true;
 insetControls.enablePan = true;
-// Interaction (pointer handler below): one finger on the torus spins it; one finger
-// elsewhere orbits the scene; two fingers pan/zoom the scene (OrbitControls owns the
-// multi-touch). Mouse: right-drag pans, scroll zooms.
+// Interaction is OrbitControls alone, a turntable about the vertical: one finger orbits,
+// two fingers pan/zoom; mouse: drag orbits, right-drag pans, scroll zooms. (The torus used to
+// spin on its own by small rotations about fixed axes, which do not commute: a closed drag
+// of 100 × 100 px left it turned by about 53°.)
 
 const { surface: insetFace } = paperMaterials({
   paperColor: '#dcbf6f', gridColor: '#2435AF', gridMinorColor: '#4e5988',
@@ -418,7 +419,6 @@ const { surface: insetFace } = paperMaterials({
 const NET_EDGE = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5 });   // black, very-thin fold-line tubes
 
 let insetMesh: THREE.Object3D | null = null;
-let torusPivot: THREE.Object3D | null = null;   // the folded torus; drag it to spin in place
 let insetVisible = false;
 
 // position/size the panel for the current viewport, then match the renderer to its gl area
@@ -447,22 +447,21 @@ function showTorus3D(c: Klass, i: number): void {
   }
   const paper = paperFromRow(byId('v8-' + c.type), c.pos[i]);
 
-  // The folded paper torus (NO edges; drag it to spin) floating above its UNFOLDED
+  // The folded paper torus (NO edges) floating above its UNFOLDED
   // developed net, whose fold lines are black very-thin tubes (rect-gallery / Rich's
   // present). Both faces use the grid material so the graph-paper tiles across the net.
   const group = new THREE.Group();
 
-  // folded torus: grid face, no edges, centered in a spin pivot
+  // folded torus: grid face, no edges, centered in a pivot
   const tview = makeTorusView(byId('v8-' + c.type), { surface: { material: insetFace } });
   tview.draw(paper.positions);
   const torus = tview.group;
   torus.updateMatrixWorld(true);
   const tbox = new THREE.Box3().setFromObject(torus);
   const tr = tbox.getBoundingSphere(new THREE.Sphere()).radius || 1;
-  torus.position.sub(tbox.getCenter(new THREE.Vector3()));   // centered at the pivot origin → spins in place
+  torus.position.sub(tbox.getCenter(new THREE.Vector3()));   // centered at the pivot origin
   const pivot = new THREE.Group();
   pivot.add(torus);
-  torusPivot = pivot;
 
   // developed net: grid face + black very-thin tube fold lines
   const sheetView = developedSheet(byId('v8-' + c.type), { faceMaterial: insetFace, foldMaterial: NET_EDGE, foldRadius: 0.0015 });
@@ -546,52 +545,6 @@ function hideTorus3D(): void { panel.style.display = 'none'; insetVisible = fals
   insetControls.update();
   insetRenderer.render(insetScene, insetCam);
 })();
-
-// ---- one finger on the torus spins it; one finger elsewhere orbits; two fingers
-//      pan/zoom the scene (we step aside and let OrbitControls own the gesture) ----
-{
-  const ROT = 0.01;
-  const ray = new THREE.Raycaster();
-  const ndc = new THREE.Vector2();
-  const cv = insetRenderer.domElement;
-  const down = new Set<number>();
-  let spinning = false;
-  let lx = 0, ly = 0;
-  const overTorus = (e: PointerEvent | MouseEvent): boolean => {
-    if (!torusPivot) return false;
-    const r = cv.getBoundingClientRect();
-    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-    ray.setFromCamera(ndc, insetCam);
-    return ray.intersectObject(torusPivot, true).length > 0;
-  };
-  cv.addEventListener('pointerdown', (e) => {
-    down.add(e.pointerId);
-    if (down.size > 1) { spinning = false; return; }   // 2+ fingers → OrbitControls pans/zooms
-    if (e.button === 0 && overTorus(e)) {
-      spinning = true;
-      insetControls.enableRotate = false;              // suppress orbit so this drag only spins the torus
-      lx = e.clientX; ly = e.clientY; cv.style.cursor = 'grabbing';
-    }
-  }, { capture: true });
-  cv.addEventListener('pointermove', (e) => {
-    if (!spinning) { if (down.size === 0) cv.style.cursor = overTorus(e) ? 'grab' : 'default'; return; }
-    const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
-    const qy = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dx * ROT);
-    const qp = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), dy * ROT);
-    torusPivot?.quaternion.premultiply(qy).premultiply(qp);
-  });
-  const up = (e: PointerEvent): void => {
-    down.delete(e.pointerId);
-    if (down.size === 0) {
-      spinning = false;
-      insetControls.enableRotate = true;               // restore one-finger orbit
-      cv.style.cursor = overTorus(e) ? 'grab' : 'default';
-    }
-  };
-  cv.addEventListener('pointerup', up);
-  cv.addEventListener('pointercancel', up);
-  cv.addEventListener('dblclick', (e) => { if (overTorus(e)) torusPivot?.quaternion.identity(); });
-}
 
 // ---- a tap/click: legend toggle, else select the nearest visible point ----
 function selectAt(x: number, y: number): void {
