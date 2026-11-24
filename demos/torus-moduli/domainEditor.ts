@@ -36,7 +36,8 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   let gap = 0;                                                          // mm between the margin and the creases
   let rounded = true;                                                   // the mouths of the slits
   let origin: V2 = [0.5, 0.5];
-  let sheet: DomainSheet = layoutDomain(model, origin, { gap, rounded });
+  let text = false;                                                     // the "text" checkbox: header room on the page
+  let sheet: DomainSheet = layoutDomain(model, origin, { gap, rounded, text });
   let patch: Patch = tilingPatch(model, sheet.thickness / sheet.scale);
 
   // ---- the overlay ----
@@ -203,7 +204,7 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
 
   function moveTo(next: V2): void {
     origin = [Math.min(1, Math.max(0, next[0])), Math.min(1, Math.max(0, next[1]))];
-    sheet = layoutDomain(model, origin, { gap, rounded });
+    sheet = layoutDomain(model, origin, { gap, rounded, text });
     draw();
   }
 
@@ -272,6 +273,8 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   gapS.input.oninput = () => { gap = Number(gapS.input.value); moveTo(origin); };
   slitBtn.onclick = () => { rounded = !rounded; moveTo(origin); };
   pdfBtn.onclick = () => openPdf(domainPdf(sheet, { ...info, faceColours: colourBox.checked ? info.faceColours : undefined, text: textBox.checked }));
+  // without text the sheet fills the page, at a larger scale, so the tiling around it is redone too
+  textBox.onchange = () => { text = textBox.checked; moveTo(origin); patch = tilingPatch(model, sheet.thickness / sheet.scale); draw(); };
   colourBox.onchange = () => draw();
   // keys go to the editor while it is open, not to the moduli plot underneath (capture, first)
   const close = (): void => { window.removeEventListener('resize', draw); window.removeEventListener('keydown', onKey, true); root.remove(); };

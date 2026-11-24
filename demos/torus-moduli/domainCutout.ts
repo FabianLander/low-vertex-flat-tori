@@ -49,7 +49,7 @@ import { developNet } from '@core/moduli/develop.ts';
 import { modulus } from '@core/moduli/modulus.ts';
 import {
   creaseKinds, normalsPointOut, ekey, clipLeft, area, Page,
-  CUT_C, MOUNTAIN_C, VALLEY_C, CREASE_LW, MOUNTAIN_DASH, VALLEY_DASH, CUT_LW, MARGIN, TAB_H,
+  CUT_C, MOUNTAIN_C, VALLEY_C, CREASE_LW, MOUNTAIN_DASH, VALLEY_DASH, CUT_LW, MARGIN, PRINT_MARGIN, TAB_H,
   type V2, type CutoutInfo,
 } from './cutout';
 
@@ -356,6 +356,8 @@ export interface DomainOptions {
   readonly thickness?: number;
   /** Are the mouths of the slits rounded? */
   readonly rounded?: boolean;
+  /** Is there a header on the page (default true)? Without one the sheet takes the whole page but `PRINT_MARGIN`. */
+  readonly text?: boolean;
 }
 
 export interface Flap {
@@ -670,13 +672,14 @@ export function layoutDomain(model: DomainModel, origin: V2, options: DomainOpti
   const gap = Math.min(FACE_CLEAR, Math.max(0, options.gap ?? 0)), rounded = options.rounded ?? false;
   const { a, b } = model;
 
-  // ---- the page: the thickened domain as large as A4 holds it under the header. Moving every side out
-  // by w moves the corners along both sides' directions, by w / sin of their angle each: sideways that is
-  // more than w if the domain is slanted. ----
+  // ---- the page: the thickened domain as large as A4 holds it under the header (if there is text; else
+  // with PRINT_MARGIN all round). Moving every side out by w moves the corners along both sides'
+  // directions, by w / sin of their angle each: sideways that is more than w if the domain is slanted. ----
+  const text = options.text ?? true, M = text ? MARGIN : PRINT_MARGIN, top = text ? HEAD_ROOM : PRINT_MARGIN;
   const lb = Math.hypot(b[0], b[1]), u: V2 = [1, 0], v: V2 = [b[0] / lb, b[1] / lb];
   const bw = a[0] + Math.abs(b[0]), bh = b[1], hMin = Math.min(b[1], a[0] * b[1] / lb);
   const fitted = (margin: number): { s: number; page: 'portrait' | 'landscape' } => {
-    const at = (W: number, H: number): number => Math.min((W - 2 * MARGIN - 2 * (margin / v[1]) * (1 + Math.abs(v[0]))) / bw, (H - HEAD_ROOM - MARGIN - 2 * margin) / bh);
+    const at = (W: number, H: number): number => Math.min((W - 2 * M - 2 * (margin / v[1]) * (1 + Math.abs(v[0]))) / bw, (H - top - M - 2 * margin) / bh);
     const portrait = at(210, 297), landscape = at(297, 210);
     return portrait >= landscape ? { s: portrait, page: 'portrait' } : { s: landscape, page: 'landscape' };
   };
@@ -687,7 +690,7 @@ export function layoutDomain(model: DomainModel, origin: V2, options: DomainOpti
   if (2 * w > s * hMin) { w = 0.49 * s * hMin; ({ s, page } = fitted(w)); }
   const t = w / v[1];
   const W = page === 'portrait' ? 210 : 297, H = page === 'portrait' ? 297 : 210;
-  const X0 = W / 2 - s * (Math.min(0, b[0]) + a[0] + Math.max(0, b[0])) / 2, Y0 = (MARGIN + H - HEAD_ROOM) / 2 - s * b[1] / 2;
+  const X0 = W / 2 - s * (Math.min(0, b[0]) + a[0] + Math.max(0, b[0])) / 2, Y0 = (M + H - top) / 2 - s * b[1] / 2;
   const place = (p: V2): V2 => [X0 + s * p[0], Y0 + s * p[1]];                    // from the domain's own frame
   const toPage = (p: V2): V2 => place([p[0] - o[0], p[1] - o[1]]);
   const toModel = (p: V2): V2 => [o[0] + (p[0] - X0) / s, o[1] + (p[1] - Y0) / s];

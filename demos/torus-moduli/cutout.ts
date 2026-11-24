@@ -81,6 +81,8 @@ export const CUT_LW = 0.4, TAB_LW = 0.35;
 // ---- the page, in mm ----
 const A4: V2 = [210, 297];
 export const MARGIN = 11, TAB_ROOM = 6, HEADER = 26;
+/** The white around a sheet without text, in mm: no header, and just enough edge for a printer. */
+export const PRINT_MARGIN = 6;
 export const TAB_H = 6;
 const TAB_MIN_DEPTH = 2.5, TAB_MIN_BASE = 4, TAB_MIN_AREA = 20;
 const TAB_FACE_CLEAR = 1.2, TAB_NET_CLEAR = 0.5, TAB_TAB_CLEAR = 1.0;
@@ -246,6 +248,8 @@ export interface Sheet {
   readonly page: 'portrait' | 'landscape';
   /** Millimetres per unit length of the torus. */
   readonly scale: number;
+  /** The angle, in degrees, by which the development is turned on the page (0 when there is text). */
+  readonly turn: number;
   /** From the development (with a face's translation added) to the page. */
   readonly toPage: (p: V2) => V2;
   /** Each face on the page. */
@@ -280,22 +284,36 @@ function joined(model: CutoutModel, faces: V2[][], key: string): boolean {
   return dist(P(t1, u), P(t2, u)) < tol && dist(P(t1, v), P(t2, v)) < tol;
 }
 
-export function layoutSheet(model: CutoutModel, arr: Arrangement): Sheet {
+/**
+ * `text`: is there a header on the page (default true)? Without one the net takes the whole page but `PRINT_MARGIN`, and
+ * is turned as well: by `turn` degrees if given, else by the angle (in half degrees) at which it prints largest.
+ */
+export function layoutSheet(model: CutoutModel, arr: Arrangement, opts: { readonly text?: boolean; readonly turn?: number } = {}): Sheet {
   const T = model.triang.triangles;
   const faces = placed(model, arr);
   const local = (t: number, v: number): number => T[t].indexOf(v);
 
-  // ---- the page: the arrangement as it is, as large as an A4 page holds it ----
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const tri of faces) for (const [x, y] of tri) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-  const fitIn = (W: number, H: number): number => Math.min((W - 2 * (MARGIN + TAB_ROOM)) / (x1 - x0), (H - 2 * (MARGIN + TAB_ROOM) - HEADER) / (y1 - y0));
-  const portrait = fitIn(A4[0], A4[1]), landscape = fitIn(A4[1], A4[0]);
-  const page: 'portrait' | 'landscape' = portrait >= landscape ? 'portrait' : 'landscape';
+  // ---- the page: the arrangement as large as an A4 page holds it, under the header if there is text, turned if not ----
+  const text = opts.text ?? true, M = text ? MARGIN : PRINT_MARGIN, head = text ? HEADER : 0;
+  const pts = faces.flat();
+  const fitTurned = (deg: number) => {
+    const c = Math.cos((deg * Math.PI) / 180), si = Math.sin((deg * Math.PI) / 180);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [x, y] of pts) {
+      const u = c * x - si * y, v = si * x + c * y;
+      x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v);
+    }
+    const fitIn = (W: number, H: number): number => Math.min((W - 2 * (M + TAB_ROOM)) / (x1 - x0), (H - 2 * (M + TAB_ROOM) - head) / (y1 - y0));
+    const portrait = fitIn(A4[0], A4[1]), landscape = fitIn(A4[1], A4[0]);
+    return { deg, c, si, x0, x1, y0, y1, s: Math.max(portrait, landscape), page: (portrait >= landscape ? 'portrait' : 'landscape') as 'portrait' | 'landscape' };
+  };
+  let fit = fitTurned(text ? 0 : opts.turn ?? 0);
+  if (!text && opts.turn === undefined) for (let d = 0.5; d < 180; d += 0.5) { const f = fitTurned(d); if (f.s > fit.s) fit = f; }
+  const { s, page, c, si, x0, x1, y0, y1 } = fit;
   const [PW, PH] = page === 'portrait' ? A4 : [A4[1], A4[0]] as V2;
-  const s = Math.max(portrait, landscape);
-  const bodyH = PH - HEADER;
+  const bodyH = PH - head;
   const ox = PW / 2 - s * (x0 + x1) / 2, oy = bodyH / 2 - s * (y0 + y1) / 2;
-  const toPage = (p: V2): V2 => [ox + s * p[0], oy + s * p[1]];
+  const toPage = (p: V2): V2 => [ox + s * (c * p[0] - si * p[1]), oy + s * (si * p[0] + c * p[1])];
   const tris = faces.map((tri) => [toPage(tri[0]), toPage(tri[1]), toPage(tri[2])] as [V2, V2, V2]);
 
   // ---- folds and seams, read off the page ----
@@ -453,7 +471,7 @@ export function layoutSheet(model: CutoutModel, arr: Arrangement): Sheet {
   for (let i = 0; i < tris.length; i++) for (let j = i + 1; j < tris.length; j++) if (overlapArea(tris[i], tris[j]) > 1e-3) overlaps.push([i, j]);
 
   return {
-    W: PW, H: PH, page, scale: s, toPage, tris, folds, adjacency, copies, tabs, missingTabs, lines, letters, overlaps,
+    W: PW, H: PH, page, scale: s, turn: fit.deg, toPage, tris, folds, adjacency, copies, tabs, missingTabs, lines, letters, overlaps,
     printedSide: model.printedOutside ? 'outside' : 'inside', creases: { mountain, valley }, seams: seamKeys.length,
   };
 }

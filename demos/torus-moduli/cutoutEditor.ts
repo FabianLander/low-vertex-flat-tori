@@ -89,7 +89,16 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   bar.append(title, ...(info.faceColours ? [colourWrap] : []), textWrap, mirrorWrap, undoBtn, resetBtn, pdfBtn, closeBtn);
   // the sheet as it is shown and printed: the layout of the arrangement, mirrored or not. Face
   // numbers and seam keys survive the mirror, so picking, moving and flipping tabs are unaffected.
-  const laid = (): Sheet => { const s = layoutSheet(model, arr); return mirrorBox.checked ? mirrorSheet(s) : s; };
+  // Without text the net is turned to fill the page. The angle is kept from one layout to the next unless another one
+  // prints at least 3% larger, so the sheet does not spin with every move.
+  let turn: number | undefined;
+  const laid = (): Sheet => {
+    const text = textBox.checked;
+    let s = layoutSheet(model, arr, { text });
+    if (!text && turn !== undefined) { const kept = layoutSheet(model, arr, { text, turn }); if (s.scale < 1.03 * kept.scale) s = kept; }
+    turn = text ? undefined : s.turn;
+    return mirrorBox.checked ? mirrorSheet(s) : s;
+  };
   sheet = laid();
   const hint = document.createElement('div');
   hint.style.cssText = 'padding:6px 14px;font-size:12px;color:rgba(20,20,20,0.7)';
@@ -229,7 +238,7 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   undoBtn.onclick = () => { const prev = history.pop(); if (!prev) return; arr = prev; sheet = laid(); hover = null; draw(); };
   resetBtn.onclick = () => { if (arr === first) return; history.push(arr); arr = first; sheet = laid(); hover = null; draw(); };
   pdfBtn.onclick = () => openPdf(sheetPdf(sheet, { ...info, faceColours: colourBox.checked ? info.faceColours : undefined, text: textBox.checked }));
-  textBox.onchange = () => draw();
+  textBox.onchange = () => { sheet = laid(); hover = null; draw(); };   // without text the net fills the page
   // keys go to the editor while it is open, not to the moduli plot underneath (capture, first)
   const close = (): void => { window.removeEventListener('resize', draw); window.removeEventListener('keydown', onKey, true); root.remove(); };
   const onKey = (e: KeyboardEvent): void => {
