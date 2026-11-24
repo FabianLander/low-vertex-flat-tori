@@ -18,6 +18,10 @@
  * diamond in its type colour, not a gold star — it is not a special point of moduli
  * space — and counted once in the total (2026-11).
  *
+ * symmetric-exact-t6 is the torus q of Theorem 1.1 of the paper on the σ-symmetric tori
+ * (~/src/symmetric-paper-tori): σ-symmetric, exactly flat and certified embedded. Drawn as
+ * a triangle in its type colour and labelled "symmetric exact torus" (2026-11).
+ *
  * A file may have notes, <name>.notes.json beside <name>.csv, one line per row, shown when the
  * row is clicked. Clicking again on the same spot steps through every torus drawn there.
  *
@@ -87,12 +91,14 @@ const HILITE = '#f59e0b';   // gold — the starred special tori (square τ̂ = 
 const MARK = {
   star: { halo: 'rgba(245,158,11,0.18)', ink: '#7c4a00', line: 'rgba(124,74,0,0.55)', edge: 'rgba(124,74,0,0.35)' },
   featured: { halo: 'rgba(21,128,61,0.18)', ink: '#0b4d25', line: 'rgba(11,77,37,0.55)', edge: 'rgba(11,77,37,0.35)' },
+  symmetric: { halo: 'rgba(21,128,61,0.18)', ink: '#0b4d25', line: 'rgba(11,77,37,0.55)', edge: 'rgba(11,77,37,0.35)' },
 };
 
 type Klass = {
   name: string; type: number; wall: string; label: string; color: string; visible: boolean;
   highlight: boolean;        // drawn as a gold star, on top, with a label
   featured: boolean;         // a highlight drawn as a diamond in its type colour instead
+  symmetric: boolean;        // a highlight drawn as a triangle in its type colour (the symmetric exact torus)
   notes: string[];           // one line per row, from <name>.notes.json, or empty
   re: Float64Array; im: Float64Array; cone: Float64Array; margin: Float64Array;
   pos: Float64Array[]; n: number;
@@ -102,11 +108,14 @@ function parseClass(path: string, text: string): Klass {
   const name = path.match(/([^/]+)\.csv$/)![1];                       // e.g. "rhombic-t6"
   const type = Number((name.match(/t(\d)/) || [])[1]);
   const featured = name.startsWith('featured');                        // picked for its looks
-  const highlight = featured || name.startsWith('square') || name.startsWith('hex'); // the starred special tori
+  const symmetric = name.startsWith('symmetric');                      // the torus q of the σ-symmetric paper
+  const highlight = featured || symmetric || name.startsWith('square') || name.startsWith('hex'); // the starred special tori
   const label = featured ? `featured · type ${type}`
+    : symmetric ? 'symmetric exact torus'
     : name.startsWith('hex-rho-left') ? 'hex torus · τ = ρ (not in the paper)'
     : name.startsWith('hex') ? 'hex torus · τ = ρ' : 'square torus · τ = i';
   const wall = featured ? `featured (also in embedded-t${type})`
+    : symmetric ? 'σ-symmetric, exactly flat (the torus q of the σ-symmetric paper)'
     : name.startsWith('square') ? 'square torus (τ̂ = i)'
     : name.startsWith('hex') ? 'hexagonal torus (τ̂ = ρ)'
     : name.startsWith('rect') ? 'rectangular (Re τ̂ = 0)' : 'rhombic (|Re τ̂| = ½)';
@@ -123,8 +132,8 @@ function parseClass(path: string, text: string): Klass {
   const noteFile = noteFiles[path.replace(/\.csv$/, '.notes.json')];
   const notes = noteFile ? noteFile.rows.map((r) => r.note) : [];
   return {
-    name, type, wall, label, color: highlight && !featured ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
-    visible: true, highlight, featured, notes,
+    name, type, wall, label, color: highlight && !featured && !symmetric ? HILITE : (TYPE_COLOR[type] ?? FALLBACK),
+    visible: true, highlight, featured, symmetric, notes,
     re: Float64Array.from(re), im: Float64Array.from(im),
     cone: Float64Array.from(cone), margin: Float64Array.from(margin), pos, n: re.length,
   };
@@ -234,15 +243,28 @@ function diamondPath(X: number, Y: number, r: number): void {
   ctx.closePath();
 }
 
+/** A triangle path centered at (X,Y), tip up, corners at distance r. */
+function trianglePath(X: number, Y: number, r: number): void {
+  ctx.beginPath();
+  for (let k = 0; k < 3; k++) {
+    const a = -Math.PI / 2 + (k * 2 * Math.PI) / 3;
+    if (k === 0) ctx.moveTo(X + r * Math.cos(a), Y + r * Math.sin(a)); else ctx.lineTo(X + r * Math.cos(a), Y + r * Math.sin(a));
+  }
+  ctx.closePath();
+}
+
 /**
- * A highlighted torus: gold star (square at i, hex at ρ) or diamond (featured) + halo + a
- * leader-line label. `withLabel` false draws the marker alone (a second torus at the same spot).
+ * A highlighted torus: gold star (square at i, hex at ρ), diamond (featured) or triangle (the
+ * symmetric exact torus) + halo + a leader-line label. `withLabel` false draws the marker alone
+ * (a second torus at the same spot).
  */
-function drawHighlightMarker(X: number, Y: number, color: string, label: string, kind: 'star' | 'featured', withLabel = true): void {
+function drawHighlightMarker(X: number, Y: number, color: string, label: string, kind: 'star' | 'featured' | 'symmetric', withLabel = true): void {
   const m = MARK[kind];
   ctx.beginPath(); ctx.arc(X, Y, 13, 0, Math.PI * 2);
   ctx.fillStyle = m.halo; ctx.fill();                             // soft halo
-  if (kind === 'featured') diamondPath(X, Y, 9); else starPath(X, Y, 9.5, 4.2);
+  if (kind === 'featured') diamondPath(X, Y, 9);
+  else if (kind === 'symmetric') trianglePath(X, Y + 1.5, 10);
+  else starPath(X, Y, 9.5, 4.2);
   ctx.fillStyle = color; ctx.fill();
   ctx.lineWidth = 1.6; ctx.strokeStyle = m.ink; ctx.stroke();
   if (!withLabel) return;
@@ -276,7 +298,7 @@ function drawPoints(): void {
     const labelled = new Set<string>();                  // one label per spot, however many tori sit there
     for (let i = 0; i < c.n; i++) {
       const X = sx(c.re[i]), Y = sy(c.im[i]), spot = `${Math.round(X)},${Math.round(Y)}`;
-      const kind = c.featured ? 'featured' : 'star';
+      const kind = c.featured ? 'featured' : c.symmetric ? 'symmetric' : 'star';
       drawHighlightMarker(X, Y, c.color, c.label, kind, !labelled.has(spot));
       labelled.add(spot);
     }
@@ -299,12 +321,13 @@ function drawLegend(): void {
   ctx.font = `${fs}px ui-monospace, monospace`;
   classes.forEach((c, i) => {
     const y = y0 + (mob ? 44 : 48) + i * rowH;
-    const label = c.featured ? `◆ ${c.label}  (${c.n})` : c.highlight ? `★ ${c.label}  (${c.n})` : `${c.name}  (${c.n})`;
+    const label = c.featured ? `◆ ${c.label}  (${c.n})` : c.symmetric ? `▲ ${c.label}  (${c.n})` : c.highlight ? `★ ${c.label}  (${c.n})` : `${c.name}  (${c.n})`;
     const labW = sw + 8 + ctx.measureText(label).width + 10;
     legendHits.push({ x: x0 - 4, y: y - rowH / 2, w: labW, h: rowH, klass: c });
     ctx.globalAlpha = c.visible ? 1 : 0.32;
     ctx.fillStyle = c.color;
     if (c.featured) { diamondPath(x0 + sw / 2, y, sw / 2 + 1); ctx.fill(); }
+    else if (c.symmetric) { trianglePath(x0 + sw / 2, y + 1, sw / 2 + 1.5); ctx.fill(); }
     else if (c.highlight) { starPath(x0 + sw / 2, y, sw / 2 + 1, (sw / 2 + 1) * 0.44); ctx.fill(); }
     else ctx.fillRect(x0, y - sw / 2, sw, sw);
     ctx.fillStyle = THEME.legendLabel;
@@ -486,7 +509,7 @@ function showTorus3D(c: Klass, i: number): void {
 
   const im = c.im[i];
   statsDiv.innerHTML =
-    `<b style="color:${c.color}">${c.name} · type ${c.type}</b><br>`
+    `<b style="color:${c.color}">${c.symmetric ? c.label : c.name} · type ${c.type}</b><br>`
     + `${c.wall}<br>`
     + `τ̂ = ${c.re[i]} ${im >= 0 ? '+' : '−'} ${Math.abs(im)} i<br>`
     + `embedding margin&nbsp; ${c.margin[i].toExponential(3)}<br>`

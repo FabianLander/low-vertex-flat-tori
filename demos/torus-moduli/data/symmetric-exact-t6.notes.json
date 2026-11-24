@@ -1,0 +1,6 @@
+{
+  "source": "the explicit torus q of Theorem 1.1 of the σ-symmetric paper (symmetric-paper-tori/paper; exact coordinates in paper/anc/q-exact.txt, these floats from paper/viewer/data.json)",
+  "rows": [
+    { "name": "q", "note": "certified embedded · q(b, r, h, t, θ) with b = 27/50, r = 14/25, h = 4/5, t = 1/100, tan(θ/2) = 49/50" }
+  ]
+}
