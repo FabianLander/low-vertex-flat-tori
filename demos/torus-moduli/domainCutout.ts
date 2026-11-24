@@ -787,19 +787,21 @@ export function domainPdf(sheet: DomainSheet, info: CutoutInfo): Uint8Array {
   }
   for (const g of sheet.guides) pdf.line(g.a, g.b, GUIDE_C, GUIDE_LW, GUIDE_DASH);
   for (const l of sheet.cuts) pdf.line(l.a, l.b, CUT_C, CUT_LW, null);
-  const top = sheet.H - MARGIN, legendW = 58;
-  pdf.text(info.title, [MARGIN, top - 4.5], 4.6, CUT_C, 'left');
-  pdf.text(info.subtitle, [MARGIN, top - 10], 3.0, [0.3, 0.3, 0.3], 'left');
-  const note = 'Print at 100%. Cut along the solid lines, the slits included. The sheet is the domain (dotted) with a margin around it. '
-    + 'Opposite sides join: lay the margin of each on the other, sliding the two into each other along the slits until the dotted lines meet. '
-    + `Grey pieces go underneath, white ones on top. Mountain and valley are seen from the printed side, which ends up on the ${sheet.printedSide} of the torus.`;
-  pdf.text(note, [MARGIN, top - 15], 2.4, [0.35, 0.35, 0.35], 'left', sheet.W - 2 * MARGIN - legendW - 4);
-  const lx = sheet.W - MARGIN - legendW;
-  ([[MOUNTAIN_C, MOUNTAIN_DASH, CREASE_LW, 'mountain fold'], [VALLEY_C, VALLEY_DASH, CREASE_LW, 'valley fold'], [CUT_C, null, CUT_LW, 'cut'],
-    [GUIDE_C, GUIDE_DASH, GUIDE_LW, 'side of the domain, no fold']] as const).forEach(([col, dash, lw, label], i) => {
-    const y = top - 3.5 - i * 4.2;
-    pdf.line([lx, y], [lx + 14, y], col, lw, dash ? [...dash] : null);
-    pdf.text(label, [lx + 17, y], 2.8, [0.2, 0.2, 0.2], 'left-middle');
-  });
+  if (info.text ?? true) {
+    const top = sheet.H - MARGIN, legendW = 58;
+    pdf.text(info.title, [MARGIN, top - 4.5], 4.6, CUT_C, 'left');
+    pdf.text(info.subtitle, [MARGIN, top - 10], 3.0, [0.3, 0.3, 0.3], 'left');
+    const note = 'Print at 100%. Cut along the solid lines, the slits included. The sheet is the domain (dotted) with a margin around it. '
+      + 'Opposite sides join: lay the margin of each on the other, sliding the two into each other along the slits until the dotted lines meet. '
+      + `Grey pieces go underneath, white ones on top. Mountain and valley are seen from the printed side, which ends up on the ${sheet.printedSide} of the torus.`;
+    pdf.text(note, [MARGIN, top - 15], 2.4, [0.35, 0.35, 0.35], 'left', sheet.W - 2 * MARGIN - legendW - 4);
+    const lx = sheet.W - MARGIN - legendW;
+    ([[MOUNTAIN_C, MOUNTAIN_DASH, CREASE_LW, 'mountain fold'], [VALLEY_C, VALLEY_DASH, CREASE_LW, 'valley fold'], [CUT_C, null, CUT_LW, 'cut'],
+      [GUIDE_C, GUIDE_DASH, GUIDE_LW, 'side of the domain, no fold']] as const).forEach(([col, dash, lw, label], i) => {
+      const y = top - 3.5 - i * 4.2;
+      pdf.line([lx, y], [lx + 14, y], col, lw, dash ? [...dash] : null);
+      pdf.text(label, [lx + 17, y], 2.8, [0.2, 0.2, 0.2], 'left-middle');
+    });
+  }
   return pdf.bytes(info.title);
 }

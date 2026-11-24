@@ -58,6 +58,11 @@ export interface CutoutInfo {
    * face numbers, so these still line up on a mirrored sheet.
    */
   readonly faceColours?: readonly Rgb[];
+  /**
+   * Whether the sheet carries any text: the header, the instructions, the legend and the seam
+   * letters. Default true. The letters are left out anyway when the faces are coloured.
+   */
+  readonly text?: boolean;
 }
 
 // ---- the coding of the fold nets ----
@@ -526,19 +531,22 @@ export function sheetPdf(sheet: Sheet, info: CutoutInfo): Uint8Array {
     if (l.kind === 'cut') pdf.line(l.a, l.b, CUT_C, l.width, null);
     else pdf.line(l.a, l.b, l.kind === 'mountain' ? MOUNTAIN_C : VALLEY_C, l.width, l.kind === 'mountain' ? MOUNTAIN_DASH : VALLEY_DASH);
   }
-  for (const l of sheet.letters) pdf.text(l.text, l.at, l.size, LETTER_C, 'center-middle');
-  const top = sheet.H - MARGIN;
-  pdf.text(info.title, [MARGIN, top - 4.5], 4.6, CUT_C, 'left');
-  pdf.text(info.subtitle, [MARGIN, top - 10], 3.0, [0.3, 0.3, 0.3], 'left');
-  const note = `Print at 100%. Cut along the solid lines, tabs included, fold, and glue each tab behind the edge with the same letter. `
-    + `Mountain and valley are seen from the printed side, which ends up on the ${sheet.printedSide} of the torus.`;
-  pdf.text(note, [MARGIN, top - 15], 2.4, [0.35, 0.35, 0.35], 'left', sheet.W - 2 * MARGIN);
-  const lx = sheet.W - MARGIN - 52;
-  ([[MOUNTAIN_C, MOUNTAIN_DASH, 'mountain fold'], [VALLEY_C, VALLEY_DASH, 'valley fold'], [CUT_C, null, 'cut']] as const).forEach(([col, dash, label], i) => {
-    const y = top - 3.5 - i * 4.2;
-    pdf.line([lx, y], [lx + 14, y], col, dash ? CREASE_LW : CUT_LW, dash ? [...dash] : null);
-    pdf.text(label, [lx + 17, y], 2.8, [0.2, 0.2, 0.2], 'left-middle');
-  });
+  const text = info.text ?? true, letters = text && !cols;
+  if (letters) for (const l of sheet.letters) pdf.text(l.text, l.at, l.size, LETTER_C, 'center-middle');
+  if (text) {
+    const top = sheet.H - MARGIN;
+    pdf.text(info.title, [MARGIN, top - 4.5], 4.6, CUT_C, 'left');
+    pdf.text(info.subtitle, [MARGIN, top - 10], 3.0, [0.3, 0.3, 0.3], 'left');
+    const note = `Print at 100%. Cut along the solid lines, tabs included, fold, and glue each tab behind ${letters ? 'the edge with the same letter' : 'the edge it matches'}. `
+      + `Mountain and valley are seen from the printed side, which ends up on the ${sheet.printedSide} of the torus.`;
+    pdf.text(note, [MARGIN, top - 15], 2.4, [0.35, 0.35, 0.35], 'left', sheet.W - 2 * MARGIN);
+    const lx = sheet.W - MARGIN - 52;
+    ([[MOUNTAIN_C, MOUNTAIN_DASH, 'mountain fold'], [VALLEY_C, VALLEY_DASH, 'valley fold'], [CUT_C, null, 'cut']] as const).forEach(([col, dash, label], i) => {
+      const y = top - 3.5 - i * 4.2;
+      pdf.line([lx, y], [lx + 14, y], col, dash ? CREASE_LW : CUT_LW, dash ? [...dash] : null);
+      pdf.text(label, [lx + 17, y], 2.8, [0.2, 0.2, 0.2], 'left-middle');
+    });
+  }
   return pdf.bytes(info.title);
 }
 

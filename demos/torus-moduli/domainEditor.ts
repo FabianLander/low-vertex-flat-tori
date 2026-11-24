@@ -80,7 +80,15 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   colourBox.type = 'checkbox';
   colourBox.checked = false;
   colourWrap.append(colourBox, document.createTextNode('colours'));
-  bar.append(title, gapS.box, ...(info.faceColours ? [colourWrap] : []), slitBtn, sideBtn, centreBtn, pdfBtn, closeBtn);
+  // the text on the sheet (header, instructions, legend), off until asked for; the preview shows none either way
+  const textWrap = document.createElement('label');
+  textWrap.style.cssText = colourWrap.style.cssText;
+  textWrap.title = 'print the title, the instructions and the legend';
+  const textBox = document.createElement('input');
+  textBox.type = 'checkbox';
+  textBox.checked = false;
+  textWrap.append(textBox, document.createTextNode('text'));
+  bar.append(title, gapS.box, ...(info.faceColours ? [colourWrap] : []), textWrap, slitBtn, sideBtn, centreBtn, pdfBtn, closeBtn);
   const hint = document.createElement('div');
   hint.style.cssText = 'padding:6px 14px;font-size:12px;color:rgba(20,20,20,0.7)';
   hint.textContent = 'Drag the domain over the tiling (arrow keys move it by 1 mm of the page, with shift by 0.2 mm). What is inside it is the sheet. '
@@ -263,7 +271,7 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   centreBtn.onclick = () => { fitted = true; moveTo([0.5, 0.5]); };
   gapS.input.oninput = () => { gap = Number(gapS.input.value); moveTo(origin); };
   slitBtn.onclick = () => { rounded = !rounded; moveTo(origin); };
-  pdfBtn.onclick = () => openPdf(domainPdf(sheet, colourBox.checked ? info : { ...info, faceColours: undefined }));
+  pdfBtn.onclick = () => openPdf(domainPdf(sheet, { ...info, faceColours: colourBox.checked ? info.faceColours : undefined, text: textBox.checked }));
   colourBox.onchange = () => draw();
   // keys go to the editor while it is open, not to the moduli plot underneath (capture, first)
   const close = (): void => { window.removeEventListener('resize', draw); window.removeEventListener('keydown', onKey, true); root.remove(); };

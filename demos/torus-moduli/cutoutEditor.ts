@@ -14,7 +14,8 @@
  *
  * A caller may open the editor on an arrangement of its own (`start`, which "reset" returns to
  * as well) and with the colours already on (`colours`); the default is the engine's development
- * with the colours off.
+ * with the colours off. The sheet carries no text unless "text" is ticked, and even then no
+ * seam letters while the faces are coloured.
  *
  * Impure render boundary (DOM, canvas).
  */
@@ -77,7 +78,15 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   colourBox.type = 'checkbox';
   colourBox.checked = !!opts.colours && !!info.faceColours;
   colourWrap.append(colourBox, document.createTextNode('colours'));
-  bar.append(title, ...(info.faceColours ? [colourWrap] : []), mirrorWrap, undoBtn, resetBtn, pdfBtn, closeBtn);
+  // the text on the sheet (header, instructions, legend, and without colours the seam letters), off until asked for
+  const textWrap = document.createElement('label');
+  textWrap.style.cssText = mirrorWrap.style.cssText;
+  textWrap.title = 'print the title, the instructions, the legend, and (without colours) the letters of the seams';
+  const textBox = document.createElement('input');
+  textBox.type = 'checkbox';
+  textBox.checked = false;
+  textWrap.append(textBox, document.createTextNode('text'));
+  bar.append(title, ...(info.faceColours ? [colourWrap] : []), textWrap, mirrorWrap, undoBtn, resetBtn, pdfBtn, closeBtn);
   // the sheet as it is shown and printed: the layout of the arrangement, mirrored or not. Face
   // numbers and seam keys survive the mirror, so picking, moving and flipping tabs are unaffected.
   const laid = (): Sheet => { const s = layoutSheet(model, arr); return mirrorBox.checked ? mirrorSheet(s) : s; };
@@ -149,15 +158,17 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
       ctx.stroke();
     }
     ctx.setLineDash([]);
-    // letters
+    // letters (with the text, and only on bare faces)
     ctx.fillStyle = rgb(LETTER_C);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (const l of sheet.letters) { const p = toPx(l.at); ctx.font = `${Math.max(8, l.size * k)}px Helvetica, Arial, sans-serif`; ctx.fillText(l.text, p[0], p[1]); }
+    if (textBox.checked && !cols) for (const l of sheet.letters) { const p = toPx(l.at); ctx.font = `${Math.max(8, l.size * k)}px Helvetica, Arial, sans-serif`; ctx.fillText(l.text, p[0], p[1]); }
     // the header of the page
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     const head = (text: string, at: V2, size: number, color: string): void => { const p = toPx(at); ctx.font = `${Math.max(7, size * k)}px Helvetica, Arial, sans-serif`; ctx.fillStyle = color; ctx.fillText(text, p[0], p[1]); };
-    head(info.title, [11, sheet.H - 15.5], 4.6, rgb(CUT_C));
-    head(info.subtitle, [11, sheet.H - 21], 3.0, 'rgba(77,77,77,1)');
+    if (textBox.checked) {
+      head(info.title, [11, sheet.H - 15.5], 4.6, rgb(CUT_C));
+      head(info.subtitle, [11, sheet.H - 21], 3.0, 'rgba(77,77,77,1)');
+    }
     // where the hovered triangle would go
     if (hover?.kind === 'face' && hover.copy) {
       const h = hover, cp = hover.copy;
@@ -217,7 +228,8 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   });
   undoBtn.onclick = () => { const prev = history.pop(); if (!prev) return; arr = prev; sheet = laid(); hover = null; draw(); };
   resetBtn.onclick = () => { if (arr === first) return; history.push(arr); arr = first; sheet = laid(); hover = null; draw(); };
-  pdfBtn.onclick = () => openPdf(sheetPdf(sheet, colourBox.checked ? info : { ...info, faceColours: undefined }));
+  pdfBtn.onclick = () => openPdf(sheetPdf(sheet, { ...info, faceColours: colourBox.checked ? info.faceColours : undefined, text: textBox.checked }));
+  textBox.onchange = () => draw();
   // keys go to the editor while it is open, not to the moduli plot underneath (capture, first)
   const close = (): void => { window.removeEventListener('resize', draw); window.removeEventListener('keydown', onKey, true); root.remove(); };
   const onKey = (e: KeyboardEvent): void => {
