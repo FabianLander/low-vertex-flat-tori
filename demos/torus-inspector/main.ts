@@ -5,19 +5,24 @@
  * when launched directly. Nothing here is specific to the square torus: the type,
  * triangulation, generators, and section are all derived from the passed embedding.
  *
- * The torus stays put, with the data z-axis up. DRAG orbits the camera about that axis
- * (a turntable: the view is a function of two angles, so no drag loop leaves it rotated).
- * The intersection plane is OFF by default. Switched on, three sliders place it: its tilt
- * from horizontal, the direction it tilts toward, and its offset along its normal; the
- * polygon where it cuts the torus is traced live (plane ∩ each triangle). Two mini 2-D panels:
- *   • bottom-right — the section polygon, in the plane's own coordinates (pan/zoom; shown
- *     while the plane is on);
+ * The data z-axis is up. With the intersection plane OFF (the default), the torus stays put
+ * and a DRAG orbits the camera about that axis (a turntable: the view is a function of two
+ * angles, so no drag loop leaves it rotated). With the plane ON, the plane is fixed in the
+ * world, horizontal at the height of its slider, the camera stands still, and a drag turns
+ * the TORUS through the plane by a turntable of its own: left/right about its vertical axis
+ * (az), up/down tilting it toward the viewer (el). The turn is a function of (az, el) alone,
+ * so again no drag loop leaves it turned; switching the plane off returns it to rest. The
+ * polygon where the plane cuts the torus is traced live (plane ∩ each triangle). Two mini
+ * 2-D panels:
+ *   • bottom-right — the section polygon, as seen from above (pan/zoom; shown while the
+ *     plane is on);
  *   • bottom-left  — the developed net tiled across the universal cover, with the
  *     two generator loops (α blue, β red) and their straight holonomy vectors.
  *
  * Coordinates: TorusMesh recenters geometry on the bounding-box center, so we work
- * in that same frame (cpos = raw − bboxCenter). The plane, the section and the loops
- * live in that frame too; one group turns it so that its z-axis is three.js's up.
+ * in that same frame (cpos = raw − bboxCenter). The loops and the section live in that
+ * frame too; one group turns it so that its z-axis is three.js's up, and a second one
+ * above it holds the turn.
  *
  * The default sample is in ./square-torus.csv (24 positions + certificate columns).
  */
@@ -120,21 +125,23 @@ scene.add(key);
 
 const cam = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, maxR * 0.02, maxR * 40);
 
-// translucent torus; it never moves
+// translucent torus; it moves only while the plane is on, turned through it
 const { surface: face } = paperMaterials({ paperColor: '#dcbf6f', gridColor: '#2435AF', gridMinorColor: '#4e5988' });
 face.transparent = true; face.opacity = 0.4;
 const view = makeTorusView(torusDef, { surface: { material: face } });
 view.draw(paper.positions);
 const pivot = view.group;
 // the torus frame: (x, y, z) ↦ three's (x, z, −y), so the data z-axis is up and the turntable
-// below turns about it
+// below turns about it; `spin` above it holds the turn through the plane (identity at rest)
 const torusFrame = new THREE.Group();
 torusFrame.rotation.x = -Math.PI / 2;
 torusFrame.add(pivot);
-scene.add(torusFrame);
+const spin = new THREE.Group();
+spin.add(torusFrame);
+scene.add(spin);
 
 // frame the camera on the torus's actual bounds (a slightly-elevated 3/4 view)
-torusFrame.updateMatrixWorld(true);
+spin.updateMatrixWorld(true);
 const tbox = new THREE.Box3().setFromObject(pivot);
 const tcenter = tbox.getCenter(new THREE.Vector3());
 const trad = tbox.getBoundingSphere(new THREE.Sphere()).radius || maxR;
@@ -143,7 +150,7 @@ cam.position.set(tcenter.x + cdist * 0.5, tcenter.y + cdist * 0.72, tcenter.z + 
 cam.near = trad * 0.02; cam.far = trad * 40; cam.updateProjectionMatrix();
 cam.lookAt(tcenter);
 
-// the only rotation: OrbitControls' turntable about the up axis (drag anywhere). The torus used
+// with the plane off, OrbitControls' turntable about the up axis (drag anywhere). The torus used
 // to spin by small rotations about fixed axes, which do not commute: a closed drag of
 // 100 × 100 px left it turned by about 53°.
 const controls = new OrbitControls(cam, renderer.domElement);
@@ -180,13 +187,14 @@ const loopsB = tubeLoop(loopB, 0xdc2626, maxR * 0.013);   // β red
 loopsA.visible = false; loopsB.visible = false;
 pivot.add(loopsA, loopsB);
 
-// the slice plane, in the torus frame (so it is horizontal when untilted)
+// the slice plane, fixed in the world: horizontal, at the height of its slider
 const planeSize = maxR * 2.4;
 const plane = new THREE.Mesh(
   new THREE.PlaneGeometry(planeSize, planeSize),
   new THREE.MeshStandardMaterial({ color: 0x4488ff, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }),
 );
-torusFrame.add(plane);
+plane.rotation.x = -Math.PI / 2;
+scene.add(plane);
 
 // the section polygon in 3-D
 // transparent so it renders in the transparent pass (after the translucent plane
@@ -203,26 +211,33 @@ torusFrame.add(slice);
 let sliceVerts = 0;                 // number of vertices written to sliceBuf (2 per segment)
 const sec2 = new Float32Array(torusDef.triangles.length * 2 * 2);   // the same segments in the plane's (u, v)
 
-// The plane: unit normal n, tilted by `tilt` from +z toward the direction `dir` (from +x in the
-// xy-plane), at offset d along n. Its basis (u, v, n) is (x, y, z) turned about the horizontal
-// axis z × n, so the untilted plane shows the section in plain x, y.
-const planeQ = new THREE.Quaternion();
-const nrm = new THREE.Vector3(0, 0, 1), eu = new THREE.Vector3(1, 0, 0), ev = new THREE.Vector3(0, 1, 0);
-let planeD = 0;
-function setPlane(tiltDeg: number, dirDeg: number, d: number): void {
-  const t = (tiltDeg * Math.PI) / 180, a = (dirDeg * Math.PI) / 180;
-  planeQ.setFromAxisAngle(new THREE.Vector3(-Math.sin(a), Math.cos(a), 0), t);
-  nrm.set(0, 0, 1).applyQuaternion(planeQ);
-  eu.set(1, 0, 0).applyQuaternion(planeQ);
-  ev.set(0, 1, 0).applyQuaternion(planeQ);
-  planeD = d;
-  plane.quaternion.copy(planeQ);
-  plane.position.copy(nrm).multiplyScalar(d);
+// The turn of the torus through the plane: spin = R(a, el) · R(up, az), with a the camera's
+// horizontal right when the plane went on (the camera stands still while it is on).
+const UP = new THREE.Vector3(0, 1, 0);
+const turnAxis = new THREE.Vector3(1, 0, 0);
+let az = 0, el = 0, planeH = 0;
+function applyTurn(): void {
+  const qe = new THREE.Quaternion().setFromAxisAngle(turnAxis, el);
+  spin.quaternion.copy(qe).multiply(new THREE.Quaternion().setFromAxisAngle(UP, az));
+  spin.updateMatrixWorld(true);
   updateSlice();
 }
 
+// The plane in the torus frame: unit normal n (the world's up, turned back), n·p = d, and the
+// basis (u, v) of the section panel: the camera's horizontal right, and the horizontal direction
+// away from the camera, so the panel shows the section as seen from above.
+const nrm = new THREE.Vector3(0, 0, 1), eu = new THREE.Vector3(1, 0, 0), ev = new THREE.Vector3(0, 1, 0);
+let planeD = 0;
+const toTorus = new THREE.Quaternion();
+
 /** Section: the plane n·p = d ∩ the torus, in the torus frame (3-D) and in the plane's (u, v). */
 function updateSlice(): void {
+  toTorus.copy(spin.quaternion).multiply(torusFrame.quaternion).invert();
+  nrm.copy(UP).applyQuaternion(toTorus);
+  eu.copy(turnAxis).applyQuaternion(toTorus);
+  ev.crossVectors(UP, turnAxis).applyQuaternion(toTorus);
+  planeD = planeH;
+  plane.position.y = planeH;
   let n = 0, m = 0;
   for (const t of torusDef.triangles) {
     const W: number[][] = [];
@@ -279,12 +294,13 @@ ui.innerHTML =
   +   `&nbsp;&nbsp;·&nbsp;&nbsp;cone&nbsp;def&nbsp;${exp(cert.coneDeficit)}<br>`
   +   `rot&nbsp;def&nbsp;${exp(cert.rotDefect)}&nbsp;&nbsp;·&nbsp;&nbsp;area&nbsp;${cert.area.toPrecision(8)}</span>`
   + `</div>`
-  + `<div style="margin-top:6px;opacity:.6">drag to orbit · right-drag to pan · scroll to zoom</div>`
+  + `<div id="hint" style="margin-top:6px;opacity:.6"></div>`
   + `<div style="margin-top:8px"><label style="cursor:pointer;user-select:none"><input id="slice" type="checkbox" style="vertical-align:middle"> intersection plane (translucent torus)</label></div>`
-  + `<div id="planeCtl" style="margin-top:4px;display:grid;grid-template-columns:auto 1fr 3.6em;gap:0 6px;align-items:center">`
-  +   `<span>offset d</span><input id="pd" type="range" min="${-maxR}" max="${maxR}" step="${maxR / 300}" value="0"><span id="dv"></span>`
-  +   `<span>tilt</span><input id="ptilt" type="range" min="0" max="90" step="0.5" value="0"><span id="tv"></span>`
-  +   `<span>toward</span><input id="pdir" type="range" min="-180" max="180" step="1" value="0"><span id="av"></span></div>`
+  + `<div id="planeCtl" style="margin-top:4px">`
+  +   `<div style="display:grid;grid-template-columns:auto 1fr 3.6em;gap:0 6px;align-items:center">`
+  +     `<span>height</span><input id="pd" type="range" min="${-maxR}" max="${maxR}" step="${maxR / 300}" value="0"><span id="dv"></span></div>`
+  +   `<div style="margin-top:3px;display:flex;gap:8px;align-items:center">turn <span id="turnv"></span>`
+  +     `<button id="turn0" style="margin-left:auto;padding:2px 8px;font:11px ui-monospace,monospace;cursor:pointer;border:1px solid #166534;border-radius:6px;background:#fff;color:#166534">reset turn</button></div></div>`
   + `<div style="margin-top:8px">show loops:&nbsp;`
   +   `<label style="cursor:pointer;user-select:none;margin-right:8px"><input id="loopA" type="checkbox" style="vertical-align:middle"> <span style="color:#1d4ed8;font-weight:700">α</span></label>`
   +   `<label style="cursor:pointer;user-select:none;margin-right:8px"><input id="loopB" type="checkbox" style="vertical-align:middle"> <span style="color:#dc2626;font-weight:700">β</span></label>`
@@ -297,16 +313,15 @@ document.body.appendChild(ui);
 ui.querySelector<HTMLButtonElement>('#dl3d')!.onclick = () => downloadObj(paper, `torus-type${typeNum}.obj`);
 ui.querySelector<HTMLButtonElement>('#dlnet')!.onclick = () => downloadNetObj(paper, `torus-type${typeNum}-net.obj`);
 const dEl = ui.querySelector<HTMLInputElement>('#pd')!;
-const tiltEl = ui.querySelector<HTMLInputElement>('#ptilt')!;
-const dirEl = ui.querySelector<HTMLInputElement>('#pdir')!;
+const deg = (x: number): string => `${((x * 180) / Math.PI).toFixed(0)}°`;
 function readPlane(): void {
-  const d = parseFloat(dEl.value), tilt = parseFloat(tiltEl.value), dir = parseFloat(dirEl.value);
-  ui.querySelector('#dv')!.textContent = d.toFixed(3);
-  ui.querySelector('#tv')!.textContent = `${tilt.toFixed(1)}°`;
-  ui.querySelector('#av')!.textContent = `${dir.toFixed(0)}°`;
-  setPlane(tilt, dir, d);
+  planeH = parseFloat(dEl.value);
+  ui.querySelector('#dv')!.textContent = planeH.toFixed(3);
+  ui.querySelector('#turnv')!.textContent = `az ${deg(az)} · el ${deg(el)}`;
+  applyTurn();
 }
-for (const el of [dEl, tiltEl, dirEl]) el.addEventListener('input', readPlane);
+dEl.addEventListener('input', readPlane);
+ui.querySelector<HTMLButtonElement>('#turn0')!.onclick = () => { az = 0; el = 0; readPlane(); };
 // three toggles: α and β independent, "both" a master that mirrors them.
 const aEl = ui.querySelector<HTMLInputElement>('#loopA')!;
 const bEl = ui.querySelector<HTMLInputElement>('#loopB')!;
@@ -319,20 +334,54 @@ function syncLoops(): void {
 aEl.addEventListener('change', syncLoops);
 bEl.addEventListener('change', syncLoops);
 bothEl.addEventListener('change', () => { aEl.checked = bEl.checked = bothEl.checked; syncLoops(); });
-// intersection-plane switch: on = plane + section + its sliders + the section panel, torus
-// translucent; off (the default) = none of them, torus nearly opaque.
+// intersection-plane switch: on = plane + section + its controls + the section panel, torus
+// translucent, and a drag turns the torus instead of orbiting the camera; off (the default) =
+// none of them, torus nearly opaque and back at rest.
 const sliceEl = ui.querySelector<HTMLInputElement>('#slice')!;
 const planeCtl = ui.querySelector<HTMLDivElement>('#planeCtl')!;
 function applySlice(): void {
   const on = sliceEl.checked;
   plane.visible = on;
   slice.visible = on;
-  planeCtl.style.display = on ? 'grid' : 'none';
+  planeCtl.style.display = on ? '' : 'none';
   wrap.style.display = on ? '' : 'none';
   if (on) size2d();                  // the panel had no size while hidden
   face.opacity = on ? 0.4 : 0.9;
+  controls.enableRotate = !on;
+  if (on) {                          // tilt about the camera's horizontal right, fixed while the plane is on
+    turnAxis.set(1, 0, 0).applyQuaternion(cam.quaternion).setY(0);
+    if (turnAxis.lengthSq() < 1e-12) turnAxis.set(1, 0, 0);
+    turnAxis.normalize();
+  }
+  az = 0; el = 0;
+  readPlane();
+  ui.querySelector('#hint')!.textContent = on
+    ? 'drag to turn the torus through the plane · right-drag to pan · scroll to zoom'
+    : 'drag to orbit · right-drag to pan · scroll to zoom';
 }
 sliceEl.addEventListener('change', applySlice);
+// while the plane is on, a left drag turns the torus: left/right about its vertical axis, up/down
+// tilting it toward the viewer (el kept in [−90°, 90°])
+{
+  const TURN = Math.PI / 360;        // half a degree per pixel
+  const cv = renderer.domElement;
+  let drag: { x: number; y: number } | null = null;
+  cv.addEventListener('pointerdown', (e) => {
+    if (!sliceEl.checked || e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY };
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    az += (e.clientX - drag.x) * TURN;
+    el = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, el + (e.clientY - drag.y) * TURN));
+    drag = { x: e.clientX, y: e.clientY };
+    readPlane();
+  });
+  const end = (e: PointerEvent): void => { drag = null; try { cv.releasePointerCapture(e.pointerId); } catch { /* released */ } };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+}
 
 // ---------------------------------------------------------------------------
 // Mini 2-D view: only the section polygon, with pan (drag) + zoom (scroll)
