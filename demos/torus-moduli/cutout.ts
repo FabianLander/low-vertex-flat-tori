@@ -21,10 +21,12 @@
  * side is above 180° for a mountain (fold away from you) and below for a valley. Two independent
  * tests decide it, as in `dihedral_table` there, and they must agree.
  *
- * The printed side is the side the panel shows. Those sheets always print the outside of the
- * torus and mirror the net to do so. Here the arrangement wins: the sheet says whether its
- * printed side ends up outside or inside, which depends on the orientation of the row's
- * coordinates (the signed volume).
+ * The printed side is the side the panel shows, so which side of the torus it ends up on depends
+ * on the orientation of the row's coordinates (the signed volume). `mirrorSheet` prints the sheet
+ * on the other side of the paper instead — the page reflected, mountain and valley swapped, the
+ * same torus — the move those sheets make to put the printed side outside. The editor offers it
+ * as "mirror" and turns it on when the coordinates would otherwise print the inside, so the
+ * default is the outside, as in `domainModel`.
  *
  * GLUE TABS follow the rule of those sheets: a tab sits on one of the two copies of a seam, it
  * is a ledge clipped to the face it is glued behind (laid across the seam), 1.2 mm clear of that
@@ -49,10 +51,17 @@ export interface CutoutInfo {
   readonly title: string;
   /** Second line: which torus, its modulus. ASCII only (the standard PDF font). */
   readonly subtitle: string;
+  /**
+   * One fill per face, in the triangulation's face order, or absent for bare paper. The caller
+   * owns the meaning: the symmetric-paper-tori viewer passes its sigma-pair pastels, so a face
+   * and its partner come out the same colour on the sheet as on the screen. The mirror keeps
+   * face numbers, so these still line up on a mirrored sheet.
+   */
+  readonly faceColours?: readonly Rgb[];
 }
 
 // ---- the coding of the fold nets ----
-type Rgb = readonly [number, number, number];
+export type Rgb = readonly [number, number, number];
 export const CUT_C: Rgb = [0x11 / 255, 0x11 / 255, 0x11 / 255];
 export const MOUNTAIN_C: Rgb = [0x1b / 255, 0x78 / 255, 0x37 / 255];
 export const VALLEY_C: Rgb = [0x76 / 255, 0x2a / 255, 0x83 / 255];
@@ -510,6 +519,8 @@ export function flipTab(model: CutoutModel, arr: Arrangement, seam: string): Arr
 
 export function sheetPdf(sheet: Sheet, info: CutoutInfo): Uint8Array {
   const pdf = new Page(sheet.W, sheet.H);
+  const cols = info.faceColours;
+  if (cols) sheet.tris.forEach((tri, t) => { const c = cols[t]; if (c) pdf.fill(tri, c); });
   for (const t of sheet.tabs) pdf.fill(t.poly, TAB_FC);
   for (const l of sheet.lines) {
     if (l.kind === 'cut') pdf.line(l.a, l.b, CUT_C, l.width, null);
@@ -532,9 +543,37 @@ export function sheetPdf(sheet: Sheet, info: CutoutInfo): Uint8Array {
 }
 
 /** The sheet of the panel's net as it is, as PDF bytes (no rearranging). */
-export function cutoutPdf(triang: Triangulation, positions: ArrayLike<number>, info: CutoutInfo): { bytes: Uint8Array; sheet: Sheet } {
+/**
+ * The same sheet printed on the other side of the paper: the page reflected in its vertical
+ * centre line, and every mountain a valley and back. Folding the mirrored sheet the way its
+ * creases now say rebuilds the SAME torus, not its mirror image, with the ink on the other
+ * side of the paper — the move the print sheets make to put the printed side outside. Face
+ * numbers, seam keys and letters are untouched, so an `Arrangement` and anything else read off
+ * a sheet still applies to the mirrored one; only the geometry on the page has moved.
+ */
+export function mirrorSheet(sheet: Sheet): Sheet {
+  const m = (p: V2): V2 => [sheet.W - p[0], p[1]];
+  const flipKind = (k: Line['kind']): Line['kind'] => (k === 'mountain' ? 'valley' : k === 'valley' ? 'mountain' : 'cut');
+  // A then B keeps the face on its left, and the mate stays counter-clockwise, by swapping A and B
+  const flipCopy = (c: Copy): Copy => ({ ...c, A: m(c.B), B: m(c.A), mate: [m(c.mate[1]), m(c.mate[0]), m(c.mate[2])] });
+  return {
+    ...sheet,
+    toPage: (p: V2): V2 => m(sheet.toPage(p)),
+    tris: sheet.tris.map((t) => [m(t[0]), m(t[1]), m(t[2])] as [V2, V2, V2]),
+    copies: sheet.copies.map(flipCopy),
+    tabs: sheet.tabs.map((t) => ({ ...t, poly: t.poly.map(m), P0: m(t.P1), P1: m(t.P0), copy: flipCopy(t.copy) })),
+    lines: sheet.lines.map((l) => ({ ...l, a: m(l.a), b: m(l.b), kind: flipKind(l.kind) })),
+    letters: sheet.letters.map((l) => ({ ...l, at: m(l.at) })),
+    printedSide: sheet.printedSide === 'outside' ? 'inside' : 'outside',
+    creases: { mountain: sheet.creases.valley, valley: sheet.creases.mountain },
+  };
+}
+
+export function cutoutPdf(triang: Triangulation, positions: ArrayLike<number>, info: CutoutInfo,
+                          printedSide: 'outside' | 'inside' = 'outside'): { bytes: Uint8Array; sheet: Sheet } {
   const model = cutoutModel(triang, positions);
-  const sheet = layoutSheet(model, initialArrangement(model));
+  const laid = layoutSheet(model, initialArrangement(model));
+  const sheet = laid.printedSide === printedSide ? laid : mirrorSheet(laid);
   return { bytes: sheetPdf(sheet, info), sheet };
 }
 

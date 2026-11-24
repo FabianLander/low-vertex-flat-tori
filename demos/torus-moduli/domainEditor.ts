@@ -72,7 +72,15 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   };
   // the gap between the margin and the creases: 0 = the domain thickened and nothing more, up to the gap of the print sheets
   const gapS = slider('how far the margin stays from the creases: at 0 the domain is simply thickened, the creases run on into the margin', FACE_CLEAR, 0.05, gap, 200);
-  bar.append(title, gapS.box, slitBtn, sideBtn, centreBtn, pdfBtn, closeBtn);
+  // the face colours the caller supplied, off until asked for; no checkbox when there are none
+  const colourWrap = document.createElement('label');
+  colourWrap.style.cssText = 'display:flex;align-items:center;gap:5px;font:12px ui-monospace,monospace;cursor:pointer;user-select:none';
+  colourWrap.title = 'fill each face with the colour it has on screen';
+  const colourBox = document.createElement('input');
+  colourBox.type = 'checkbox';
+  colourBox.checked = false;
+  colourWrap.append(colourBox, document.createTextNode('colours'));
+  bar.append(title, gapS.box, ...(info.faceColours ? [colourWrap] : []), slitBtn, sideBtn, centreBtn, pdfBtn, closeBtn);
   const hint = document.createElement('div');
   hint.style.cssText = 'padding:6px 14px;font-size:12px;color:rgba(20,20,20,0.7)';
   hint.textContent = 'Drag the domain over the tiling (arrow keys move it by 1 mm of the page, with shift by 0.2 mm). What is inside it is the sheet. '
@@ -146,9 +154,19 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
     }
     ctx.fill('nonzero');
     ctx.restore();
+    const cols = colourBox.checked ? info.faceColours : undefined;
+    if (cols) {
+      for (const f of sheet.faces) {
+        const c = cols[f.face];
+        if (!c) continue;
+        path(f.poly, place);
+        ctx.fillStyle = rgb(c); ctx.fill();
+      }
+    }
     for (const f of sheet.flaps) {
       path(f.poly, place);
-      ctx.fillStyle = ctx.strokeStyle = f.under ? rgb(UNDER_FC) : '#fff';
+      const c = f.under || f.face < 0 ? undefined : cols?.[f.face];
+      ctx.fillStyle = ctx.strokeStyle = f.under ? rgb(UNDER_FC) : c ? rgb(c) : '#fff';
       ctx.fill(); ctx.lineWidth = 1; ctx.stroke();                        // the stroke closes the hairline between two pieces of one triangle
     }
     for (const l of sheet.creases) { fold(l.kind, 1, px(CREASE_LW)); stroke(l.a, l.b, place); }
@@ -245,7 +263,8 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   centreBtn.onclick = () => { fitted = true; moveTo([0.5, 0.5]); };
   gapS.input.oninput = () => { gap = Number(gapS.input.value); moveTo(origin); };
   slitBtn.onclick = () => { rounded = !rounded; moveTo(origin); };
-  pdfBtn.onclick = () => openPdf(domainPdf(sheet, info));
+  pdfBtn.onclick = () => openPdf(domainPdf(sheet, colourBox.checked ? info : { ...info, faceColours: undefined }));
+  colourBox.onchange = () => draw();
   // keys go to the editor while it is open, not to the moduli plot underneath (capture, first)
   const close = (): void => { window.removeEventListener('resize', draw); window.removeEventListener('keydown', onKey, true); root.remove(); };
   const onKey = (e: KeyboardEvent): void => {

@@ -398,6 +398,12 @@ export interface DomainSheet {
   readonly cuts: readonly Seg[];
   /** The sides of the domain under the flaps: not cut, not folded. */
   readonly guides: readonly Seg[];
+  /**
+   * Each piece of a face inside the domain, with the face it belongs to: what a caller that
+   * passes `faceColours` wants filled. A face can reach the domain in several translates, so
+   * there is one entry per piece, not per face.
+   */
+  readonly faces: readonly { readonly poly: readonly V2[]; readonly face: number }[];
   readonly flaps: readonly Flap[];
   /** How much thicker than the domain the sheet is on every side, in mm. */
   readonly thickness: number;
@@ -694,6 +700,16 @@ export function layoutDomain(model: DomainModel, origin: V2, options: DomainOpti
   const tiles = tilesMeeting(model, [ox - m, oy - m, ox + 1 + m, oy + 1 + m]);
   const edges = tileEdges(model, tiles, toPage);
 
+  // ---- the faces as they lie in the domain, for a caller that colours them ----
+  const clipToQuad = (poly: V2[], q: readonly V2[]): V2[] => {
+    let out = poly;
+    for (let i = 0; i < q.length && out.length; i++) out = clipLeft(out, q[i], q[(i + 1) % q.length], 0);
+    return out;
+  };
+  const faces = tiles
+    .map((tile) => ({ poly: clipToQuad(tileCorners(model, tile).map(toPage), domain), face: tile.t }))
+    .filter((f) => f.poly.length >= 3 && Math.abs(area(f.poly)) > 1e-6);
+
   // ---- the creases: without a gap they run on into the margin, with one they stop at the domain ----
   const creases: Crease[] = [];
   for (const e of edges) {
@@ -741,7 +757,7 @@ export function layoutDomain(model: DomainModel, origin: V2, options: DomainOpti
 
   return {
     W, H, page, scale: s, origin: [ox, oy], domain, outline, toPage, toModel,
-    creases, cuts, guides, flaps, thickness: w, gap, rounded, joints, slits, bare,
+    creases, cuts, guides, faces, flaps, thickness: w, gap, rounded, joints, slits, bare,
     printedSide: model.printedSide, folds: { mountain, valley },
   };
 }
@@ -752,6 +768,14 @@ export function layoutDomain(model: DomainModel, origin: V2, options: DomainOpti
 
 export function domainPdf(sheet: DomainSheet, info: CutoutInfo): Uint8Array {
   const pdf = new Page(sheet.W, sheet.H);
+  // the faces first, so the grey of the pieces that go underneath still reads over them. A flap is
+  // the continuation of its own face past the side, so it takes that face's colour too.
+  const cols = info.faceColours;
+  if (cols) {
+    for (const f of sheet.faces) { const c = cols[f.face]; if (c) pdf.fill(f.poly, c); }
+    // a gap-free sheet has one margin strip per side, crossing several faces: face -1, left white
+    for (const f of sheet.flaps) { const c = f.under || f.face < 0 ? undefined : cols[f.face]; if (c) pdf.fill(f.poly, c); }
+  }
   for (const f of sheet.flaps) {
     if (!f.under) continue;
     pdf.fill(f.poly, UNDER_FC);

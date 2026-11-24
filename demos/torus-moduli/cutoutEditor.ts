@@ -17,7 +17,7 @@
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import {
-  cutoutModel, initialArrangement, layoutSheet, movable, seamsOf, moveFace, flipTab, sheetPdf, inside,
+  cutoutModel, initialArrangement, layoutSheet, mirrorSheet, movable, seamsOf, moveFace, flipTab, sheetPdf, inside,
   CUT_C, MOUNTAIN_C, VALLEY_C, TAB_FC, LETTER_C, MOUNTAIN_DASH, VALLEY_DASH,
   type Arrangement, type Sheet, type CutoutInfo, type V2, type Copy,
 } from './cutout';
@@ -29,7 +29,7 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   const model = cutoutModel(triang, positions);
   const first = initialArrangement(model);
   let arr: Arrangement = first;
-  let sheet: Sheet = layoutSheet(model, arr);
+  let sheet: Sheet;                                   // set once the mirror checkbox exists
   const history: Arrangement[] = [];
 
   // ---- the overlay ----
@@ -49,7 +49,28 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
     return b;
   };
   const undoBtn = button('undo'), resetBtn = button('reset'), pdfBtn = button('open PDF ↗', true), closeBtn = button('close ✕');
-  bar.append(title, undoBtn, resetBtn, pdfBtn, closeBtn);
+  // print on the other side of the paper, so the ink ends up on the outside of the folded torus;
+  // on by default exactly when the coordinates would otherwise print the inside
+  const mirrorWrap = document.createElement('label');
+  mirrorWrap.style.cssText = 'display:flex;align-items:center;gap:5px;font:12px ui-monospace,monospace;cursor:pointer;user-select:none';
+  mirrorWrap.title = 'print on the other side of the paper: the page is reflected and mountain and valley swap, so the same torus folds up with the ink on the other side';
+  const mirrorBox = document.createElement('input');
+  mirrorBox.type = 'checkbox';
+  mirrorBox.checked = !model.printedOutside;
+  mirrorWrap.append(mirrorBox, document.createTextNode('mirror'));
+  // the face colours the caller supplied, off until asked for; no checkbox when there are none
+  const colourWrap = document.createElement('label');
+  colourWrap.style.cssText = mirrorWrap.style.cssText;
+  colourWrap.title = 'fill each face with the colour it has on screen';
+  const colourBox = document.createElement('input');
+  colourBox.type = 'checkbox';
+  colourBox.checked = false;
+  colourWrap.append(colourBox, document.createTextNode('colours'));
+  bar.append(title, ...(info.faceColours ? [colourWrap] : []), mirrorWrap, undoBtn, resetBtn, pdfBtn, closeBtn);
+  // the sheet as it is shown and printed: the layout of the arrangement, mirrored or not. Face
+  // numbers and seam keys survive the mirror, so picking, moving and flipping tabs are unaffected.
+  const laid = (): Sheet => { const s = layoutSheet(model, arr); return mirrorBox.checked ? mirrorSheet(s) : s; };
+  sheet = laid();
   const hint = document.createElement('div');
   hint.style.cssText = 'padding:6px 14px;font-size:12px;color:rgba(20,20,20,0.7)';
   hint.textContent = 'Click a triangle on the outline: it moves across its seam nearest the click to the other copy of that seam, and carries the tabs of the folds it leaves (it can move if the rest of the sheet stays in one piece). '
@@ -92,7 +113,10 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
     };
     // faces: overlapping ones red, the hovered movable one marked
     const bad = new Set(sheet.overlaps.flat());
+    const cols = colourBox.checked ? info.faceColours : undefined;
     sheet.tris.forEach((tri, f) => {
+      const c = cols?.[f];
+      if (c) { poly(tri); ctx.fillStyle = rgb(c); ctx.fill(); }
       if (bad.has(f)) { poly(tri); ctx.fillStyle = 'rgba(220,38,38,0.22)'; ctx.fill(); }
       if (hover?.kind === 'face' && hover.face === f) { poly(tri); ctx.fillStyle = 'rgba(250,204,21,0.30)'; ctx.fill(); }
     });
@@ -162,7 +186,7 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   function apply(next: Arrangement): void {
     history.push(arr);
     arr = next;
-    sheet = layoutSheet(model, arr);
+    sheet = laid();
     hover = null;
     draw();
   }
@@ -180,9 +204,9 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
     if (h.kind === 'tab') apply(flipTab(model, arr, h.seam));
     else if (h.copy) apply(moveFace(model, arr, sheet, h.face, h.copy));
   });
-  undoBtn.onclick = () => { const prev = history.pop(); if (!prev) return; arr = prev; sheet = layoutSheet(model, arr); hover = null; draw(); };
-  resetBtn.onclick = () => { if (arr === first) return; history.push(arr); arr = first; sheet = layoutSheet(model, arr); hover = null; draw(); };
-  pdfBtn.onclick = () => openPdf(sheetPdf(sheet, info));
+  undoBtn.onclick = () => { const prev = history.pop(); if (!prev) return; arr = prev; sheet = laid(); hover = null; draw(); };
+  resetBtn.onclick = () => { if (arr === first) return; history.push(arr); arr = first; sheet = laid(); hover = null; draw(); };
+  pdfBtn.onclick = () => openPdf(sheetPdf(sheet, colourBox.checked ? info : { ...info, faceColours: undefined }));
   // keys go to the editor while it is open, not to the moduli plot underneath (capture, first)
   const close = (): void => { window.removeEventListener('resize', draw); window.removeEventListener('keydown', onKey, true); root.remove(); };
   const onKey = (e: KeyboardEvent): void => {
@@ -190,6 +214,8 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
     if (e.key === 'Escape') close();
     else if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); undoBtn.click(); }
   };
+  mirrorBox.onchange = () => { sheet = laid(); hover = null; draw(); };
+  colourBox.onchange = () => draw();
   closeBtn.onclick = close;
   window.addEventListener('resize', draw);
   window.addEventListener('keydown', onKey, true);
