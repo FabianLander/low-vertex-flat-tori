@@ -12,6 +12,10 @@
  * Hovering shows where a triangle would go. Faces that overlap after a move are tinted red: the
  * sheet would not cut out in one piece. Undo, reset, and "open PDF" on top.
  *
+ * A caller may open the editor on an arrangement of its own (`start`, which "reset" returns to
+ * as well) and with the colours already on (`colours`); the default is the engine's development
+ * with the colours off.
+ *
  * Impure render boundary (DOM, canvas).
  */
 
@@ -19,15 +23,22 @@ import type { Triangulation } from '@core/topology/triangulation.ts';
 import {
   cutoutModel, initialArrangement, layoutSheet, mirrorSheet, movable, seamsOf, moveFace, flipTab, sheetPdf, inside,
   CUT_C, MOUNTAIN_C, VALLEY_C, TAB_FC, LETTER_C, MOUNTAIN_DASH, VALLEY_DASH,
-  type Arrangement, type Sheet, type CutoutInfo, type V2, type Copy,
+  type Arrangement, type Sheet, type CutoutInfo, type CutoutModel, type V2, type Copy,
 } from './cutout';
+
+export interface CutoutEditorOptions {
+  /** The arrangement to open with and to reset to, instead of the engine's development. */
+  readonly start?: (model: CutoutModel) => Arrangement;
+  /** Start with the face colours on (when the caller supplied some). */
+  readonly colours?: boolean;
+}
 
 const rgb = (c: readonly number[], a = 1): string => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 const PT = 25.4 / 72;                                                   // millimetres per point
 
-export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<number>, info: CutoutInfo, openPdf: (bytes: Uint8Array) => void): void {
+export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<number>, info: CutoutInfo, openPdf: (bytes: Uint8Array) => void, opts: CutoutEditorOptions = {}): void {
   const model = cutoutModel(triang, positions);
-  const first = initialArrangement(model);
+  const first = opts.start ? opts.start(model) : initialArrangement(model);
   let arr: Arrangement = first;
   let sheet: Sheet;                                   // set once the mirror checkbox exists
   const history: Arrangement[] = [];
@@ -58,13 +69,13 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   mirrorBox.type = 'checkbox';
   mirrorBox.checked = !model.printedOutside;
   mirrorWrap.append(mirrorBox, document.createTextNode('mirror'));
-  // the face colours the caller supplied, off until asked for; no checkbox when there are none
+  // the face colours the caller supplied, off until asked for (unless `colours`); no checkbox when there are none
   const colourWrap = document.createElement('label');
   colourWrap.style.cssText = mirrorWrap.style.cssText;
   colourWrap.title = 'fill each face with the colour it has on screen';
   const colourBox = document.createElement('input');
   colourBox.type = 'checkbox';
-  colourBox.checked = false;
+  colourBox.checked = !!opts.colours && !!info.faceColours;
   colourWrap.append(colourBox, document.createTextNode('colours'));
   bar.append(title, ...(info.faceColours ? [colourWrap] : []), mirrorWrap, undoBtn, resetBtn, pdfBtn, closeBtn);
   // the sheet as it is shown and printed: the layout of the arrangement, mirrored or not. Face
