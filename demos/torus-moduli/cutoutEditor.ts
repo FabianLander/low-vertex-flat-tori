@@ -10,19 +10,22 @@
  *   click a tab        it moves to the other copy of its seam.
  *
  * Hovering shows where a triangle would go. Faces that overlap after a move are tinted red: the
- * sheet would not cut out in one piece. Undo, reset, and "open PDF" on top.
+ * sheet would not cut out in one piece. Undo, reset, and "open PDF" on top, and "save SVG" if the
+ * caller takes one: the lines of the sheet alone (`sheetSvg` in ./cutout.ts).
  *
  * A caller may open the editor on an arrangement of its own (`start`, which "reset" returns to
  * as well) and with the colours already on (`colours`); the default is the engine's development
  * with the colours off. The sheet carries no text unless "text" is ticked, and even then no
- * seam letters while the faces are coloured.
+ * seam letters while the faces are coloured. With "slide-in tabs" the tabs are slit half way at
+ * their thirds and so are the faces they slide into, and with colours each tab takes the colour
+ * of that face (see ./cutout.ts).
  *
  * Impure render boundary (DOM, canvas).
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import {
-  cutoutModel, initialArrangement, layoutSheet, mirrorSheet, movable, seamsOf, moveFace, flipTab, sheetPdf, inside,
+  cutoutModel, initialArrangement, layoutSheet, mirrorSheet, movable, seamsOf, moveFace, flipTab, sheetPdf, sheetSvg, inside,
   CUT_C, MOUNTAIN_C, VALLEY_C, TAB_FC, LETTER_C, MOUNTAIN_DASH, VALLEY_DASH,
   type Arrangement, type Sheet, type CutoutInfo, type CutoutModel, type V2, type Copy,
 } from './cutout';
@@ -32,6 +35,11 @@ export interface CutoutEditorOptions {
   readonly start?: (model: CutoutModel) => Arrangement;
   /** Start with the face colours on (when the caller supplied some). */
   readonly colours?: boolean;
+  /**
+   * Takes the sheet's lines as an SVG (`sheetSvg`). The editor has a "save SVG" button when this is given. The SVG is
+   * the sheet as shown, mirror and arrangement included, but never with colours or text, whatever is ticked.
+   */
+  readonly saveSvg?: (svg: string) => void;
 }
 
 const rgb = (c: readonly number[], a = 1): string => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
@@ -60,7 +68,8 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
       + (primary ? 'border:none;background:#166534;color:#fff' : 'border:1px solid #166534;background:#fff;color:#166534');
     return b;
   };
-  const undoBtn = button('undo'), resetBtn = button('reset'), pdfBtn = button('open PDF ↗', true), closeBtn = button('close ✕');
+  const undoBtn = button('undo'), resetBtn = button('reset'), pdfBtn = button('open PDF ↗', true), svgBtn = button('save SVG ↓'), closeBtn = button('close ✕');
+  svgBtn.title = 'the lines of the sheet alone, all thin, black and solid: no colours, no text, no letters';
   // print on the other side of the paper, so the ink ends up on the outside of the folded torus;
   // on by default exactly when the coordinates would otherwise print the inside
   const mirrorWrap = document.createElement('label');
@@ -86,16 +95,24 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   textBox.type = 'checkbox';
   textBox.checked = false;
   textWrap.append(textBox, document.createTextNode('text'));
-  bar.append(title, ...(info.faceColours ? [colourWrap] : []), textWrap, mirrorWrap, undoBtn, resetBtn, pdfBtn, closeBtn);
+  // slide-in tabs in place of glue tabs: slit half way at their thirds, as the faces they slide into, and with colours in the colour of that face
+  const slitWrap = document.createElement('label');
+  slitWrap.style.cssText = mirrorWrap.style.cssText;
+  slitWrap.title = 'tabs that need no glue: each is slit half way down at its thirds, the face across the seam is slit half way in at the same places, and the two slide into each other, slit into slit. The mouths of the slits are rounded. With colours, a tab takes the colour of the face it slides into';
+  const slitBox = document.createElement('input');
+  slitBox.type = 'checkbox';
+  slitBox.checked = false;
+  slitWrap.append(slitBox, document.createTextNode('slide-in tabs'));
+  bar.append(title, ...(info.faceColours ? [colourWrap] : []), slitWrap, textWrap, mirrorWrap, undoBtn, resetBtn, pdfBtn, ...(opts.saveSvg ? [svgBtn] : []), closeBtn);
   // the sheet as it is shown and printed: the layout of the arrangement, mirrored or not. Face
   // numbers and seam keys survive the mirror, so picking, moving and flipping tabs are unaffected.
   // Without text the net is turned to fill the page. The angle is kept from one layout to the next unless another one
   // prints at least 3% larger, so the sheet does not spin with every move.
   let turn: number | undefined;
   const laid = (): Sheet => {
-    const text = textBox.checked;
-    let s = layoutSheet(model, arr, { text });
-    if (!text && turn !== undefined) { const kept = layoutSheet(model, arr, { text, turn }); if (s.scale < 1.03 * kept.scale) s = kept; }
+    const text = textBox.checked, slits = slitBox.checked;
+    let s = layoutSheet(model, arr, { text, slits });
+    if (!text && turn !== undefined) { const kept = layoutSheet(model, arr, { text, turn, slits }); if (s.scale < 1.03 * kept.scale) s = kept; }
     turn = text ? undefined : s.turn;
     return mirrorBox.checked ? mirrorSheet(s) : s;
   };
@@ -103,7 +120,7 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   const hint = document.createElement('div');
   hint.style.cssText = 'padding:6px 14px;font-size:12px;color:rgba(20,20,20,0.7)';
   hint.textContent = 'Click a triangle on the outline: it moves across its seam nearest the click to the other copy of that seam, and carries the tabs of the folds it leaves (it can move if the rest of the sheet stays in one piece). '
-    + 'Click a glue tab to move it to the other copy of its seam. Then open the PDF.';
+    + `Click a glue tab to move it to the other copy of its seam. Then open the PDF${opts.saveSvg ? ', or save the lines alone as an SVG' : ''}.`;
   const status = document.createElement('div');
   status.style.cssText = 'padding:0 14px 6px;font-size:12px';
   const host = document.createElement('div');
@@ -149,11 +166,14 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
       if (bad.has(f)) { poly(tri); ctx.fillStyle = 'rgba(220,38,38,0.22)'; ctx.fill(); }
       if (hover?.kind === 'face' && hover.face === f) { poly(tri); ctx.fillStyle = 'rgba(250,204,21,0.30)'; ctx.fill(); }
     });
-    // tabs
+    // tabs: a glue tab grey, a slide-in tab in its pieces and, with colours, in the colour of the face it slides onto
     for (const t of sheet.tabs) {
-      poly(t.poly);
-      ctx.fillStyle = hover?.kind === 'tab' && hover.seam === t.seam ? 'rgba(22,101,52,0.22)' : rgb(TAB_FC);
-      ctx.fill();
+      const c = (t.pieces && cols?.[t.copy.mateFace]) || TAB_FC;
+      for (const piece of t.pieces ?? [t.poly]) {
+        poly(piece); ctx.fillStyle = ctx.strokeStyle = rgb(c); ctx.fill();
+        if (t.pieces) { ctx.setLineDash([]); ctx.lineWidth = 1; ctx.stroke(); }   // closes the hairline between two thirds of a slide-in tab
+      }
+      if (hover?.kind === 'tab' && hover.seam === t.seam) { poly(t.poly); ctx.fillStyle = 'rgba(22,101,52,0.22)'; ctx.fill(); }
     }
     // lines, in the PDF's styles
     const px = (pt: number): number => Math.max(0.6, pt * PT * k);
@@ -238,6 +258,7 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
   undoBtn.onclick = () => { const prev = history.pop(); if (!prev) return; arr = prev; sheet = laid(); hover = null; draw(); };
   resetBtn.onclick = () => { if (arr === first) return; history.push(arr); arr = first; sheet = laid(); hover = null; draw(); };
   pdfBtn.onclick = () => openPdf(sheetPdf(sheet, { ...info, faceColours: colourBox.checked ? info.faceColours : undefined, text: textBox.checked }));
+  svgBtn.onclick = () => opts.saveSvg?.(sheetSvg(sheet));
   textBox.onchange = () => { sheet = laid(); hover = null; draw(); };   // without text the net fills the page
   // keys go to the editor while it is open, not to the moduli plot underneath (capture, first)
   const close = (): void => { window.removeEventListener('resize', draw); window.removeEventListener('keydown', onKey, true); root.remove(); };
@@ -247,6 +268,7 @@ export function openCutoutEditor(triang: Triangulation, positions: ArrayLike<num
     else if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); undoBtn.click(); }
   };
   mirrorBox.onchange = () => { sheet = laid(); hover = null; draw(); };
+  slitBox.onchange = () => { sheet = laid(); hover = null; draw(); };
   colourBox.onchange = () => draw();
   closeBtn.onclick = close;
   window.addEventListener('resize', draw);

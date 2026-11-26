@@ -17,20 +17,31 @@
  *                      is thickened and nothing more, up to the 1.2 mm of the print sheets, where
  *                      every cut face keeps its own piece of the margin.
  *
+ * "open PDF" on top, and "save SVG" if the caller takes one: the lines of the sheet alone, the
+ * guides included (`domainSvg` in ./domainCutout.ts).
+ *
  * Impure render boundary (DOM, canvas).
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import { inside, CUT_C, MOUNTAIN_C, VALLEY_C, CREASE_LW, MOUNTAIN_DASH, VALLEY_DASH, CUT_LW, type CutoutInfo, type V2 } from './cutout';
 import {
-  domainModel, tilingPatch, layoutDomain, domainPdf, latticeCoords, FACE_CLEAR, UNDER_FC, GUIDE_C, GUIDE_LW, GUIDE_DASH,
+  domainModel, tilingPatch, layoutDomain, domainPdf, domainSvg, latticeCoords, FACE_CLEAR, UNDER_FC, GUIDE_C, GUIDE_LW, GUIDE_DASH,
   type DomainModel, type DomainSheet, type Patch,
 } from './domainCutout';
 
 const rgb = (c: readonly number[], a = 1): string => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 const PT = 25.4 / 72;                                                   // millimetres per point
 
-export function openDomainEditor(triang: Triangulation, positions: ArrayLike<number>, info: CutoutInfo, openPdf: (bytes: Uint8Array) => void): void {
+export interface DomainEditorOptions {
+  /**
+   * Takes the sheet's lines as an SVG (`domainSvg`). The editor has a "save SVG" button when this is given. The SVG is
+   * the sheet as placed, but never with colours, the grey of the pieces that go underneath, or text.
+   */
+  readonly saveSvg?: (svg: string) => void;
+}
+
+export function openDomainEditor(triang: Triangulation, positions: ArrayLike<number>, info: CutoutInfo, openPdf: (bytes: Uint8Array) => void, opts: DomainEditorOptions = {}): void {
   let side: 'outside' | 'inside' = 'outside';
   let model: DomainModel = domainModel(triang, positions, side);
   let gap = 0;                                                          // mm between the margin and the creases
@@ -56,7 +67,8 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
       + (primary ? 'border:none;background:#166534;color:#fff' : 'border:1px solid #166534;background:#fff;color:#166534');
     return b;
   };
-  const sideBtn = button(''), slitBtn = button(''), centreBtn = button('centre'), pdfBtn = button('open PDF ↗', true), closeBtn = button('close ✕');
+  const sideBtn = button(''), slitBtn = button(''), centreBtn = button('centre'), pdfBtn = button('open PDF ↗', true), svgBtn = button('save SVG ↓'), closeBtn = button('close ✕');
+  svgBtn.title = 'the lines of the sheet alone, all thin, black and solid, the sides of the domain included: no colours, no grey, no text';
   sideBtn.title = 'which side of the torus the printed side ends up on';
   slitBtn.title = 'the mouths of the slits: rounded, so that the pieces find their way in, or square';
   const slider = (hover: string, max: number, step: number, value: number, width: number): { box: HTMLLabelElement; text: HTMLSpanElement; input: HTMLInputElement } => {
@@ -89,12 +101,12 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   textBox.type = 'checkbox';
   textBox.checked = false;
   textWrap.append(textBox, document.createTextNode('text'));
-  bar.append(title, gapS.box, ...(info.faceColours ? [colourWrap] : []), textWrap, slitBtn, sideBtn, centreBtn, pdfBtn, closeBtn);
+  bar.append(title, gapS.box, ...(info.faceColours ? [colourWrap] : []), textWrap, slitBtn, sideBtn, centreBtn, pdfBtn, ...(opts.saveSvg ? [svgBtn] : []), closeBtn);
   const hint = document.createElement('div');
   hint.style.cssText = 'padding:6px 14px;font-size:12px;color:rgba(20,20,20,0.7)';
   hint.textContent = 'Drag the domain over the tiling (arrow keys move it by 1 mm of the page, with shift by 0.2 mm). What is inside it is the sheet. '
     + 'The sheet is the domain with a margin around it, in which the tiling carries on. The margin is slit, so that opposite sides slide into each other: grey pieces end up underneath, white ones on top. '
-    + 'The slider keeps the margin off the creases. Scroll to zoom, drag the tiling to pan. Then open the PDF.';
+    + `The slider keeps the margin off the creases. Scroll to zoom, drag the tiling to pan. Then open the PDF${opts.saveSvg ? ', or save the lines alone as an SVG' : ''}.`;
   const status = document.createElement('div');
   status.style.cssText = 'padding:0 14px 6px;font-size:12px';
   const host = document.createElement('div');
@@ -273,6 +285,7 @@ export function openDomainEditor(triang: Triangulation, positions: ArrayLike<num
   gapS.input.oninput = () => { gap = Number(gapS.input.value); moveTo(origin); };
   slitBtn.onclick = () => { rounded = !rounded; moveTo(origin); };
   pdfBtn.onclick = () => openPdf(domainPdf(sheet, { ...info, faceColours: colourBox.checked ? info.faceColours : undefined, text: textBox.checked }));
+  svgBtn.onclick = () => opts.saveSvg?.(domainSvg(sheet));
   // without text the sheet fills the page, at a larger scale, so the tiling around it is redone too
   textBox.onchange = () => { text = textBox.checked; moveTo(origin); patch = tilingPatch(model, sheet.thickness / sheet.scale); draw(); };
   colourBox.onchange = () => draw();

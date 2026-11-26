@@ -1,6 +1,7 @@
 /**
  * cutout — a cut-and-fold sheet of the net in the info panel: the sheet as data, an arrangement
- * the reader may change (`./cutoutEditor.ts`), and the one-page PDF, all made in the page.
+ * the reader may change (`./cutoutEditor.ts`), the one-page PDF, and the sheet's lines alone as an
+ * SVG, all made in the page.
  *
  * THE ARRANGEMENT starts as the net of the panel exactly: `developNet` of the same positions, the
  * same tree of faces, seen from the side the panel's camera sees it from (the net's +z side, the
@@ -32,16 +33,29 @@
  * is a ledge clipped to the face it is glued behind (laid across the seam), 1.2 mm clear of that
  * face's other two edges, so no tab ever spans a crease. It keeps 0.5 mm from every face of the
  * net but its own and 1 mm from every other tab, and it is at least 2.5 mm deep and 4 mm long
- * with 20 mm² of area, or it is left out. Its base is the fold the seam takes once glued and is
+ * with 20 mm² of area, or it is left out. A ledge that would end within that 1 mm of another tab
+ * is cut back at that end, 1.5 mm at a time, as far as needed and down to 60% of its seam; only
+ * below that does a short tab centred on the seam take its place. Its base is the fold the seam takes once glued and is
  * drawn as that crease. A seam's two copies carry the same letter. On the first layout the
  * tabs' sides are chosen as in `place_tabs` there (fewest options first, backtracking); after
  * that the arrangement says on which copy each tab sits.
+ *
+ * SLIDE-IN TABS (`slits`) need no glue. A tab and the face it lies on are joined slit into slit,
+ * as two cards are stood across each other. The tab is slit square to its base at the thirds of
+ * the base (`./slits.ts`, as the margin of the domain sheet: once in the middle of a short tab, not
+ * at all on a very short one), from its far edge half way down (`SLIT_PART`). The face across the
+ * seam is slit at the same places, from its edge the other half of the way in. Slid into each
+ * other until the slits' ends meet, the tab's base lies on the face's edge, and from slit to slit
+ * the tab is over and under the face in turn. The mouths of all these slits are rounded. A third
+ * that lies on top is seen, so with colours a slide-in tab takes the colour of the face it lies
+ * on, not the grey of a glue tab.
  *
  * Pure apart from the TextEncoder.
  */
 
 import type { Triangulation } from '@core/topology/triangulation.ts';
 import { developNet } from '@core/moduli/develop.ts';
+import { slitStrip, span, TWO_SLITS, ONE_SLIT, SLIT_ROUND, ARC_STEPS } from './slits';
 
 export type V2 = readonly [number, number];
 type V3 = readonly [number, number, number];
@@ -84,8 +98,18 @@ export const MARGIN = 11, TAB_ROOM = 6, HEADER = 26;
 /** The white around a sheet without text, in mm: no header, and just enough edge for a printer. */
 export const PRINT_MARGIN = 6;
 export const TAB_H = 6;
+/**
+ * How far a slide-in tab is slit, from its far edge, as a part of its depth. The face it slides onto is slit over the
+ * rest, from its edge. At 1 the tab would be cut into separate pieces down to its base and the face left whole.
+ */
+export const SLIT_PART = 0.5;
 const TAB_MIN_DEPTH = 2.5, TAB_MIN_BASE = 4, TAB_MIN_AREA = 20;
 const TAB_FACE_CLEAR = 1.2, TAB_NET_CLEAR = 0.5, TAB_TAB_CLEAR = 1.0;
+/**
+ * A ledge that would end too near another tab is offered cut back as well: by `TAB_TRIM` mm at a time, at most
+ * `TAB_TRIMS` times in all (at one end, or shared between the two), and to no less than `TAB_TRIM_MIN` of its seam.
+ */
+const TAB_TRIM = 1.5, TAB_TRIMS = 8, TAB_TRIM_MIN = 0.6;
 
 const sub3 = (p: V3, q: V3): V3 => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
 const cross3 = (p: V3, q: V3): V3 => [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]];
@@ -239,7 +263,14 @@ export interface Copy {
   readonly mate: readonly [V2, V2, V2];  // the face glued here, laid across the seam: A, B, apex
   readonly mateFace: number;
 }
-export interface Tab { readonly seam: string; readonly face: number; readonly copy: Copy; readonly poly: V2[]; readonly P0: V2; readonly P1: V2 }
+export interface Tab {
+  readonly seam: string; readonly face: number; readonly copy: Copy; readonly poly: V2[]; readonly P0: V2; readonly P1: V2;
+  /**
+   * A slide-in tab only: the tab between its slits, along the base from P0 to P1, the rounded mouths taken off. That is
+   * what is filled. The slits stop half way, so these hang together; `poly` stays the tab before it was slit.
+   */
+  readonly pieces?: readonly V2[][];
+}
 export interface Line { readonly a: V2; readonly b: V2; readonly kind: 'mountain' | 'valley' | 'cut'; readonly width: number; readonly edge?: readonly [number, number] }
 
 export interface Sheet {
@@ -287,8 +318,10 @@ function joined(model: CutoutModel, faces: V2[][], key: string): boolean {
 /**
  * `text`: is there a header on the page (default true)? Without one the net takes the whole page but `PRINT_MARGIN`, and
  * is turned as well: by `turn` degrees if given, else by the angle (in half degrees) at which it prints largest.
+ * `slits`: are the tabs slide-in tabs, slit and joined to slits in the faces they lie on (default false: glue tabs)?
+ * The tabs are placed the same either way.
  */
-export function layoutSheet(model: CutoutModel, arr: Arrangement, opts: { readonly text?: boolean; readonly turn?: number } = {}): Sheet {
+export function layoutSheet(model: CutoutModel, arr: Arrangement, opts: { readonly text?: boolean; readonly turn?: number; readonly slits?: boolean } = {}): Sheet {
   const T = model.triang.triangles;
   const faces = placed(model, arr);
   const local = (t: number, v: number): number => T[t].indexOf(v);
@@ -368,6 +401,20 @@ export function layoutSheet(model: CutoutModel, arr: Arrangement, opts: { readon
       if (cyc[1] !== P1) return;
       out.push({ seam: cp.seam, face: cp.face, copy: cp, poly: cyc, P0, P1, score: kind * 1e6 + Math.round(h * 1000) * 1e2 + Math.min(99, along(P1) - along(P0)), glued: glued(cp, cyc) });
     };
+    /** The ledge `h` deep on the copy's edge less `shaveA` at A and `shaveB` at B, clipped to the mate. None if that is too small or off the page. */
+    const ledge = (h: number, taper: number, shaveA: number, shaveB: number): { poly: V2[]; P0: V2; P1: V2 } | null => {
+      if (L - shaveA - shaveB < TAB_MIN_BASE) return null;
+      const A1: V2 = [A[0] + shaveA * u[0], A[1] + shaveA * u[1]], B1: V2 = [B[0] - shaveB * u[0], B[1] - shaveB * u[1]];
+      const inset = Math.min(taper * h, 0.25 * (L - shaveA - shaveB));
+      let poly: V2[] = [A1, B1, [B1[0] + h * n[0] - inset * u[0], B1[1] + h * n[1] - inset * u[1]], [A1[0] + h * n[0] + inset * u[0], A1[1] + h * n[1] + inset * u[1]]];
+      poly = clipLeft(clipLeft(poly, mA, mC, TAB_FACE_CLEAR), mC, mB, TAB_FACE_CLEAR);
+      if (poly.length < 3) return null;
+      const onBase = poly.filter((p) => Math.abs((p[0] - A[0]) * n[0] + (p[1] - A[1]) * n[1]) < 1e-9);
+      if (onBase.length !== 2) return null;
+      const [P0, P1] = onBase.sort((p, q) => along(p) - along(q));
+      if (along(P1) - along(P0) < TAB_MIN_BASE || depthOf(poly) < TAB_MIN_DEPTH || Math.abs(area(poly)) < TAB_MIN_AREA || offPage(poly)) return null;
+      return { poly, P0, P1 };
+    };
     // the full-edge ledge, best height first, shaved back from whatever face it touches
     for (const h of [TAB_H, 0.8 * TAB_H, 0.62 * TAB_H, 0.48 * TAB_H, 0.36 * TAB_H, 0.28 * TAB_H]) {
       if (h < TAB_MIN_DEPTH) break;
@@ -375,19 +422,23 @@ export function layoutSheet(model: CutoutModel, arr: Arrangement, opts: { readon
       for (const taper of [1.4, 1.0, 0.7]) {
         let shaveA = 0, shaveB = 0;
         for (let it = 0; it < 16; it++) {
-          if (L - shaveA - shaveB < TAB_MIN_BASE) break;
-          const A1: V2 = [A[0] + shaveA * u[0], A[1] + shaveA * u[1]], B1: V2 = [B[0] - shaveB * u[0], B[1] - shaveB * u[1]];
-          const inset = Math.min(taper * h, 0.25 * (L - shaveA - shaveB));
-          let poly: V2[] = [A1, B1, [B1[0] + h * n[0] - inset * u[0], B1[1] + h * n[1] - inset * u[1]], [A1[0] + h * n[0] + inset * u[0], A1[1] + h * n[1] + inset * u[1]]];
-          poly = clipLeft(clipLeft(poly, mA, mC, TAB_FACE_CLEAR), mC, mB, TAB_FACE_CLEAR);
-          if (poly.length < 3) break;
-          const onBase = poly.filter((p) => Math.abs((p[0] - A[0]) * n[0] + (p[1] - A[1]) * n[1]) < 1e-9);
-          if (onBase.length !== 2) break;
-          const [P0, P1] = onBase.sort((p, q) => along(p) - along(q));
-          if (along(P1) - along(P0) < TAB_MIN_BASE || depthOf(poly) < TAB_MIN_DEPTH || Math.abs(area(poly)) < TAB_MIN_AREA || offPage(poly)) break;
+          const made = ledge(h, taper, shaveA, shaveB);
+          if (!made) break;
+          const { poly, P0, P1 } = made;
           const offenders = tris.map((tri, k) => (k === cp.face ? Infinity : polyDistance(tri, poly)));
           const worst = offenders.reduce((bi, d, k) => (d < offenders[bi] ? k : bi), 0);
-          if (offenders[worst] >= TAB_NET_CLEAR) { accept(poly, P0, P1, 2, h); found = true; break; }
+          if (offenders[worst] >= TAB_NET_CLEAR) {
+            accept(poly, P0, P1, 2, h);
+            // and the same ledge cut back further at one end or both, for where it would end too near another tab. These
+            // rank below every ledge that is not cut back and above the centred trapezoids, so the search takes the
+            // longest of them that fits, and only when no whole ledge does.
+            for (let i = 0; i <= TAB_TRIMS; i++) for (let j = 0; i + j <= TAB_TRIMS; j++) {
+              if (i + j === 0) continue;
+              const cut = ledge(h, taper, shaveA + i * TAB_TRIM, shaveB + j * TAB_TRIM);
+              if (cut && along(cut.P1) - along(cut.P0) >= TAB_TRIM_MIN * L && clearOfNet(cp, cut.poly) >= TAB_NET_CLEAR) accept(cut.poly, cut.P0, cut.P1, 1.5, h);
+            }
+            found = true; break;
+          }
           // shave the end nearer the closest offending face
           const tri = tris[worst], cx = (tri[0][0] + tri[1][0] + tri[2][0]) / 3, cy = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
           if (along([cx, cy]) < (along(P0) + along(P1)) / 2) shaveA += Math.max(2, 0.05 * L); else shaveB += Math.max(2, 0.05 * L);
@@ -433,7 +484,46 @@ export function layoutSheet(model: CutoutModel, arr: Arrangement, opts: { readon
     search(k + 1, placedTabs);
   };
   search(0, []);
-  const tabs: Tab[] = best;
+  // ---- slide-in tabs: every tab slit square to its base, at the thirds of the base (once in the middle of a short
+  // tab, not at all on a very short one), from its far edge over `SLIT_PART` of its depth, and the face it lies on slit
+  // at the same places from its edge over the rest. All mouths are rounded. `cutOf` is what is cut for such a tab, as
+  // polylines: what the mouths leave of its outline, the base left out, and the slits with the arcs of their mouths.
+  // `faceCuts` are the slits in the faces, and `gapsOf` what their mouths take out of the face's copy of the seam.
+  const cutOf = new Map<Tab, V2[][]>();
+  const faceCuts: V2[][] = [];
+  const gapsOf = new Map<Copy, [V2, V2][]>();
+  const slitTab = (t: Tab): Tab => {
+    const { P0, P1 } = t, L = dist(P0, P1), ux = (P1[0] - P0[0]) / L, uy = (P1[1] - P0[1]) / L;
+    // the tab in its own frame: the base on y = 0 from x = 0 to L, the tab below it
+    const toF = (p: V2): V2 => { const dx = p[0] - P0[0], dy = p[1] - P0[1], y = -dx * uy + dy * ux; return [dx * ux + dy * uy, Math.abs(y) < 1e-9 ? 0 : y]; };
+    const fromF = (p: V2): V2 => [P0[0] + p[0] * ux - p[1] * uy, P0[1] + p[0] * uy + p[1] * ux];
+    const strip = t.poly.map(toF), depth = -Math.min(...strip.map((p) => p[1]));
+    const at = L >= TWO_SLITS ? [L / 3, 2 * L / 3] : L >= ONE_SLIT ? [L / 2] : [];
+    const r = Math.min(SLIT_ROUND, SLIT_PART * depth / 2);
+    const cut = slitStrip(strip, at, r, SLIT_PART);
+    const slit: Tab = { ...t, pieces: cut.pieces.map((piece) => piece.map(fromF)) };
+    cutOf.set(slit, [...cut.edges.slice(1).flat(), ...cut.cuts].map((path) => path.map(fromF)));   // edge 0 is the base
+    // the face it lies on, in the same frame: laid across the seam it is below y = 0 as well, its edge on y = 0. Its
+    // slit at x runs from that edge down to where the tab's slit stops, and `glued` takes it to the face's own place.
+    const other = copies.find((c) => c.seam === t.seam && c.face !== t.face)!;
+    const onFace = (path: V2[]): V2[] => glued(t.copy, path.map(fromF));
+    for (const x of at) {
+      const far = span(strip, 0, x)?.[0];
+      if (far === undefined) continue;
+      const end = far * (1 - SLIT_PART), rf = Math.min(r, -end);
+      if (-end < 1e-9) continue;
+      const arc = (cx: number, from: number, to: number): V2[] => Array.from({ length: ARC_STEPS + 1 },
+        (_, i) => { const th = from + (to - from) * i / ARC_STEPS; return [cx + rf * Math.cos(th), -rf + rf * Math.sin(th)] as V2; });
+      if (rf > 0 && x - rf > 0 && x + rf < L) {
+        if (-end - rf > 1e-9) faceCuts.push(onFace([[x, -rf], [x, end]]));
+        faceCuts.push(onFace(arc(x - rf, Math.PI / 2, 0)), onFace(arc(x + rf, Math.PI, Math.PI / 2)));   // from the edge to the slit, and back out
+        const [g0, g1] = onFace([[x - rf, 0], [x + rf, 0]]);
+        gapsOf.set(other, [...(gapsOf.get(other) ?? []), [g0, g1]]);
+      } else faceCuts.push(onFace([[x, 0], [x, end]]));
+    }
+    return slit;
+  };
+  const tabs: Tab[] = opts.slits ? best.map(slitTab) : best;
   const tabOf = new Map<Copy, Tab>(tabs.map((t) => [t.copy, t]));
   const missingTabs = seamKeys.filter((k) => arr.tabFace.has(k) && !tabs.some((t) => t.seam === k));
 
@@ -453,12 +543,26 @@ export function layoutSheet(model: CutoutModel, arr: Arrangement, opts: { readon
   });
   for (const cp of copies) {
     const tab = tabOf.get(cp);
-    if (!tab) { lines.push({ a: cp.A, b: cp.B, kind: 'cut', width: CUT_LW }); continue; }
+    if (!tab) {
+      // the whole copy, or what the mouths of the slits in this face leave of it
+      const L = dist(cp.A, cp.B), at = (p: V2): number => ((p[0] - cp.A[0]) * (cp.B[0] - cp.A[0]) + (p[1] - cp.A[1]) * (cp.B[1] - cp.A[1])) / L;
+      let from = cp.A;
+      for (const [g0, g1] of (gapsOf.get(cp) ?? []).map(([p, q]) => (at(p) <= at(q) ? [p, q] : [q, p])).sort((g, h) => at(g[0]) - at(h[0]))) {
+        if (at(g0) - at(from) > 1e-9) lines.push({ a: from, b: g0, kind: 'cut', width: CUT_LW });
+        from = g1;
+      }
+      if (L - at(from) > 1e-9) lines.push({ a: from, b: cp.B, kind: 'cut', width: CUT_LW });
+      continue;
+    }
     if (dist(cp.A, tab.P0) > 0.15) lines.push({ a: cp.A, b: tab.P0, kind: 'cut', width: CUT_LW });
     if (dist(tab.P1, cp.B) > 0.15) lines.push({ a: tab.P1, b: cp.B, kind: 'cut', width: CUT_LW });
     lines.push({ a: tab.P0, b: tab.P1, kind: model.kinds.get(cp.seam)!, width: CREASE_LW, edge: cp.edge });
-    for (let k = 1; k < tab.poly.length; k++) lines.push({ a: tab.poly[k], b: tab.poly[(k + 1) % tab.poly.length], kind: 'cut', width: TAB_LW });
+    // the tab's outline from P1 round to P0, or what its slits make of it
+    for (const path of cutOf.get(tab) ?? [[...tab.poly.slice(1), tab.poly[0]]]) {
+      for (let k = 0; k + 1 < path.length; k++) lines.push({ a: path[k], b: path[k + 1], kind: 'cut', width: TAB_LW });
+    }
   }
+  for (const path of faceCuts) for (let k = 0; k + 1 < path.length; k++) lines.push({ a: path[k], b: path[k + 1], kind: 'cut', width: CUT_LW });
   // a seam's two copies carry the same letter, just inside their faces
   const letters = copies.map((cp) => {
     const mid: V2 = [(cp.A[0] + cp.B[0]) / 2, (cp.A[1] + cp.B[1]) / 2];
@@ -544,7 +648,15 @@ export function sheetPdf(sheet: Sheet, info: CutoutInfo): Uint8Array {
   const pdf = new Page(sheet.W, sheet.H);
   const cols = info.faceColours;
   if (cols) sheet.tris.forEach((tri, t) => { const c = cols[t]; if (c) pdf.fill(tri, c); });
-  for (const t of sheet.tabs) pdf.fill(t.poly, TAB_FC);
+  // a glue tab is grey. A slide-in tab lies on the face across its seam, so with colours it takes that face's
+  for (const t of sheet.tabs) {
+    const c = (t.pieces && cols?.[t.copy.mateFace]) || TAB_FC;
+    for (const piece of t.pieces ?? [t.poly]) {
+      pdf.fill(piece, c);
+      // the thirds of a slide-in tab meet edge to edge below its slits: a thin line of their colour closes the hairline between them
+      if (t.pieces) piece.forEach((p, i) => pdf.line(p, piece[(i + 1) % piece.length], c, 0.3, null));
+    }
+  }
   for (const l of sheet.lines) {
     if (l.kind === 'cut') pdf.line(l.a, l.b, CUT_C, l.width, null);
     else pdf.line(l.a, l.b, l.kind === 'mountain' ? MOUNTAIN_C : VALLEY_C, l.width, l.kind === 'mountain' ? MOUNTAIN_DASH : VALLEY_DASH);
@@ -555,7 +667,10 @@ export function sheetPdf(sheet: Sheet, info: CutoutInfo): Uint8Array {
     const top = sheet.H - MARGIN;
     pdf.text(info.title, [MARGIN, top - 4.5], 4.6, CUT_C, 'left');
     pdf.text(info.subtitle, [MARGIN, top - 10], 3.0, [0.3, 0.3, 0.3], 'left');
-    const note = `Print at 100%. Cut along the solid lines, tabs included, fold, and glue each tab behind ${letters ? 'the edge with the same letter' : 'the edge it matches'}. `
+    const edge = letters ? 'the edge with the same letter' : 'the edge it matches';
+    const note = (sheet.tabs.some((t) => t.pieces)
+      ? `Print at 100%. Cut along the solid lines, the tabs and all slits included, and fold. Slide each tab into ${edge}, slit into slit: it goes over and under the face in turn. `
+      : `Print at 100%. Cut along the solid lines, tabs included, fold, and glue each tab behind ${edge}. `)
       + `Mountain and valley are seen from the printed side, which ends up on the ${sheet.printedSide} of the torus.`;
     pdf.text(note, [MARGIN, top - 15], 2.4, [0.35, 0.35, 0.35], 'left', sheet.W - 2 * MARGIN);
     const lx = sheet.W - MARGIN - 52;
@@ -587,7 +702,10 @@ export function mirrorSheet(sheet: Sheet): Sheet {
     toPage: (p: V2): V2 => m(sheet.toPage(p)),
     tris: sheet.tris.map((t) => [m(t[0]), m(t[1]), m(t[2])] as [V2, V2, V2]),
     copies: sheet.copies.map(flipCopy),
-    tabs: sheet.tabs.map((t) => ({ ...t, poly: t.poly.map(m), P0: m(t.P1), P1: m(t.P0), copy: flipCopy(t.copy) })),
+    tabs: sheet.tabs.map((t) => ({
+      ...t, poly: t.poly.map(m), P0: m(t.P1), P1: m(t.P0), copy: flipCopy(t.copy),
+      ...(t.pieces ? { pieces: t.pieces.map((piece) => piece.map(m)).reverse() } : {}),
+    })),
     lines: sheet.lines.map((l) => ({ ...l, a: m(l.a), b: m(l.b), kind: flipKind(l.kind) })),
     letters: sheet.letters.map((l) => ({ ...l, at: m(l.at) })),
     printedSide: sheet.printedSide === 'outside' ? 'inside' : 'outside',
@@ -601,6 +719,30 @@ export function cutoutPdf(triang: Triangulation, positions: ArrayLike<number>, i
   const laid = layoutSheet(model, initialArrangement(model));
   const sheet = laid.printedSide === printedSide ? laid : mirrorSheet(laid);
   return { bytes: sheetPdf(sheet, info), sheet };
+}
+
+// ======================================================================================
+// the SVG
+// ======================================================================================
+
+/**
+ * A page of line segments as an SVG at true size (one unit of the viewBox is a millimetre), with the page's y turned
+ * to point down. It holds the lines and nothing else: no fills, no text, no letters, and every line drawn alike, solid
+ * black at the width of a cut line with round ends. What a line is survives in the grouping alone: one <g> per entry
+ * of `groups`, with the entry's name as its id.
+ */
+export function linesSvg(W: number, H: number, groups: readonly (readonly [string, readonly { readonly a: V2; readonly b: V2 }[]])[]): string {
+  const n = (x: number): string => String(Number(x.toFixed(3)));
+  const body = groups.filter(([, segs]) => segs.length).map(([id, segs]) => `<g id="${id}">\n`
+    + segs.map((l) => `<line x1="${n(l.a[0])}" y1="${n(H - l.a[1])}" x2="${n(l.b[0])}" y2="${n(H - l.b[1])}"/>`).join('\n') + '\n</g>').join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}" `
+    + `fill="none" stroke="#000" stroke-width="${n(CUT_LW * 25.4 / 72)}" stroke-linecap="round">\n${body}\n</svg>\n`;
+}
+
+/** The lines of the sheet as an SVG (`linesSvg`): the cuts, tabs included, and the folds, all drawn as cuts. */
+export function sheetSvg(sheet: Sheet): string {
+  const of = (kind: Line['kind']): Line[] => sheet.lines.filter((l) => l.kind === kind);
+  return linesSvg(sheet.W, sheet.H, [['cut', of('cut')], ['mountain', of('mountain')], ['valley', of('valley')]]);
 }
 
 // ---- a one-page PDF with lines, fills and Helvetica text, in mm ----
